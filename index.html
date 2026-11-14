@@ -295,7 +295,7 @@
                 <h3 class="text-xl font-black text-white tracking-tight">레이드</h3>
                 <span class="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/50 text-[10px] font-bold text-purple-200">혼자 · 친구 협동</span>
               </div>
-              <p class="text-xs text-purple-200/85 mt-0.5">HP 500 · 한 번에 2개 스킬을 쓰는 심연 보스 토벌</p>
+              <p class="text-xs text-purple-200/85 mt-0.5">HP 100 · 한 번에 3개 스킬을 동시에 쓰는 보스 토벌 (아비스 / 샌즈)</p>
             </div>
           </div>
           <span class="text-purple-300 font-black text-base group-hover:translate-x-1 transition">토벌 ›</span>
@@ -795,10 +795,26 @@
         <span id="battle-dialogue-text">전투가 시작되었습니다!</span>
       </div>
 
+      <!-- 1:1 PvP 10턴 경과 서든데스 2중 스킬 알림 배너 -->
+      <div id="pvp-sudden-death-banner" class="hidden w-full max-w-xl rounded-xl bg-gradient-to-r from-red-950 via-orange-950 to-amber-950 border-2 border-orange-400 px-3.5 py-2 text-xs font-black text-orange-200 text-center shadow-[0_0_20px_rgba(249,115,22,0.35)] animate-pulse">
+        🔥 10턴 경과! 서든데스 2중 스킬 모드 발동 (스킬 2개 동시 선택 가능!)
+      </div>
+
       <!-- 플레이어 스킬 선택 패널 -->
       <div id="battle-player-turn-panel" class="w-full max-w-xl undertale-box rounded-xl p-3.5">
-        <div class="text-[11px] text-zinc-400 font-bold mb-2">▶ 사용할 무기 스킬을 선택하세요</div>
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div id="battle-skill-prompt" class="text-[11px] text-zinc-400 font-bold">▶ 사용할 무기 스킬을 선택하세요</div>
+          <span id="pvp-turn-counter-badge" class="hidden px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 font-orbitron text-[10px] font-bold text-cyan-300">TURN 1</span>
+        </div>
         <div id="battle-skills-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        <!-- PvP 2중 스킬 확정 액션 바 -->
+        <div id="pvp-dual-cast-bar" class="hidden mt-3 pt-2.5 border-t border-orange-500/40 flex flex-wrap items-center justify-between gap-2">
+          <div id="pvp-dual-selection-text" class="text-xs font-bold text-orange-200">선택된 스킬 (0/2): 없음</div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="clearPvpDualSelection()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold cursor-pointer">초기화</button>
+            <button id="btn-confirm-pvp-dual" type="button" onclick="confirmPvpDualSkills()" disabled class="px-4 py-1.5 rounded-lg bg-zinc-800 text-zinc-500 text-xs font-black cursor-not-allowed transition">⚡ 2중 스킬 동시 발동!</button>
+          </div>
+        </div>
       </div>
 
       <!-- PvP 상대방 스킬 대기 패널 -->
@@ -947,7 +963,7 @@
     </div>
   </div>
 
-  <!-- 레이드 모드 선택 모달 (혼자 vs 친구 4자리 코드 협동) -->
+  <!-- 레이드 모드 선택 모달 (혼자 vs 친구 4자리 코드 협동 + 보스 선택) -->
   <div id="raid-mode-modal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="w-full max-w-md rounded-3xl bg-zinc-950 border-2 border-purple-500/70 p-6 shadow-2xl">
       <div class="flex items-center justify-between mb-4">
@@ -955,17 +971,41 @@
         <button onclick="closeRaidModeModal()" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold cursor-pointer">✕</button>
       </div>
 
-      <div class="mb-4 p-3 rounded-2xl bg-purple-950/30 border border-purple-500/40 text-xs text-purple-200 space-y-1">
+      <!-- 레이드 보스 선택 2종 -->
+      <div class="mb-4">
+        <div class="text-[11px] font-black text-zinc-400 mb-2">1단계 · 토벌할 레이드 보스 선택 (HP 100 · 3스킬 동시 발사)</div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button id="raid-boss-opt-abyss" type="button" onclick="selectRaidBossType('abyss')" class="p-3 rounded-2xl bg-purple-950/40 border-2 border-purple-400 text-left transition cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-xl">👹</span>
+              <span class="px-1.5 py-0.5 rounded bg-black/70 font-orbitron text-[10px] font-bold text-purple-300">HP 100</span>
+            </div>
+            <div class="text-xs font-black text-white mt-1.5">심연의 군주 · 아비스</div>
+            <div class="text-[10px] text-purple-200/80 mt-0.5">전 무기 3스킬 동시 난사</div>
+          </button>
+
+          <button id="raid-boss-opt-sans" type="button" onclick="selectRaidBossType('sans')" class="p-3 rounded-2xl bg-black hover:bg-sky-950/30 border-2 border-zinc-800 text-left transition cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-xl">💀</span>
+              <span class="px-1.5 py-0.5 rounded bg-black/70 font-orbitron text-[10px] font-bold text-sky-300">HP 100</span>
+            </div>
+            <div class="text-xs font-black text-sky-200 mt-1.5">심판의 해골 · 샌즈</div>
+            <div class="text-[10px] text-sky-300/80 mt-0.5">블래스터·뼈다귀 3중 심판</div>
+          </button>
+        </div>
+      </div>
+
+      <div id="raid-boss-summary-box" class="mb-4 p-3 rounded-2xl bg-purple-950/30 border border-purple-500/40 text-xs text-purple-200 space-y-1">
         <div class="font-black text-purple-300">🔥 심연의 군주 · 아비스 로드</div>
-        <div>• 보스 체력: <span class="text-white font-bold">500 HP</span> (최강 캐릭터 50 HP × 10)</div>
-        <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 2가지 무기 패턴 동시 발사!</span></div>
+        <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
+        <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 무기 패턴 동시 발사!</span></div>
       </div>
 
       <div id="raid-step-select" class="grid grid-cols-2 gap-3">
         <button onclick="startSoloRaid()" class="p-5 rounded-2xl bg-black hover:bg-purple-950/30 border-2 border-zinc-700 hover:border-purple-400 flex flex-col items-center text-center transition cursor-pointer">
           <span class="text-4xl mb-2">🧍</span>
           <span class="text-base font-black text-white">혼자 (솔로 레이드)</span>
-          <span class="text-[11px] text-zinc-400 mt-1">홀로 500 HP 보스의 2중 탄막 돌파</span>
+          <span class="text-[11px] text-zinc-400 mt-1">홀로 100 HP 보스의 3중 탄막 돌파</span>
         </button>
 
         <button onclick="showFriendRaidStep()" class="p-5 rounded-2xl bg-black hover:bg-sky-950/30 border-2 border-zinc-700 hover:border-sky-400 flex flex-col items-center text-center transition cursor-pointer">
@@ -2675,7 +2715,7 @@
       SoundFX.click();
       currentView = viewName;
 
-      ['auth', 'lobby', 'gacha', 'codex', 'formation', 'battle'].forEach(v => {
+      ['auth', 'lobby', 'craft', 'gacha', 'codex', 'formation', 'battle'].forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) {
           el.classList.add('hidden');
@@ -2820,21 +2860,21 @@
         const r = Math.random() * 100;
         let pickedId = 'rusty_dagger';
 
-        if (bannerType === 'limited_thunder') {
-          if (r < 4.0) pickedId = 'lightning_daggers';
-          else if (r < 4.75) pickedId = 'strange_bone';
-          else if (r < 12.0) pickedId = 'knight_greatsword';
-          else if (r < 27.0) pickedId = 'steel_spear';
-          else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
-        } else if (bannerType === 'limited_sans') {
+        if (bannerType === 'limited_sans') {
           if (r < 4.0) pickedId = 'strange_bone';
           else if (r < 4.75) pickedId = 'lightning_daggers';
           else if (r < 12.0) pickedId = 'knight_greatsword';
           else if (r < 27.0) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
+        } else if (bannerType === 'limited_thunder') {
+          if (r < 4.0) pickedId = 'lightning_daggers';
+          else if (r < 4.75) pickedId = 'strange_bone';
+          else if (r < 12.0) pickedId = 'knight_greatsword';
+          else if (r < 27.0) pickedId = 'steel_spear';
+          else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else {
-          if (r < 0.75) pickedId = 'lightning_daggers';
-          else if (r < 1.5) pickedId = 'strange_bone';
+          if (r < 0.75) pickedId = 'strange_bone';
+          else if (r < 1.5) pickedId = 'lightning_daggers';
           else if (r < 8.5) pickedId = 'knight_greatsword';
           else if (r < 24.5) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
@@ -3070,246 +3110,6 @@
     }
 
     /* ============================================================================
-       8-B. 무기 합성 시스템 (단검 + 활 = 단검활 등)
-    ============================================================================ */
-    let craftSlots = [null, null];
-
-    function findMatchingRecipe(id1, id2) {
-      if (!id1 || !id2) return null;
-      return CRAFT_RECIPES.find(r =>
-        (r.mat1 === id1 && r.mat2 === id2) || (r.mat1 === id2 && r.mat2 === id1)
-      ) || null;
-    }
-
-    function selectWeaponForCraft(weaponId) {
-      if (!state.ownedWeapons[weaponId]) return;
-      SoundFX.click();
-
-      if (craftSlots[0] === weaponId) {
-        craftSlots[0] = null;
-      } else if (craftSlots[1] === weaponId) {
-        craftSlots[1] = null;
-      } else if (!craftSlots[0]) {
-        craftSlots[0] = weaponId;
-      } else if (!craftSlots[1]) {
-        craftSlots[1] = weaponId;
-      } else {
-        craftSlots[0] = craftSlots[1];
-        craftSlots[1] = weaponId;
-      }
-      renderCraft();
-    }
-
-    function clearCraftSlot(slotNum) {
-      SoundFX.click();
-      craftSlots[slotNum - 1] = null;
-      renderCraft();
-    }
-
-    function clearCraftSlots() {
-      SoundFX.click();
-      craftSlots = [null, null];
-      renderCraft();
-    }
-
-    function applyRecipeToSlots(recipeId) {
-      const rec = CRAFT_RECIPES.find(r => r.id === recipeId);
-      if (!rec) return;
-      SoundFX.click();
-      craftSlots = [rec.mat1, rec.mat2];
-      renderCraft();
-    }
-
-    function executeWeaponCraft() {
-      const recipe = findMatchingRecipe(craftSlots[0], craftSlots[1]);
-      if (!recipe) {
-        showToast('⚠️ 올바른 합성 조합을 선택해주세요!', 'border-red-400 text-red-200');
-        return;
-      }
-
-      const w1 = state.ownedWeapons[recipe.mat1];
-      const w2 = state.ownedWeapons[recipe.mat2];
-      if (!w1 || !w2) {
-        showToast('⚠️ 재료 무기를 모두 보유하고 있어야 합성할 수 있습니다!', 'border-red-400 text-red-200');
-        return;
-      }
-
-      // 재료 무기 각 1개(1레벨) 소모
-      [recipe.mat1, recipe.mat2].forEach(matId => {
-        if (state.ownedWeapons[matId].level > 1) {
-          state.ownedWeapons[matId].level -= 1;
-        } else {
-          delete state.ownedWeapons[matId];
-          if (state.equippedWeaponId === matId) {
-            state.equippedWeaponId = null;
-          }
-        }
-      });
-
-      // 합성 결과 무기 지급
-      const resWeapon = getWeaponById(recipe.result);
-      let isNew = false;
-      if (!state.ownedWeapons[recipe.result]) {
-        state.ownedWeapons[recipe.result] = { level: 1 };
-        isNew = true;
-      } else {
-        state.ownedWeapons[recipe.result].level += 1;
-      }
-
-      // 장착 무기가 비어 있으면 자동 장착
-      if (!state.equippedWeaponId) {
-        state.equippedWeaponId = recipe.result;
-      }
-
-      craftSlots = [null, null];
-      SoundFX.synergy();
-      updateGlobalUI();
-      saveAccountProgress();
-      renderCraft();
-
-      showGachaResultModal('🔨 무기 합성 성공!', [{
-        name: resWeapon.name,
-        rarity: resWeapon.rarity,
-        rarityColor: resWeapon.rarityColor,
-        art: resWeapon.art,
-        isNew,
-        level: state.ownedWeapons[recipe.result].level,
-        subText: `탄막 위력 +${resWeapon.atk}`
-      }]);
-    }
-
-    function renderCraft() {
-      const slot1El = document.getElementById('craft-slot-1');
-      const slot2El = document.getElementById('craft-slot-2');
-      const resEl = document.getElementById('craft-result-preview');
-      const statusEl = document.getElementById('craft-status-banner');
-      const btnEl = document.getElementById('btn-execute-craft');
-
-      const renderSlotBox = (el, wId, label) => {
-        const w = wId ? getWeaponById(wId) : null;
-        const owned = wId ? state.ownedWeapons[wId] : null;
-        if (w) {
-          el.className = `sm:col-span-2 rounded-2xl p-3.5 ${owned ? 'bg-emerald-950/20 border-emerald-400/70' : 'bg-red-950/20 border-red-500/70'} border flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition`;
-          el.innerHTML = `
-            <div class="w-14 h-14 mb-1">${w.art}</div>
-            <div class="text-xs font-black text-white">${w.name}</div>
-            <div class="text-[10px] font-bold mt-0.5 ${owned ? 'text-emerald-300' : 'text-red-400'}">
-              ${owned ? `보유 중 (Lv.${owned.level}) · 클릭 시 해제` : '미보유 재료'}
-            </div>
-          `;
-        } else {
-          el.className = 'sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition';
-          el.innerHTML = `
-            <span class="text-2xl text-zinc-700 mb-1">🗡️</span>
-            <span class="text-xs font-bold text-zinc-400">${label}</span>
-            <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
-          `;
-        }
-      };
-
-      renderSlotBox(slot1El, craftSlots[0], '재료 무기 1');
-      renderSlotBox(slot2El, craftSlots[1], '재료 무기 2');
-
-      const matched = findMatchingRecipe(craftSlots[0], craftSlots[1]);
-      if (matched) {
-        const resW = getWeaponById(matched.result);
-        const canCraft = !!state.ownedWeapons[matched.mat1] && !!state.ownedWeapons[matched.mat2];
-        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-amber-950/25 border-2 border-amber-400 flex flex-col items-center justify-center min-h-[140px] text-center shadow-[0_0_20px_rgba(250,204,21,0.2)]';
-        resEl.innerHTML = `
-          <span class="px-1.5 py-0.5 rounded border text-[9px] font-bold mb-1 ${resW.rarityColor}">${resW.rarity}</span>
-          <div class="w-12 h-12">${resW.art}</div>
-          <div class="text-xs font-black text-amber-200 mt-1">${resW.name}</div>
-          <div class="text-[10px] text-amber-300 font-orbitron">위력 +${resW.atk}</div>
-        `;
-
-        if (canCraft) {
-          statusEl.textContent = `✨ 합성 가능! [${getWeaponById(matched.mat1).name}] + [${getWeaponById(matched.mat2).name}] → [${resW.name}]`;
-          statusEl.className = 'mt-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/60 text-xs text-center text-emerald-200 font-bold';
-          btnEl.disabled = false;
-          btnEl.className = 'px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-sm shadow-lg transition cursor-pointer';
-        } else {
-          statusEl.textContent = `⚠️ [${resW.name}] 조합법이지만 보유하지 않은 재료가 포함되어 있습니다.`;
-          statusEl.className = 'mt-4 p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-xs text-center text-red-300 font-bold';
-          btnEl.disabled = true;
-          btnEl.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
-        }
-      } else {
-        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-zinc-900/70 border border-zinc-800 flex flex-col items-center justify-center min-h-[140px] text-center';
-        resEl.innerHTML = `
-          <span class="text-2xl text-zinc-600 mb-1">❓</span>
-          <span class="text-[11px] font-bold text-zinc-400">${(craftSlots[0] && craftSlots[1]) ? '조합법 없음' : '합성 결과'}</span>
-        `;
-        statusEl.textContent = (craftSlots[0] && craftSlots[1])
-          ? '❌ 선택한 두 무기는 합성 조합법이 없습니다. 오른쪽 조합표를 참고하세요!'
-          : '아래 [보유한 무기] 또는 [합성 조합표]에서 재료를 선택하세요!';
-        statusEl.className = 'mt-4 p-3 rounded-xl bg-black/80 border border-zinc-800 text-xs text-center text-zinc-300';
-        btnEl.disabled = true;
-        btnEl.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
-      }
-
-      // 보유 무기 목록 렌더링
-      const ownedGrid = document.getElementById('craft-owned-weapons-grid');
-      ownedGrid.innerHTML = '';
-      const ownedWeapons = WEAPONS.filter(w => state.ownedWeapons[w.id]);
-      if (ownedWeapons.length === 0) {
-        ownedGrid.innerHTML = `<div class="col-span-full text-center py-6 text-xs text-zinc-500">보유한 무기가 없습니다. 뽑기에서 무기를 획득하세요!</div>`;
-      } else {
-        ownedWeapons.forEach(w => {
-          const lv = state.ownedWeapons[w.id].level;
-          const isSelected = craftSlots.includes(w.id);
-          const btn = document.createElement('button');
-          btn.onclick = () => selectWeaponForCraft(w.id);
-          btn.className = `p-2.5 rounded-xl border text-center flex flex-col items-center cursor-pointer transition ${
-            isSelected
-              ? 'bg-emerald-950/50 border-emerald-400 shadow-md'
-              : 'bg-black hover:bg-zinc-900 border-zinc-800'
-          }`;
-          btn.innerHTML = `
-            <div class="w-11 h-11 mb-1">${w.art}</div>
-            <div class="text-[11px] font-black text-white line-clamp-1">${w.name}</div>
-            <div class="text-[10px] text-amber-300">보유 Lv.${lv}</div>
-          `;
-          ownedGrid.appendChild(btn);
-        });
-      }
-
-      // 합성 조합표 렌더링
-      const recipesList = document.getElementById('craft-recipes-list');
-      recipesList.innerHTML = '';
-      CRAFT_RECIPES.forEach(rec => {
-        const m1 = getWeaponById(rec.mat1);
-        const m2 = getWeaponById(rec.mat2);
-        const res = getWeaponById(rec.result);
-        const has1 = !!state.ownedWeapons[rec.mat1];
-        const has2 = !!state.ownedWeapons[rec.mat2];
-        const ready = has1 && has2;
-
-        const row = document.createElement('button');
-        row.onclick = () => applyRecipeToSlots(rec.id);
-        row.className = `w-full p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 cursor-pointer transition ${
-          ready
-            ? 'bg-emerald-950/25 hover:bg-emerald-950/40 border-emerald-500/60'
-            : 'bg-black/80 hover:bg-zinc-900 border-zinc-800'
-        }`;
-        row.innerHTML = `
-          <div class="flex items-center gap-1.5 text-xs flex-wrap">
-            <span class="font-bold ${has1 ? 'text-white' : 'text-zinc-500'}">${m1.name}</span>
-            <span class="text-emerald-400 font-black">+</span>
-            <span class="font-bold ${has2 ? 'text-white' : 'text-zinc-500'}">${m2.name}</span>
-            <span class="text-amber-400 font-black">=</span>
-            <span class="font-black text-amber-300">${res.name}</span>
-          </div>
-          <span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-black ${
-            ready ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/50' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
-          }">
-            ${ready ? '제작 가능' : '재료 부족'}
-          </span>
-        `;
-        recipesList.appendChild(row);
-      });
-    }
-
-    /* ============================================================================
        9. 편성 시스템 (1칸 슬롯: 1번째 클릭 사람 -> 2번째 클릭 무기)
     ============================================================================ */
     function handleFormationSlotClick() {
@@ -3516,14 +3316,272 @@
     }
 
     /* ============================================================================
+       9-B. 무기 합성 대장간 시스템 (예: 녹슨 단검 + 사냥꾼의 활 = 단검활)
+    ============================================================================ */
+    let craftSlots = { mat1: null, mat2: null };
+
+    function findMatchingRecipe(id1, id2) {
+      if (!id1 || !id2) return null;
+      return CRAFT_RECIPES.find(
+        r => (r.mat1 === id1 && r.mat2 === id2) || (r.mat1 === id2 && r.mat2 === id1)
+      ) || null;
+    }
+
+    function selectWeaponForCraft(weaponId) {
+      if (!state.ownedWeapons[weaponId]) return;
+      SoundFX.click();
+
+      if (craftSlots.mat1 === weaponId && craftSlots.mat2 !== weaponId) {
+        craftSlots.mat2 = weaponId;
+      } else if (!craftSlots.mat1) {
+        craftSlots.mat1 = weaponId;
+      } else if (!craftSlots.mat2) {
+        craftSlots.mat2 = weaponId;
+      } else {
+        craftSlots.mat1 = weaponId;
+        craftSlots.mat2 = null;
+      }
+      renderCraft();
+    }
+
+    function clearCraftSlot(slotNum) {
+      SoundFX.click();
+      if (slotNum === 1) craftSlots.mat1 = null;
+      if (slotNum === 2) craftSlots.mat2 = null;
+      renderCraft();
+    }
+
+    function clearCraftSlots() {
+      SoundFX.click();
+      craftSlots.mat1 = null;
+      craftSlots.mat2 = null;
+      renderCraft();
+    }
+
+    function applyRecipeToSlots(recipeId) {
+      const rec = CRAFT_RECIPES.find(r => r.id === recipeId);
+      if (!rec) return;
+      SoundFX.click();
+      craftSlots.mat1 = rec.mat1;
+      craftSlots.mat2 = rec.mat2;
+      renderCraft();
+    }
+
+    function executeWeaponCraft() {
+      const rec = findMatchingRecipe(craftSlots.mat1, craftSlots.mat2);
+      if (!rec) {
+        showToast('⚠️ 올바른 합성 조합을 선택해주세요!', 'border-red-400 text-red-200');
+        return;
+      }
+
+      const owned1 = state.ownedWeapons[rec.mat1];
+      const owned2 = state.ownedWeapons[rec.mat2];
+      if (!owned1 || !owned2) {
+        showToast('⚠️ 재료 무기를 모두 보유하고 있어야 합성할 수 있습니다!', 'border-red-400 text-red-200');
+        return;
+      }
+
+      if (rec.mat1 === rec.mat2 && owned1.level < 2) {
+        showToast('⚠️ 동일 무기 합성은 Lv.2 이상 보유해야 합니다!', 'border-red-400 text-red-200');
+        return;
+      }
+
+      const consumeWeapon = (wId) => {
+        if (!state.ownedWeapons[wId]) return;
+        if (state.ownedWeapons[wId].level > 1) {
+          state.ownedWeapons[wId].level -= 1;
+        } else {
+          delete state.ownedWeapons[wId];
+          if (state.equippedWeaponId === wId) {
+            state.equippedWeaponId = null;
+          }
+        }
+      };
+
+      consumeWeapon(rec.mat1);
+      consumeWeapon(rec.mat2);
+
+      let isNew = false;
+      if (!state.ownedWeapons[rec.result]) {
+        state.ownedWeapons[rec.result] = { level: 1 };
+        isNew = true;
+      } else {
+        state.ownedWeapons[rec.result].level += 1;
+      }
+
+      const resultWeapon = getWeaponById(rec.result);
+      craftSlots.mat1 = null;
+      craftSlots.mat2 = null;
+
+      SoundFX.synergy();
+      updateGlobalUI();
+      saveAccountProgress();
+      renderCraft();
+
+      showGachaResultModal('🔨 무기 합성 성공!', [{
+        name: resultWeapon.name,
+        rarity: resultWeapon.rarity,
+        rarityColor: resultWeapon.rarityColor,
+        art: resultWeapon.art,
+        isNew,
+        level: state.ownedWeapons[rec.result].level,
+        subText: `융합 탄막 위력 +${resultWeapon.atk}`
+      }]);
+    }
+
+    function renderCraft() {
+      const slot1El = document.getElementById('craft-slot-1');
+      const slot2El = document.getElementById('craft-slot-2');
+      const resEl = document.getElementById('craft-result-preview');
+      const statusBanner = document.getElementById('craft-status-banner');
+      const craftBtn = document.getElementById('btn-execute-craft');
+
+      const w1 = getWeaponById(craftSlots.mat1);
+      const w2 = getWeaponById(craftSlots.mat2);
+
+      if (w1) {
+        const has1 = !!state.ownedWeapons[w1.id];
+        slot1El.className = `sm:col-span-2 rounded-2xl p-3.5 bg-zinc-900/90 border ${has1 ? 'border-emerald-400' : 'border-red-500/70'} flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition`;
+        slot1El.innerHTML = `
+          <div class="w-14 h-14 mb-1 ${has1 ? '' : 'opacity-40 grayscale'}">${w1.art}</div>
+          <div class="text-xs font-black text-white">${w1.name}</div>
+          <div class="text-[10px] ${has1 ? 'text-emerald-400' : 'text-red-400'} font-bold mt-0.5">${has1 ? `보유 Lv.${state.ownedWeapons[w1.id].level} (클릭 해제)` : '미보유 재료'}</div>
+        `;
+      } else {
+        slot1El.className = 'sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition';
+        slot1El.innerHTML = `
+          <span class="text-2xl text-zinc-700 mb-1">🗡️</span>
+          <span class="text-xs font-bold text-zinc-400">재료 무기 1</span>
+          <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
+        `;
+      }
+
+      if (w2) {
+        const has2 = !!state.ownedWeapons[w2.id];
+        slot2El.className = `sm:col-span-2 rounded-2xl p-3.5 bg-zinc-900/90 border ${has2 ? 'border-emerald-400' : 'border-red-500/70'} flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition`;
+        slot2El.innerHTML = `
+          <div class="w-14 h-14 mb-1 ${has2 ? '' : 'opacity-40 grayscale'}">${w2.art}</div>
+          <div class="text-xs font-black text-white">${w2.name}</div>
+          <div class="text-[10px] ${has2 ? 'text-emerald-400' : 'text-red-400'} font-bold mt-0.5">${has2 ? `보유 Lv.${state.ownedWeapons[w2.id].level} (클릭 해제)` : '미보유 재료'}</div>
+        `;
+      } else {
+        slot2El.className = 'sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition';
+        slot2El.innerHTML = `
+          <span class="text-2xl text-zinc-700 mb-1">🏹</span>
+          <span class="text-xs font-bold text-zinc-400">재료 무기 2</span>
+          <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
+        `;
+      }
+
+      const rec = findMatchingRecipe(craftSlots.mat1, craftSlots.mat2);
+      const canCraft = !!(rec && state.ownedWeapons[rec.mat1] && state.ownedWeapons[rec.mat2] && (rec.mat1 !== rec.mat2 || state.ownedWeapons[rec.mat1].level >= 2));
+
+      if (rec) {
+        const resWeapon = getWeaponById(rec.result);
+        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-gradient-to-b from-emerald-950/60 to-zinc-950 border-2 border-amber-400 flex flex-col items-center justify-center min-h-[140px] text-center shadow-[0_0_20px_rgba(250,204,21,0.25)]';
+        resEl.innerHTML = `
+          <div class="w-14 h-14 mb-1">${resWeapon.art}</div>
+          <div class="text-xs font-black text-amber-300">${resWeapon.name}</div>
+          <div class="text-[10px] text-zinc-300 mt-0.5">위력 +${resWeapon.atk}</div>
+        `;
+        if (canCraft) {
+          statusBanner.textContent = `✨ 조합 일치! [${w1.name}] + [${w2.name}] → [${resWeapon.name}] 제작 가능!`;
+          statusBanner.className = 'mt-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/60 text-xs text-center text-emerald-200 font-bold';
+          craftBtn.disabled = false;
+          craftBtn.className = 'px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-sm shadow-lg transition cursor-pointer';
+        } else {
+          statusBanner.textContent = `⚠️ [${resWeapon.name}] 조합식이지만 재료 무기가 부족합니다!`;
+          statusBanner.className = 'mt-4 p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-xs text-center text-red-300 font-bold';
+          craftBtn.disabled = true;
+          craftBtn.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
+        }
+      } else {
+        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-zinc-900/70 border border-zinc-800 flex flex-col items-center justify-center min-h-[140px] text-center';
+        resEl.innerHTML = `
+          <span class="text-2xl text-zinc-600 mb-1">❓</span>
+          <span class="text-[11px] font-bold text-zinc-400">합성 결과</span>
+        `;
+        statusBanner.textContent = (w1 && w2)
+          ? '❌ 선택한 두 무기로는 합성할 수 있는 조합식이 없습니다. 오른쪽 조합표를 참고하세요!'
+          : '아래 [보유한 무기] 또는 [합성 조합표]에서 재료를 선택하세요!';
+        statusBanner.className = 'mt-4 p-3 rounded-xl bg-black/80 border border-zinc-800 text-xs text-center text-zinc-300';
+        craftBtn.disabled = true;
+        craftBtn.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
+      }
+
+      const ownedGrid = document.getElementById('craft-owned-weapons-grid');
+      ownedGrid.innerHTML = '';
+      const ownedWeapons = WEAPONS.filter(w => state.ownedWeapons[w.id]);
+      if (ownedWeapons.length === 0) {
+        ownedGrid.innerHTML = `<div class="col-span-full text-center py-6 text-xs text-zinc-500">보유한 무기가 없습니다.</div>`;
+      } else {
+        ownedWeapons.forEach(w => {
+          const lv = state.ownedWeapons[w.id].level;
+          const isPicked = craftSlots.mat1 === w.id || craftSlots.mat2 === w.id;
+          const btn = document.createElement('button');
+          btn.onclick = () => selectWeaponForCraft(w.id);
+          btn.className = `p-2.5 rounded-xl border text-center flex flex-col items-center cursor-pointer transition ${
+            isPicked
+              ? 'bg-emerald-950/50 border-emerald-400 shadow-md'
+              : 'bg-black hover:bg-zinc-900 border-zinc-800'
+          }`;
+          btn.innerHTML = `
+            <div class="w-11 h-11 mb-1">${w.art}</div>
+            <div class="text-[11px] font-black text-white line-clamp-1">${w.name}</div>
+            <div class="text-[10px] text-amber-300">Lv.${lv} · 위력 +${w.atk}</div>
+          `;
+          ownedGrid.appendChild(btn);
+        });
+      }
+
+      const recipeList = document.getElementById('craft-recipes-list');
+      recipeList.innerHTML = '';
+      CRAFT_RECIPES.forEach(rec => {
+        const m1 = getWeaponById(rec.mat1);
+        const m2 = getWeaponById(rec.mat2);
+        const res = getWeaponById(rec.result);
+        const has1 = !!state.ownedWeapons[rec.mat1];
+        const has2 = !!state.ownedWeapons[rec.mat2];
+        const ready = has1 && has2;
+
+        const row = document.createElement('button');
+        row.onclick = () => applyRecipeToSlots(rec.id);
+        row.className = `w-full p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 cursor-pointer transition ${
+          ready
+            ? 'bg-emerald-950/25 hover:bg-emerald-950/45 border-emerald-500/60'
+            : 'bg-black/80 hover:bg-zinc-900 border-zinc-800'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2 text-xs">
+            <span class="${has1 ? 'text-white font-bold' : 'text-zinc-500'}">${m1.name}</span>
+            <span class="text-emerald-400 font-black">+</span>
+            <span class="${has2 ? 'text-white font-bold' : 'text-zinc-500'}">${m2.name}</span>
+            <span class="text-amber-400 font-black">=</span>
+            <span class="text-amber-300 font-black">${res.name}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black ${ready ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'}">
+            ${ready ? '제작 가능' : '재료 부족'}
+          </span>
+        `;
+        recipeList.appendChild(row);
+      });
+    }
+
+    /* ============================================================================
        10. 전쟁 모드 선택 모달 (봇 vs 친구 4자리 코드 PvP 매칭)
     ============================================================================ */
     let pvpSession = {
       roomCode: null,
       role: null,
       unsub: null,
-      lastTurnSeq: -1
+      lastTurnSeq: -1,
+      turnCount: 1,
+      selectedSkillIndices: []
     };
+
+    function isPvpDualSkillMode() {
+      return battle.active && battle.mode === 'pvp' && (pvpSession.turnCount || 1) >= 10;
+    }
 
     function cleanupPvpSubscription() {
       const oldCode = pvpSession.roomCode;
@@ -3538,6 +3596,8 @@
       pvpSession.roomCode = null;
       pvpSession.role = null;
       pvpSession.lastTurnSeq = -1;
+      pvpSession.turnCount = 1;
+      pvpSession.selectedSkillIndices = [];
     }
 
     function openWarModeModal() {
@@ -3630,6 +3690,7 @@
         guest: null,
         activeAttacker: 'host',
         phase: 'choose_skill',
+        turnCount: 1,
         turnSeq: 0,
         selectedSkill: null,
         winner: null,
@@ -3684,6 +3745,7 @@
         pvpSession.roomCode = rawCode;
         pvpSession.role = 'guest';
 
+        // 1순위: WebRTC P2P 직통 입장 시도
         try {
           const syncedState = await RoomStore.joinP2P('pvp', rawCode, guestLoadout);
           subscribePvpRoom(rawCode);
@@ -3693,6 +3755,7 @@
           console.warn('P2P join fallback to cloud/local:', p2pErr?.message || p2pErr);
         }
 
+        // 2순위: 클라우드/로컬 방 조회 및 입장
         const data = await RoomStore.get('pvp', rawCode);
 
         if (!data) {
@@ -3714,6 +3777,7 @@
         await RoomStore.update('pvp', rawCode, {
           status: 'playing',
           guest: guestLoadout,
+          turnCount: 1,
           turnSeq: 1
         });
 
@@ -3751,6 +3815,15 @@
       stats: null
     };
 
+    function getAvailablePlayerSkills() {
+      const weapon = (battle.stats && battle.stats.weapon) || getWeaponById('iron_sword');
+      const list = [...weapon.skills];
+      if (battle.stats && battle.stats.synergy && battle.stats.synergy.synergySkill) {
+        list.push(battle.stats.synergy.synergySkill);
+      }
+      return list;
+    }
+
     function showBattlePanel(panelName) {
       const skillsPanel = document.getElementById('battle-player-turn-panel');
       const waitPanel = document.getElementById('battle-pvp-wait-panel');
@@ -3785,46 +3858,6 @@
         document.getElementById('ally-hp-bar').style.width = `${aPct}%`;
         document.getElementById('ally-hp-text').textContent = `${Math.max(0, battle.allyHp)} / ${battle.allyMaxHp}`;
       }
-    }
-
-    function getAvailablePlayerSkills() {
-      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
-      const skills = [...weapon.skills];
-      if (battle.stats.synergy && battle.stats.synergy.synergySkill) {
-        skills.push(battle.stats.synergy.synergySkill);
-      }
-      return skills;
-    }
-
-    function renderPlayerSkills() {
-      const grid = document.getElementById('battle-skills-grid');
-      grid.innerHTML = '';
-      const skills = getAvailablePlayerSkills();
-
-      skills.forEach((sk, idx) => {
-        const isHeal = sk.type === 'heal';
-        const isSynSkill = !!sk.isSynergySkill;
-        const dmg = isHeal ? 0 : Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
-        const btn = document.createElement('button');
-        btn.onclick = () => usePlayerWeaponSkill(idx);
-        btn.className = `p-3 rounded-xl border text-left transition cursor-pointer ${
-          isSynSkill
-            ? 'sm:col-span-2 bg-gradient-to-r from-sky-950/80 via-indigo-950/70 to-sky-950/80 hover:from-sky-900/90 hover:to-indigo-900/80 border-2 border-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.3)]'
-            : isHeal
-              ? 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-500/60'
-              : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-700 hover:border-amber-400'
-        }`;
-        btn.innerHTML = `
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-xs sm:text-sm font-black ${isSynSkill ? 'text-sky-200' : isHeal ? 'text-emerald-300' : 'text-white'}">${sk.name}</span>
-            <span class="px-2 py-0.5 rounded bg-black border ${isSynSkill ? 'border-sky-400/70 text-sky-300' : 'border-zinc-700'} font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : isSynSkill ? 'text-sky-300' : 'text-amber-300'}">
-              ${isHeal ? `+${sk.heal} HP` : `위력 ${dmg}`}
-            </span>
-          </div>
-          <div class="text-[11px] ${isSynSkill ? 'text-sky-100/90' : 'text-zinc-400'} mt-1">${sk.desc}</div>
-        `;
-        grid.appendChild(btn);
-      });
     }
 
     function initBotBattle() {
@@ -3889,6 +3922,99 @@
       showBattlePanel('player_skills');
     }
 
+    function updatePvpSuddenDeathUI() {
+      const sdBanner = document.getElementById('pvp-sudden-death-banner');
+      const turnBadge = document.getElementById('pvp-turn-counter-badge');
+      const promptEl = document.getElementById('battle-skill-prompt');
+      const dualBar = document.getElementById('pvp-dual-cast-bar');
+
+      if (battle.mode === 'pvp') {
+        const tc = pvpSession.turnCount || 1;
+        turnBadge.classList.remove('hidden');
+        turnBadge.textContent = `TURN ${tc}`;
+        if (tc >= 10) {
+          sdBanner.classList.remove('hidden');
+          promptEl.textContent = '🔥 서든데스 2중 스킬 모드! 아래에서 스킬 2개를 선택하세요';
+          promptEl.className = 'text-[11px] text-orange-300 font-black';
+          dualBar.classList.remove('hidden');
+        } else {
+          sdBanner.classList.add('hidden');
+          promptEl.textContent = `▶ 사용할 무기 스킬을 선택하세요 (10턴 도달 시 2중 스킬 해금 · 현재 ${tc}/10턴)`;
+          promptEl.className = 'text-[11px] text-zinc-400 font-bold';
+          dualBar.classList.add('hidden');
+        }
+      } else {
+        sdBanner.classList.add('hidden');
+        turnBadge.classList.add('hidden');
+        promptEl.textContent = '▶ 사용할 무기 스킬을 선택하세요';
+        promptEl.className = 'text-[11px] text-zinc-400 font-bold';
+        dualBar.classList.add('hidden');
+      }
+    }
+
+    function clearPvpDualSelection() {
+      SoundFX.click();
+      pvpSession.selectedSkillIndices = [];
+      renderPlayerSkills();
+    }
+
+    function renderPlayerSkills() {
+      updatePvpSuddenDeathUI();
+      const grid = document.getElementById('battle-skills-grid');
+      grid.innerHTML = '';
+      const skills = getAvailablePlayerSkills();
+      const dualMode = isPvpDualSkillMode();
+
+      skills.forEach((sk, idx) => {
+        const isHeal = sk.type === 'heal';
+        const isSynSkill = !!sk.isSynergySkill;
+        const dmg = isHeal ? 0 : Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
+
+        const pickOrder = dualMode ? pvpSession.selectedSkillIndices.indexOf(idx) : -1;
+        const isPicked = pickOrder !== -1;
+
+        const btn = document.createElement('button');
+        btn.onclick = () => usePlayerWeaponSkill(idx);
+        btn.className = `p-3 rounded-xl border text-left transition cursor-pointer relative ${
+          isPicked
+            ? 'bg-orange-950/60 border-2 border-orange-400 shadow-[0_0_16px_rgba(249,115,22,0.4)]'
+            : isSynSkill
+              ? 'sm:col-span-2 bg-gradient-to-r from-sky-950/80 via-indigo-950/70 to-sky-950/80 hover:from-sky-900/90 hover:to-indigo-900/80 border-2 border-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.3)]'
+              : isHeal
+                ? 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-500/60'
+                : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-700 hover:border-amber-400'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs sm:text-sm font-black ${isPicked ? 'text-orange-200' : isSynSkill ? 'text-sky-200' : isHeal ? 'text-emerald-300' : 'text-white'}">
+              ${isPicked ? `<span class="inline-block px-1.5 py-0.5 mr-1 rounded bg-orange-400 text-black text-[10px] font-black">선택 ${pickOrder + 1}</span>` : ''}${sk.name}
+            </span>
+            <span class="px-2 py-0.5 rounded bg-black border ${isSynSkill ? 'border-sky-400/70 text-sky-300' : 'border-zinc-700'} font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : isSynSkill ? 'text-sky-300' : 'text-amber-300'}">
+              ${isHeal ? `+${sk.heal} HP` : `위력 ${dmg}`}
+            </span>
+          </div>
+          <div class="text-[11px] ${isSynSkill ? 'text-sky-100/90' : 'text-zinc-400'} mt-1">${sk.desc}</div>
+        `;
+        grid.appendChild(btn);
+      });
+
+      if (dualMode) {
+        const selText = document.getElementById('pvp-dual-selection-text');
+        const confirmBtn = document.getElementById('btn-confirm-pvp-dual');
+        const pickedNames = pvpSession.selectedSkillIndices.map(i => skills[i]?.name).filter(Boolean);
+        selText.textContent = pickedNames.length > 0
+          ? `선택된 스킬 (${pickedNames.length}/2): ${pickedNames.join(' + ')}`
+          : '선택된 스킬 (0/2): 위에서 2개를 고르세요';
+
+        if (pickedNames.length === 2) {
+          confirmBtn.disabled = false;
+          confirmBtn.className = 'px-4 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 hover:from-orange-400 hover:to-amber-300 text-black text-xs font-black cursor-pointer shadow-lg transition';
+        } else {
+          confirmBtn.disabled = true;
+          confirmBtn.className = 'px-4 py-1.5 rounded-lg bg-zinc-800 text-zinc-500 text-xs font-black cursor-not-allowed transition';
+        }
+      }
+    }
     function initPvpBattle(data) {
       stopArenaLoop();
       const meKey = pvpSession.role;
@@ -3897,6 +4023,9 @@
       const oppData = data[oppKey];
       const oppChar = getCharById(oppData.charId) || CHARACTERS[0];
       const myStats = calculateCombatStats();
+
+      pvpSession.turnCount = data.turnCount || 1;
+      pvpSession.selectedSkillIndices = [];
 
       battle = {
         active: true,
@@ -3968,6 +4097,9 @@
       const oppData = data[oppKey];
       if (!meData || !oppData) return;
 
+      pvpSession.turnCount = data.turnCount || pvpSession.turnCount || 1;
+      updatePvpSuddenDeathUI();
+
       if (battle.enemyHp > oppData.hp) {
         spawnDamagePopup(`-${battle.enemyHp - oppData.hp}`, 'text-amber-300');
         const sprite = document.getElementById('enemy-sprite-container');
@@ -4031,27 +4163,35 @@
 
       if (data.phase === 'choose_skill') {
         stopArenaLoop();
+        pvpSession.selectedSkillIndices = [];
         if (isMyAttackTurn) {
+          renderPlayerSkills();
           showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 사용할 무기 스킬을 선택하세요!';
+          document.getElementById('battle-dialogue-text').textContent = (pvpSession.turnCount >= 10)
+            ? `🔥 [${pvpSession.turnCount}턴 서든데스] 스킬 2개를 동시에 선택하여 발동하세요!`
+            : `당신의 공격 턴 (${pvpSession.turnCount}턴)! 사용할 무기 스킬을 선택하세요!`;
         } else {
           showBattlePanel('pvp_wait');
           document.getElementById('battle-pvp-wait-panel').innerHTML = `
-            <div class="text-sm font-black text-cyan-300 animate-pulse">⏳ 상대방이 공격할 무기 스킬을 고르고 있습니다...</div>
-            <div class="text-xs text-zinc-400 mt-1">잠시 후 날아오는 탄막을 피할 준비를 하세요!</div>
+            <div class="text-sm font-black text-cyan-300 animate-pulse">⏳ 상대방이 공격할 무기 스킬을 고르고 있습니다... (${pvpSession.turnCount}턴)</div>
+            <div class="text-xs text-zinc-400 mt-1">${pvpSession.turnCount >= 10 ? '🔥 10턴 경과! 상대가 2중 스킬을 동시에 날릴 수 있습니다!' : '잠시 후 날아오는 탄막을 피할 준비를 하세요!'}</div>
           `;
           document.getElementById('battle-dialogue-text').textContent = '상대방이 스킬을 고르는 중입니다...';
         }
       } else if (data.phase === 'dodge_round' && data.selectedSkill) {
         const sk = data.selectedSkill;
+        const isDualCast = !!sk.pattern2;
         if (isMyAttackTurn) {
           showBattlePanel('arena');
           document.getElementById('mobile-touch-pad').classList.add('hidden');
-          document.getElementById('dodge-pattern-label').textContent = `⚔️ 내 [${sk.name}] 시전 중! 상대 회피 관전`;
+          document.getElementById('dodge-pattern-label').textContent = isDualCast
+            ? `🔥 내 2중 스킬 [${sk.name}] 시전 중! 상대 회피 관전`
+            : `⚔️ 내 [${sk.name}] 시전 중! 상대 회피 관전`;
           document.getElementById('battle-dialogue-text').textContent = `[${sk.name}] 탄막을 발사했습니다! 상대방이 회피 중입니다...`;
           startArenaPhase({
             controller: 'pvp_spectate',
             pattern: sk.pattern,
+            pattern2: sk.pattern2 || null,
             hitDamage: sk.damage,
             defenderSpeed: oppData.speed || 3.4,
             duration: 6.0
@@ -4059,11 +4199,14 @@
         } else {
           showBattlePanel('arena');
           document.getElementById('mobile-touch-pad').classList.remove('hidden');
-          document.getElementById('dodge-pattern-label').textContent = `⚠️ 상대의 [${sk.name}]! 빨간 하트로 피하세요!`;
+          document.getElementById('dodge-pattern-label').textContent = isDualCast
+            ? `🔥 상대의 2중 스킬 [${sk.name}]! 빨간 하트로 피하세요!`
+            : `⚠️ 상대의 [${sk.name}]! 빨간 하트로 피하세요!`;
           document.getElementById('battle-dialogue-text').textContent = `상대방의 [${sk.name}] 공격! 방향키 / WASD / 드래그로 회피하세요!`;
           startArenaPhase({
             controller: 'human_defend',
             pattern: sk.pattern,
+            pattern2: sk.pattern2 || null,
             hitDamage: sk.damage,
             defenderSpeed: battle.stats.speed,
             defenderReduce: battle.stats.dmgReduce,
@@ -4071,6 +4214,7 @@
             onPvpDefendComplete: async (finalHp) => {
               if (!pvpSession.roomCode) return;
               const nextAttacker = meKey;
+              const nextTurnCount = (data.turnCount || pvpSession.turnCount || 1) + 1;
               if (finalHp <= 0) {
                 await RoomStore.update('pvp', pvpSession.roomCode, {
                   [`${meKey}.hp`]: 0,
@@ -4084,6 +4228,7 @@
                   activeAttacker: nextAttacker,
                   phase: 'choose_skill',
                   selectedSkill: null,
+                  turnCount: nextTurnCount,
                   turnSeq: data.turnSeq + 1
                 });
               }
@@ -4102,11 +4247,89 @@
       setTimeout(() => el.remove(), 950);
     }
 
+    async function confirmPvpDualSkills() {
+      if (!battle.active || battle.mode !== 'pvp') return;
+      if (pvpSession.selectedSkillIndices.length < 2) {
+        showToast('⚠️ 스킬 2개를 선택해주세요!', 'border-orange-400 text-orange-200');
+        return;
+      }
+      const skills = getAvailablePlayerSkills();
+      const sk1 = skills[pvpSession.selectedSkillIndices[0]];
+      const sk2 = skills[pvpSession.selectedSkillIndices[1]];
+      if (!sk1 || !sk2 || !pvpSession.roomCode) return;
+
+      const meKey = pvpSession.role;
+      const oppKey = meKey === 'host' ? 'guest' : 'host';
+      const nextTurnCount = (pvpSession.turnCount || 10) + 1;
+
+      let totalHeal = 0;
+      if (sk1.type === 'heal') totalHeal += sk1.heal;
+      if (sk2.type === 'heal') totalHeal += sk2.heal;
+
+      if (totalHeal > 0) {
+        SoundFX.heal();
+        battle.playerHp = Math.min(battle.playerMaxHp, battle.playerHp + totalHeal);
+        updateBattleBars();
+        spawnDamagePopup(`+${totalHeal} HP`, 'text-emerald-400');
+      }
+
+      const atkSkills = [sk1, sk2].filter(s => s.type === 'attack');
+      pvpSession.selectedSkillIndices = [];
+
+      if (atkSkills.length === 0) {
+        document.getElementById('battle-dialogue-text').textContent =
+          `🔥 2중 회복 [${sk1.name} + ${sk2.name}] 발동! 체력을 ${totalHeal} 회복했습니다!`;
+        await RoomStore.update('pvp', pvpSession.roomCode, {
+          [`${meKey}.hp`]: battle.playerHp,
+          activeAttacker: oppKey,
+          phase: 'choose_skill',
+          selectedSkill: null,
+          turnCount: nextTurnCount,
+          turnSeq: pvpSession.lastTurnSeq + 1
+        });
+        return;
+      }
+
+      SoundFX.slash();
+      const dmg1 = Math.max(2, Math.round(battle.stats.hitDamage * atkSkills[0].mult));
+      const dmg2 = atkSkills[1] ? Math.max(2, Math.round(battle.stats.hitDamage * atkSkills[1].mult)) : dmg1;
+      const combinedHitDmg = atkSkills.length === 2 ? Math.round((dmg1 + dmg2) / 2) : dmg1;
+
+      await RoomStore.update('pvp', pvpSession.roomCode, {
+        [`${meKey}.hp`]: battle.playerHp,
+        phase: 'dodge_round',
+        selectedSkill: {
+          name: `${sk1.name} + ${sk2.name}`,
+          pattern: atkSkills[0].pattern,
+          pattern2: atkSkills[1] ? atkSkills[1].pattern : null,
+          damage: combinedHitDmg
+        },
+        turnSeq: pvpSession.lastTurnSeq + 1
+      });
+    }
+
     async function usePlayerWeaponSkill(skillIndex) {
       if (!battle.active) return;
       const skills = getAvailablePlayerSkills();
       const sk = skills[skillIndex];
       if (!sk) return;
+
+      // 1:1 PvP 10턴 이상 서든데스 2중 스킬 선택 모드
+      if (isPvpDualSkillMode()) {
+        SoundFX.click();
+        const existingPos = pvpSession.selectedSkillIndices.indexOf(skillIndex);
+        if (existingPos !== -1) {
+          pvpSession.selectedSkillIndices.splice(existingPos, 1);
+        } else {
+          if (pvpSession.selectedSkillIndices.length >= 2) {
+            pvpSession.selectedSkillIndices.shift();
+          }
+          pvpSession.selectedSkillIndices.push(skillIndex);
+        }
+        renderPlayerSkills();
+        return;
+      }
+
       const dmgPerHit = sk.type === 'attack' ? Math.max(2, Math.round(battle.stats.hitDamage * sk.mult)) : 0;
 
       if (sk.type === 'heal') {
@@ -4120,11 +4343,13 @@
           if (pvpSession.roomCode) {
             const meKey = pvpSession.role;
             const oppKey = meKey === 'host' ? 'guest' : 'host';
+            const nextTurnCount = (pvpSession.turnCount || 1) + 1;
             await RoomStore.update('pvp', pvpSession.roomCode, {
               [`${meKey}.hp`]: battle.playerHp,
               activeAttacker: oppKey,
               phase: 'choose_skill',
               selectedSkill: null,
+              turnCount: nextTurnCount,
               turnSeq: pvpSession.lastTurnSeq + 1
             });
           }
@@ -4333,14 +4558,66 @@
     }
 
     /* ============================================================================
-       11-B. 레이드 시스템 (최강 캐릭터 50 HP × 10 = 500 HP · 보스 2스킬 동시 발동 · 혼자 / 친구)
+       11-B. 레이드 시스템 (HP 100 · 보스 3스킬 동시 발동 · 아비스 로드 / 심판의 해골 샌즈)
     ============================================================================ */
-    const RAID_BOSS_MAX_HP = 500;
+    const RAID_BOSS_MAX_HP = 100;
     const RAID_BOSS_HIT_DAMAGE = 6;
+    let selectedRaidBossType = 'abyss';
+
+    const RAID_BOSS_CONFIGS = {
+      abyss: {
+        id: 'abyss',
+        title: '심연의 군주 · 아비스 로드',
+        displayName: '레이드 보스 · 아비스 로드 (HP 100)',
+        coopDisplayName: '협동 레이드 · 아비스 로드 (HP 100)',
+        badgeTag: '🔥 3스킬 동시 발동',
+        introText: '심연의 군주가 강림했습니다! 한 번에 3가지 스킬을 동시에 사용합니다!',
+        art: SVG_ART.raid_boss
+      },
+      sans: {
+        id: 'sans',
+        title: '심판의 해골 · 샌즈',
+        displayName: '레이드 보스 · 샌즈 (HP 100)',
+        coopDisplayName: '협동 레이드 · 샌즈 (HP 100)',
+        badgeTag: '💀 심판 3스킬 동시 발동',
+        introText: '심판의 해골 · 샌즈가 가로막습니다! 가스터 블래스터와 뼈다귀 3중 공격이 동시에 쏟아집니다!',
+        art: SVG_ART.sans
+      }
+    };
+
+    function selectRaidBossType(bossType) {
+      SoundFX.click();
+      selectedRaidBossType = bossType === 'sans' ? 'sans' : 'abyss';
+
+      const abyssBtn = document.getElementById('raid-boss-opt-abyss');
+      const sansBtn = document.getElementById('raid-boss-opt-sans');
+      const summaryBox = document.getElementById('raid-boss-summary-box');
+
+      if (selectedRaidBossType === 'sans') {
+        abyssBtn.className = 'p-3 rounded-2xl bg-black hover:bg-purple-950/30 border-2 border-zinc-800 text-left transition cursor-pointer';
+        sansBtn.className = 'p-3 rounded-2xl bg-sky-950/40 border-2 border-sky-400 text-left transition cursor-pointer shadow-[0_0_20px_rgba(56,189,248,0.2)]';
+        summaryBox.className = 'mb-4 p-3 rounded-2xl bg-sky-950/30 border border-sky-400/50 text-xs text-sky-200 space-y-1';
+        summaryBox.innerHTML = `
+          <div class="font-black text-sky-300">💀 심판의 해골 · 샌즈 (레이드 보스)</div>
+          <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
+          <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 가스터 블래스터·뼈다귀 스킬 동시 발사!</span></div>
+        `;
+      } else {
+        abyssBtn.className = 'p-3 rounded-2xl bg-purple-950/40 border-2 border-purple-400 text-left transition cursor-pointer shadow-[0_0_20px_rgba(168,85,247,0.2)]';
+        sansBtn.className = 'p-3 rounded-2xl bg-black hover:bg-sky-950/30 border-2 border-zinc-800 text-left transition cursor-pointer';
+        summaryBox.className = 'mb-4 p-3 rounded-2xl bg-purple-950/30 border border-purple-500/40 text-xs text-purple-200 space-y-1';
+        summaryBox.innerHTML = `
+          <div class="font-black text-purple-300">🔥 심연의 군주 · 아비스 로드</div>
+          <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
+          <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 무기 패턴 동시 발사!</span></div>
+        `;
+      }
+    }
 
     let raidSession = {
       roomCode: null,
       role: null,
+      bossType: 'abyss',
       unsub: null,
       lastTurnSeq: -1,
       lastPosSync: 0,
@@ -4412,7 +4689,18 @@
       inp.focus();
     }
 
-    function pickTwoBossSkills() {
+    function pickThreeBossSkills(bossType = 'abyss') {
+      if (bossType === 'sans') {
+        const sansSkillPool = [
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 파도', pattern: 'sb_1' },
+          { weaponName: '이상한 뼈다귀', name: '가스터 블래스터', pattern: 'sb_2' },
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' },
+          { weaponName: '심판의 시간', name: '최후의 심판', pattern: 'sb_ult' }
+        ];
+        const shuffled = [...sansSkillPool].sort(() => Math.random() - 0.5);
+        return [shuffled[0], shuffled[1], shuffled[2]];
+      }
+
       const allAttackSkills = [];
       WEAPONS.forEach(w => {
         w.skills.forEach(s => {
@@ -4421,12 +4709,8 @@
           }
         });
       });
-      const first = allAttackSkills[Math.floor(Math.random() * allAttackSkills.length)];
-      let second = allAttackSkills[Math.floor(Math.random() * allAttackSkills.length)];
-      if (second.pattern === first.pattern && allAttackSkills.length > 1) {
-        second = allAttackSkills[(allAttackSkills.indexOf(first) + 3) % allAttackSkills.length];
-      }
-      return [first, second];
+      const shuffled = [...allAttackSkills].sort(() => Math.random() - 0.5);
+      return [shuffled[0], shuffled[1], shuffled[2]];
     }
 
     function startSoloRaid() {
@@ -4434,13 +4718,16 @@
       closeRaidModeModal();
       cleanupRaidSubscription();
       cleanupPvpSubscription();
+      raidSession.bossType = selectedRaidBossType;
       navigateTo('battle');
-      initSoloRaidBattle();
+      initSoloRaidBattle(selectedRaidBossType);
     }
 
-    function initSoloRaidBattle() {
+    function initSoloRaidBattle(bossType = 'abyss') {
       stopArenaLoop();
       const stats = calculateCombatStats();
+      const bossCfg = RAID_BOSS_CONFIGS[bossType] || RAID_BOSS_CONFIGS.abyss;
+      raidSession.bossType = bossCfg.id;
 
       battle = {
         active: true,
@@ -4457,18 +4744,17 @@
         stats
       };
 
-      document.getElementById('battle-stage-badge').textContent = 'SOLO RAID';
+      document.getElementById('battle-stage-badge').textContent = bossCfg.id === 'sans' ? 'SANS RAID' : 'SOLO RAID';
       document.getElementById('battle-stage-controls').classList.remove('hidden');
-      document.getElementById('enemy-synergy-badge').textContent = '🔥 2스킬 동시 발동';
+      document.getElementById('enemy-synergy-badge').textContent = bossCfg.badgeTag;
       document.getElementById('enemy-synergy-badge').classList.remove('hidden');
       document.getElementById('ally-hp-container').classList.add('hidden');
       document.getElementById('ally-hp-container').classList.remove('flex');
 
-      document.getElementById('battle-enemy-title').textContent = '심연의 군주 · 아비스 로드';
-      document.getElementById('enemy-name-display').textContent = '레이드 보스 (HP 500)';
-      document.getElementById('enemy-sprite-container').innerHTML = SVG_ART.raid_boss;
-      document.getElementById('battle-dialogue-text').textContent =
-        '심연의 군주가 강림했습니다! 한 번에 2가지 스킬을 동시에 사용합니다!';
+      document.getElementById('battle-enemy-title').textContent = bossCfg.title;
+      document.getElementById('enemy-name-display').textContent = bossCfg.displayName;
+      document.getElementById('enemy-sprite-container').innerHTML = bossCfg.art;
+      document.getElementById('battle-dialogue-text').textContent = bossCfg.introText;
 
       document.getElementById('battle-player-name').textContent = stats.char.name;
       document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
@@ -4488,19 +4774,21 @@
 
     function startRaidBossAttackTurn() {
       if (!battle.active) return;
-      const [sk1, sk2] = pickTwoBossSkills();
+      const bossCfg = RAID_BOSS_CONFIGS[raidSession.bossType] || RAID_BOSS_CONFIGS.abyss;
+      const [sk1, sk2, sk3] = pickThreeBossSkills(bossCfg.id);
 
       showBattlePanel('arena');
       document.getElementById('mobile-touch-pad').classList.remove('hidden');
       document.getElementById('dodge-pattern-label').textContent =
-        `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]!`;
+        `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`;
       document.getElementById('battle-dialogue-text').textContent =
-        `심연의 군주가 [${sk1.name}]와 [${sk2.name}]을(를) 동시에 시전합니다!`;
+        `${bossCfg.title}가 [${sk1.name}], [${sk2.name}], [${sk3.name}]을(를) 동시에 시전합니다!`;
 
       startArenaPhase({
         controller: 'human_defend',
         pattern: sk1.pattern,
         pattern2: sk2.pattern,
+        pattern3: sk3.pattern,
         hitDamage: RAID_BOSS_HIT_DAMAGE,
         defenderSpeed: battle.stats.speed,
         defenderReduce: battle.stats.dmgReduce,
@@ -4525,9 +4813,11 @@
       hostLoadout.nickname = loggedInUser?.nickname || '방장';
       hostLoadout.heartX = 160;
       hostLoadout.heartY = 110;
+      const bossType = selectedRaidBossType;
 
       const roomMode = await RoomStore.create('raid', code, {
         code,
+        bossType,
         status: 'waiting',
         bossHp: RAID_BOSS_MAX_HP,
         bossMaxHp: RAID_BOSS_MAX_HP,
@@ -4543,6 +4833,7 @@
 
       raidSession.roomCode = code;
       raidSession.role = 'host';
+      raidSession.bossType = bossType;
 
       document.getElementById('raid-join-input-box').classList.add('hidden');
       document.getElementById('raid-host-wait-box').classList.remove('hidden');
@@ -4652,6 +4943,8 @@
       const meData = data[meKey];
       const allyData = data[allyKey];
       const myStats = calculateCombatStats();
+      const bossCfg = RAID_BOSS_CONFIGS[data.bossType] || RAID_BOSS_CONFIGS.abyss;
+      raidSession.bossType = bossCfg.id;
 
       battle = {
         active: true,
@@ -4675,7 +4968,7 @@
 
       document.getElementById('battle-stage-badge').textContent = `CO-OP RAID #${data.code}`;
       document.getElementById('battle-stage-controls').classList.remove('hidden');
-      document.getElementById('enemy-synergy-badge').textContent = '🔥 2스킬 동시 발동';
+      document.getElementById('enemy-synergy-badge').textContent = bossCfg.badgeTag;
       document.getElementById('enemy-synergy-badge').classList.remove('hidden');
 
       const allyBox = document.getElementById('ally-hp-container');
@@ -4684,9 +4977,9 @@
       document.getElementById('battle-ally-name').textContent = `${allyData.nickname} (${allyData.charName})`;
       document.getElementById('battle-ally-weapon').textContent = allyData.weaponName;
 
-      document.getElementById('battle-enemy-title').textContent = '심연의 군주 · 아비스 로드';
-      document.getElementById('enemy-name-display').textContent = '협동 레이드 보스 (HP 500)';
-      document.getElementById('enemy-sprite-container').innerHTML = SVG_ART.raid_boss;
+      document.getElementById('battle-enemy-title').textContent = bossCfg.title;
+      document.getElementById('enemy-name-display').textContent = bossCfg.coopDisplayName;
+      document.getElementById('enemy-sprite-container').innerHTML = bossCfg.art;
 
       document.getElementById('battle-player-name').textContent = `${meData.nickname} (${meData.charName})`;
       document.getElementById('battle-player-weapon').textContent = meData.weaponName;
@@ -4709,6 +5002,7 @@
       if (!raidSession.roomCode) return;
       const meKey = raidSession.role;
       const myName = loggedInUser?.nickname || (meKey === 'host' ? '방장' : '동료');
+      const bossType = raidSession.bossType || 'abyss';
 
       const newBossHp = Math.max(0, battle.enemyHp - damageDealt);
       const logMsg = isHeal
@@ -4737,23 +5031,23 @@
             turnSeq: raidSession.lastTurnSeq + 1
           });
         } else {
-          const [sk1, sk2] = pickTwoBossSkills();
+          const [sk1, sk2, sk3] = pickThreeBossSkills(bossType);
           await RoomStore.update('raid', raidSession.roomCode, {
             bossHp: newBossHp,
             [`${meKey}.hp`]: battle.playerHp,
             phase: 'boss_dodge',
-            bossSkills: [sk1, sk2],
+            bossSkills: [sk1, sk2, sk3],
             lastActionLog: logMsg,
             turnSeq: raidSession.lastTurnSeq + 1
           });
         }
       } else {
-        const [sk1, sk2] = pickTwoBossSkills();
+        const [sk1, sk2, sk3] = pickThreeBossSkills(bossType);
         await RoomStore.update('raid', raidSession.roomCode, {
           bossHp: newBossHp,
           [`${meKey}.hp`]: battle.playerHp,
           phase: 'boss_dodge',
-          bossSkills: [sk1, sk2],
+          bossSkills: [sk1, sk2, sk3],
           lastActionLog: logMsg,
           turnSeq: raidSession.lastTurnSeq + 1
         });
@@ -4849,19 +5143,23 @@
           `;
         }
       } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 2) {
-        const [sk1, sk2] = data.bossSkills;
+        const [sk1, sk2, sk3] = data.bossSkills;
+        const bossCfg = RAID_BOSS_CONFIGS[data.bossType || raidSession.bossType] || RAID_BOSS_CONFIGS.abyss;
         showBattlePanel('arena');
         document.getElementById('mobile-touch-pad').classList.remove('hidden');
-        document.getElementById('dodge-pattern-label').textContent =
-          `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]! (빨간 하트=나 / 파란 하트=친구)`;
-        document.getElementById('battle-dialogue-text').textContent =
-          `심연의 군주가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
+        document.getElementById('dodge-pattern-label').textContent = sk3
+          ? `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`
+          : `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]!`;
+        document.getElementById('battle-dialogue-text').textContent = sk3
+          ? `${bossCfg.title}가 [${sk1.name}] + [${sk2.name}] + [${sk3.name}]을(를) 동시 발사! 친구와 함께 피하세요!`
+          : `${bossCfg.title}가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
 
         startArenaPhase({
           controller: meData.hp > 0 ? 'human_defend' : 'pvp_spectate',
           coopAllyHeart: true,
           pattern: sk1.pattern,
           pattern2: sk2.pattern,
+          pattern3: sk3 ? sk3.pattern : null,
           hitDamage: RAID_BOSS_HIT_DAMAGE,
           defenderSpeed: battle.stats.speed,
           defenderReduce: battle.stats.dmgReduce,
@@ -4919,7 +5217,7 @@
       showCustomModal({
         icon: '👑',
         title: isCoop ? '2인 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
-        desc: `심연의 군주(500 HP)를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)`,
+        desc: `${(RAID_BOSS_CONFIGS[raidSession.bossType] || RAID_BOSS_CONFIGS.abyss).title}(100 HP)를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)`,
         buttons: [
           {
             label: `뽑기 (보유 ${state.wins} W)`,
@@ -5044,7 +5342,8 @@
         elapsed: 0,
         timers: [
           { spawnTimer: 0, waveTimer: 0, patternPhase: 0, toggleSide: false, toggleAxe: false },
-          { spawnTimer: 0.25, waveTimer: 0.35, patternPhase: 1.5, toggleSide: true, toggleAxe: true }
+          { spawnTimer: 0.25, waveTimer: 0.35, patternPhase: 1.5, toggleSide: true, toggleAxe: true },
+          { spawnTimer: 0.5, waveTimer: 0.65, patternPhase: 3.0, toggleSide: false, toggleAxe: true }
         ],
         invuln: 0,
         aiWanderAngle: Math.random() * Math.PI * 2,
@@ -5482,6 +5781,9 @@
       }
       if (as.pattern2) {
         spawnSinglePattern(dt, as.pattern2, as.timers[1]);
+      }
+      if (as.pattern3) {
+        spawnSinglePattern(dt, as.pattern3, as.timers[2]);
       }
     }
 
@@ -6009,6 +6311,9 @@
       clearCraftSlots,
       applyRecipeToSlots,
       executeWeaponCraft,
+      clearPvpDualSelection,
+      confirmPvpDualSkills,
+      selectRaidBossType,
       openWarModeModal,
       closeWarModeModal,
       backToWarStepSelect,
