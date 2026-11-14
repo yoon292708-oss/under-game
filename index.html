@@ -2364,6 +2364,10 @@
       if (battle.mode === 'pvp') {
         return sk.isSynergySkill ? PVP_EQUAL_BASE_DAMAGE + 2 : PVP_EQUAL_BASE_DAMAGE;
       }
+      // 봇 대전에서는 장착한 무기의 모든 공격 스킬 대미지를 동일하게 적용
+      if (battle.mode === 'bot') {
+        return Math.max(2, Math.round(battle.stats.hitDamage));
+      }
       return Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
     }
 
