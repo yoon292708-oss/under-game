@@ -432,10 +432,16 @@
               <div class="text-center mt-1">
                 <div class="text-sm font-black text-cyan-200">천둥의 쌍단검 · 라이트닝 팽</div>
                 <div class="text-[10px] text-cyan-300/80">아스리엘 나선 뇌전 & 격자 패턴</div>
-          <div class="mt-2.5 flex flex-col items-center gap-1.5">
-            <span id="cloud-status-badge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-bold text-zinc-400">
-              ⏳ 서버 연결 확인 중...
-            </span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 z-10">
+              <button onclick="rollWeaponGacha('limited_thunder', 1)" class="py-2.5 px-3 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-400/60 text-cyan-100 font-bold text-xs cursor-pointer transition">
+                한정 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollWeaponGacha('limited_thunder', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 hover:from-cyan-400 hover:to-sky-300 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                한정 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
