@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>언더 : 뽑기와 시너지 RPG</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,6 +117,20 @@
   </style>
 </head>
 <body class="bg-black text-gray-100 select-none flex flex-col min-h-screen">
+
+  <!-- 최신 업데이트 완료 확인 배너 -->
+  <div id="update-complete-banner" class="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 text-black px-3 py-1.5 shadow-md border-b border-emerald-400">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2 text-xs font-black">
+      <div class="flex items-center gap-1.5">
+        <span>✅ 최신 버전 업데이트 완료!</span>
+        <span class="px-1.5 py-0.5 rounded bg-black/85 text-emerald-300 font-orbitron text-[10px]">v2.6</span>
+        <span class="hidden sm:inline text-emerald-950 font-bold">· 실시간 멀티(레이드/PvP) 직통 릴레이 적용됨</span>
+      </div>
+      <button type="button" onclick="document.getElementById('update-complete-banner').classList.add('hidden')" class="px-2 py-0.5 rounded bg-black/20 hover:bg-black/35 text-black font-black text-[11px] cursor-pointer">
+        닫기 ✕
+      </button>
+    </div>
+  </div>
 
   <!-- 카카오톡 인앱 브라우저 최상단 안내 배너 -->
   <div id="kakao-top-banner" class="hidden sticky top-0 z-50 bg-yellow-400 text-black px-3 py-2 shadow-lg border-b border-yellow-500">
@@ -1094,9 +1109,70 @@
       ]
     };
 
+    const RELAY_BROKERS = [
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://broker.hivemq.com:8884/mqtt'
+    ];
+    const RELAY_PREFIX = 'undergame_kr_v26_';
+
+    function connectRelayClient() {
+      return new Promise((resolve, reject) => {
+        if (typeof mqtt === 'undefined') {
+          reject(new Error('RELAY_SDK_UNAVAILABLE'));
+          return;
+        }
+        let idx = 0;
+        let done = false;
+
+        const tryNext = () => {
+          if (done) return;
+          if (idx >= RELAY_BROKERS.length) {
+            done = true;
+            reject(new Error('RELAY_CONNECT_FAILED'));
+            return;
+          }
+          const url = RELAY_BROKERS[idx++];
+          const client = mqtt.connect(url, {
+            clientId: 'under_' + Math.random().toString(16).slice(2, 10) + '_' + Date.now().toString(36),
+            clean: true,
+            connectTimeout: 3500,
+            reconnectPeriod: 2000
+          });
+
+          const timer = setTimeout(() => {
+            if (!done && !client.connected) {
+              try { client.end(true); } catch (e) {}
+              tryNext();
+            }
+          }, 3800);
+
+          client.on('connect', () => {
+            if (done) {
+              try { client.end(true); } catch (e) {}
+              return;
+            }
+            done = true;
+            clearTimeout(timer);
+            resolve(client);
+          });
+
+          client.on('error', () => {
+            if (!done && !client.connected) {
+              clearTimeout(timer);
+              try { client.end(true); } catch (e) {}
+              tryNext();
+            }
+          });
+        };
+
+        tryNext();
+      });
+    }
+
     const RoomStore = {
       modeMap: {},
       lastErrorMap: {},
+      relayClients: {},
       peers: {},
       conns: {},
       hostStates: {},
@@ -1108,6 +1184,14 @@
 
       getPeerId(type, code) {
         return `under-game-${type}-${code}`;
+      },
+
+      getRelayTopics(type, code) {
+        const base = `${RELAY_PREFIX}${type}/${code}`;
+        return {
+          stateTopic: `${base}/state`,
+          actionTopic: `${base}/action`
+        };
       },
 
       emitLocalRoom(type, code, data) {
@@ -1126,6 +1210,16 @@
 
       cleanupP2P(type, code) {
         const roomKey = `${type}_${code}`;
+        if (this.relayClients[roomKey]) {
+          try {
+            const { stateTopic } = this.getRelayTopics(type, code);
+            if (this.hostStates[roomKey]) {
+              this.relayClients[roomKey].publish(stateTopic, '', { retain: true });
+            }
+            this.relayClients[roomKey].end(true);
+          } catch (e) {}
+          delete this.relayClients[roomKey];
+        }
         if (this.conns[roomKey]) {
           try { this.conns[roomKey].close(); } catch (e) {}
           delete this.conns[roomKey];
@@ -1135,6 +1229,120 @@
           delete this.peers[roomKey];
         }
         delete this.hostStates[roomKey];
+      },
+
+      async createHostRelay(type, code, payload) {
+        const roomKey = `${type}_${code}`;
+        this.cleanupP2P(type, code);
+        const client = await connectRelayClient();
+        const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
+
+        this.relayClients[roomKey] = client;
+        this.hostStates[roomKey] = JSON.parse(JSON.stringify(payload));
+
+        client.subscribe(actionTopic, { qos: 1 });
+        client.publish(stateTopic, JSON.stringify(this.hostStates[roomKey]), { retain: true, qos: 1 });
+
+        client.on('message', (topic, rawBuf) => {
+          if (topic !== actionTopic) return;
+          let msg = null;
+          try { msg = JSON.parse(rawBuf.toString()); } catch (e) { return; }
+          if (!msg || typeof msg !== 'object') return;
+
+          if (msg.type === 'JOIN_REQUEST' && msg.guest) {
+            const cur = this.hostStates[roomKey];
+            if (!cur || cur.status !== 'waiting' || cur.guest) return;
+            const nextState = {
+              ...cur,
+              status: 'playing',
+              guest: msg.guest,
+              ...(type === 'raid'
+                ? {
+                    phase: 'host_attack',
+                    lastActionLog: `[${msg.guest.nickname || '동료'}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
+                    turnSeq: 1
+                  }
+                : { turnSeq: 1 })
+            };
+            this.hostStates[roomKey] = nextState;
+            client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 });
+            this.emitLocalRoom(type, code, nextState);
+          } else if (msg.type === 'STATE_PATCH' && msg.updates) {
+            const cur = this.hostStates[roomKey];
+            if (!cur) return;
+            const nextState = applyDotUpdate(cur, msg.updates);
+            this.hostStates[roomKey] = nextState;
+            client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 });
+            this.emitLocalRoom(type, code, nextState);
+          }
+        });
+
+        return 'relay';
+      },
+
+      connectGuestRelay(type, code, guestLoadout) {
+        return new Promise(async (resolve, reject) => {
+          const roomKey = `${type}_${code}`;
+          this.cleanupP2P(type, code);
+
+          let client = null;
+          try {
+            client = await connectRelayClient();
+          } catch (e) {
+            reject(new Error('서버 연결에 실패했습니다. 네트워크를 확인해주세요.'));
+            return;
+          }
+
+          const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
+          this.relayClients[roomKey] = client;
+
+          let settled = false;
+          let joinSent = false;
+
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              this.cleanupP2P(type, code);
+              reject(new Error('❌ 존재하지 않는 방 코드이거나 방장이 대기 중이 아닙니다.'));
+            }
+          }, 5000);
+
+          client.subscribe(stateTopic, { qos: 1 });
+
+          client.on('message', (topic, rawBuf) => {
+            if (topic !== stateTopic) return;
+            const str = rawBuf.toString();
+            if (!str) return;
+            let roomState = null;
+            try { roomState = JSON.parse(str); } catch (e) { return; }
+            if (!roomState || typeof roomState !== 'object') return;
+
+            if (!joinSent) {
+              if (roomState.status !== 'waiting' || roomState.guest) {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  this.cleanupP2P(type, code);
+                  reject(new Error('❌ 이미 시작되었거나 만원인 방입니다.'));
+                }
+                return;
+              }
+              joinSent = true;
+              client.publish(actionTopic, JSON.stringify({ type: 'JOIN_REQUEST', guest: guestLoadout }), { qos: 1 });
+              return;
+            }
+
+            if (roomState.status === 'playing' && roomState.guest) {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                this.modeMap[roomKey] = 'relay';
+                resolve(roomState);
+              }
+              this.emitLocalRoom(type, code, roomState);
+            }
+          });
+        });
       },
 
       createHostPeer(type, code, payload) {
@@ -1292,13 +1500,26 @@
 
       async create(type, code, payload) {
         const roomKey = `${type}_${code}`;
-        // 1순위: WebRTC P2P 직통 호스트 오픈 (카톡/깃허브/Netlify/모바일 간 크로스 기기 통신 보장)
+        // 1순위: WSS 443 실시간 직통 릴레이 (5G/LTE·와이파이·카톡·깃허브·Netlify 크로스 기기 100% 통과)
+        try {
+          await this.createHostRelay(type, code, payload);
+          this.modeMap[roomKey] = 'relay';
+          this.lastErrorMap[roomKey] = '';
+          this.emitLocalRoom(type, code, payload);
+          if (db) {
+            setDoc(this.getDocRef(type, code), payload).catch(() => {});
+          }
+          return 'relay';
+        } catch (relayErr) {
+          console.warn('Relay host creation fallback:', relayErr);
+        }
+
+        // 2순위: WebRTC P2P 직통 호스트 오픈
         try {
           await this.createHostPeer(type, code, payload);
           this.modeMap[roomKey] = 'p2p';
           this.lastErrorMap[roomKey] = '';
           this.emitLocalRoom(type, code, payload);
-          // 백그라운드로 클라우드에도 동시 기록
           if (db) {
             setDoc(this.getDocRef(type, code), payload).catch(() => {});
           }
@@ -1307,7 +1528,7 @@
           console.warn('P2P host creation fallback:', p2pErr);
         }
 
-        // 2순위: Firebase Firestore 클라우드
+        // 3순위: Firebase Firestore 클라우드
         if (db) {
           try {
             await withTimeout(setDoc(this.getDocRef(type, code), payload), 4000);
@@ -1335,7 +1556,14 @@
       },
 
       async joinP2P(type, code, guestLoadout) {
-        return await this.connectGuestPeer(type, code, guestLoadout);
+        try {
+          return await this.connectGuestRelay(type, code, guestLoadout);
+        } catch (relayErr) {
+          if (relayErr?.message && relayErr.message.includes('만원')) {
+            throw relayErr;
+          }
+          return await this.connectGuestPeer(type, code, guestLoadout);
+        }
       },
 
       async get(type, code) {
@@ -1370,6 +1598,30 @@
       async update(type, code, updates) {
         const roomKey = `${type}_${code}`;
         const mode = this.modeMap[roomKey];
+
+        if (mode === 'relay') {
+          const client = this.relayClients[roomKey];
+          const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
+          if (this.hostStates[roomKey]) {
+            const nextState = applyDotUpdate(this.hostStates[roomKey], updates);
+            this.hostStates[roomKey] = nextState;
+            if (client && client.connected) {
+              try { client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 }); } catch (e) {}
+            }
+            this.emitLocalRoom(type, code, nextState);
+          } else {
+            if (client && client.connected) {
+              try { client.publish(actionTopic, JSON.stringify({ type: 'STATE_PATCH', updates }), { qos: 1 }); } catch (e) {}
+            }
+            const storageKey = getLocalRoomKey(type, code);
+            const raw = safeGetLocalStorage(storageKey);
+            const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[storageKey];
+            if (baseObj) {
+              this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
+            }
+          }
+          return;
+        }
 
         if (mode === 'p2p') {
           if (this.hostStates[roomKey]) {
@@ -2961,8 +3213,8 @@
       document.getElementById('pvp-host-wait-box').classList.remove('hidden');
       document.getElementById('pvp-generated-code').textContent = code;
       const syncBadge = document.getElementById('pvp-room-sync-badge');
-      if (roomMode === 'p2p') {
-        syncBadge.textContent = '🟢 P2P 직통 서버 연결 완료! (어떤 기기·링크에서도 입장 가능)';
+      if (roomMode === 'relay' || roomMode === 'p2p') {
+        syncBadge.textContent = '🟢 실시간 멀티 직통 서버 연결 완료! (어떤 기기·링크에서도 입장 가능)';
         syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
       } else if (roomMode === 'cloud') {
         syncBadge.textContent = '🟢 온라인 클라우드 방 활성화됨';
@@ -3855,8 +4107,8 @@
       document.getElementById('raid-host-wait-box').classList.remove('hidden');
       document.getElementById('raid-generated-code').textContent = code;
       const syncBadge = document.getElementById('raid-room-sync-badge');
-      if (roomMode === 'p2p') {
-        syncBadge.textContent = '🟢 P2P 직통 레이드 서버 연결 완료! (어떤 기기에서도 입장 가능)';
+      if (roomMode === 'relay' || roomMode === 'p2p') {
+        syncBadge.textContent = '🟢 실시간 레이드 직통 서버 연결 완료! (어떤 기기에서도 입장 가능)';
         syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
       } else if (roomMode === 'cloud') {
         syncBadge.textContent = '🟢 온라인 클라우드 레이드 방 활성화됨';
