@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>언더 : 뽑기와 시너지 RPG</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
@@ -1040,7 +1041,7 @@
     initFirebase();
 
     /* ============================================================================
-       HTML 내장 실시간 방 동기화 엔진 (클라우드 4초 타임아웃 + BroadcastChannel/localStorage 폴백)
+       HTML 내장 실시간 방 동기화 엔진 (WebRTC P2P 직통 연결 + 클라우드/로컬 폴백)
     ============================================================================ */
     const LOCAL_ROOMS_PREFIX = 'under_html_room_v2_';
     const inMemoryRooms = {};
@@ -1085,110 +1086,334 @@
       return clone;
     }
 
+    const PEER_ICE_CONFIG = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    };
+
     const RoomStore = {
       modeMap: {},
       lastErrorMap: {},
+      peers: {},
+      conns: {},
+      hostStates: {},
+      listeners: {},
 
       getDocRef(type, code) {
         return type === 'pvp' ? getPvpRoomDocRef(code) : getRaidRoomDocRef(code);
       },
 
-      async create(type, code, payload) {
-        try {
-          await withTimeout(initFirebase(), 4000);
-        } catch (e) {}
+      getPeerId(type, code) {
+        return `under-game-${type}-${code}`;
+      },
 
+      emitLocalRoom(type, code, data) {
+        const roomKey = `${type}_${code}`;
+        const storageKey = getLocalRoomKey(type, code);
+        inMemoryRooms[storageKey] = data;
+        safeSetLocalStorage(storageKey, JSON.stringify(data));
+        if (roomBroadcast) {
+          try { roomBroadcast.postMessage({ key: storageKey, data }); } catch (e) {}
+        }
+        const subs = this.listeners[roomKey] || [];
+        subs.forEach(cb => {
+          try { cb(data); } catch (e) {}
+        });
+      },
+
+      cleanupP2P(type, code) {
+        const roomKey = `${type}_${code}`;
+        if (this.conns[roomKey]) {
+          try { this.conns[roomKey].close(); } catch (e) {}
+          delete this.conns[roomKey];
+        }
+        if (this.peers[roomKey]) {
+          try { this.peers[roomKey].destroy(); } catch (e) {}
+          delete this.peers[roomKey];
+        }
+        delete this.hostStates[roomKey];
+      },
+
+      createHostPeer(type, code, payload) {
+        return new Promise((resolve, reject) => {
+          if (typeof Peer === 'undefined') {
+            reject(new Error('P2P_SDK_UNAVAILABLE'));
+            return;
+          }
+          const roomKey = `${type}_${code}`;
+          this.cleanupP2P(type, code);
+
+          const peerId = this.getPeerId(type, code);
+          const peer = new Peer(peerId, { config: PEER_ICE_CONFIG, debug: 0 });
+          let settled = false;
+
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              try { peer.destroy(); } catch (e) {}
+              reject(new Error('P2P_TIMEOUT'));
+            }
+          }, 6000);
+
+          peer.on('open', () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            this.peers[roomKey] = peer;
+            this.hostStates[roomKey] = JSON.parse(JSON.stringify(payload));
+
+            peer.on('connection', (conn) => {
+              this.conns[roomKey] = conn;
+              conn.on('data', (msg) => {
+                if (!msg || typeof msg !== 'object') return;
+                if (msg.type === 'JOIN_REQUEST' && msg.guest) {
+                  const cur = this.hostStates[roomKey];
+                  if (!cur || cur.status !== 'waiting' || cur.guest) {
+                    try { conn.send({ type: 'JOIN_REJECTED', reason: '이미 시작되었거나 만원인 방입니다.' }); } catch (e) {}
+                    return;
+                  }
+                  const nextState = {
+                    ...cur,
+                    status: 'playing',
+                    guest: msg.guest,
+                    ...(type === 'raid'
+                      ? {
+                          phase: 'host_attack',
+                          lastActionLog: `[${msg.guest.nickname || '동료'}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
+                          turnSeq: 1
+                        }
+                      : { turnSeq: 1 })
+                  };
+                  this.hostStates[roomKey] = nextState;
+                  try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
+                  this.emitLocalRoom(type, code, nextState);
+                } else if (msg.type === 'STATE_PATCH' && msg.updates) {
+                  const cur = this.hostStates[roomKey];
+                  if (!cur) return;
+                  const nextState = applyDotUpdate(cur, msg.updates);
+                  this.hostStates[roomKey] = nextState;
+                  try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
+                  this.emitLocalRoom(type, code, nextState);
+                }
+              });
+            });
+
+            resolve('p2p');
+          });
+
+          peer.on('error', (err) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              try { peer.destroy(); } catch (e) {}
+              reject(err || new Error('P2P_ERROR'));
+            }
+          });
+        });
+      },
+
+      connectGuestPeer(type, code, guestLoadout) {
+        return new Promise((resolve, reject) => {
+          if (typeof Peer === 'undefined') {
+            reject(new Error('P2P_SDK_UNAVAILABLE'));
+            return;
+          }
+          const roomKey = `${type}_${code}`;
+          this.cleanupP2P(type, code);
+
+          const peer = new Peer({ config: PEER_ICE_CONFIG, debug: 0 });
+          let settled = false;
+
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              try { peer.destroy(); } catch (e) {}
+              reject(new Error('방장 기기와 연결 시간이 초과되었습니다. 코드를 다시 확인해주세요.'));
+            }
+          }, 7000);
+
+          peer.on('open', () => {
+            const conn = peer.connect(this.getPeerId(type, code), { reliable: true });
+            this.peers[roomKey] = peer;
+            this.conns[roomKey] = conn;
+
+            conn.on('open', () => {
+              try {
+                conn.send({ type: 'JOIN_REQUEST', guest: guestLoadout });
+              } catch (e) {}
+            });
+
+            conn.on('data', (msg) => {
+              if (!msg || typeof msg !== 'object') return;
+              if (msg.type === 'JOIN_REJECTED') {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  this.cleanupP2P(type, code);
+                  reject(new Error(msg.reason || '입장이 거절되었습니다.'));
+                }
+              } else if (msg.type === 'STATE_SYNC' && msg.state) {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  this.modeMap[roomKey] = 'p2p';
+                  resolve(msg.state);
+                }
+                this.emitLocalRoom(type, code, msg.state);
+              }
+            });
+
+            conn.on('error', (err) => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                this.cleanupP2P(type, code);
+                reject(err || new Error('P2P 연결 오류'));
+              }
+            });
+          });
+
+          peer.on('error', (err) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              this.cleanupP2P(type, code);
+              const msg = err?.type === 'peer-unavailable'
+                ? '❌ 존재하지 않는 방 코드이거나 방장이 대기 중이 아닙니다.'
+                : '❌ P2P 연결에 실패했습니다. 코드를 확인해주세요.';
+              reject(new Error(msg));
+            }
+          });
+        });
+      },
+
+      async create(type, code, payload) {
+        const roomKey = `${type}_${code}`;
+        // 1순위: WebRTC P2P 직통 호스트 오픈 (카톡/깃허브/Netlify/모바일 간 크로스 기기 통신 보장)
+        try {
+          await this.createHostPeer(type, code, payload);
+          this.modeMap[roomKey] = 'p2p';
+          this.lastErrorMap[roomKey] = '';
+          this.emitLocalRoom(type, code, payload);
+          // 백그라운드로 클라우드에도 동시 기록
+          if (db) {
+            setDoc(this.getDocRef(type, code), payload).catch(() => {});
+          }
+          return 'p2p';
+        } catch (p2pErr) {
+          console.warn('P2P host creation fallback:', p2pErr);
+        }
+
+        // 2순위: Firebase Firestore 클라우드
         if (db) {
           try {
             await withTimeout(setDoc(this.getDocRef(type, code), payload), 4000);
             cloudAvailable = true;
             lastCloudError = '';
             updateCloudStatusBadge(true);
-            this.modeMap[`${type}_${code}`] = 'cloud';
-            this.lastErrorMap[`${type}_${code}`] = '';
+            this.modeMap[roomKey] = 'cloud';
+            this.lastErrorMap[roomKey] = '';
             return 'cloud';
           } catch (err) {
             const errCode = err?.code || err?.message || 'FIRESTORE_ERROR';
             lastCloudError = errCode;
             cloudAvailable = false;
             updateCloudStatusBadge(false);
-            this.lastErrorMap[`${type}_${code}`] = errCode;
-            console.warn(`Cloud ${type} room create failed (${errCode}), falling back to local/BroadcastChannel:`, err);
+            this.lastErrorMap[roomKey] = errCode;
           }
         } else {
-          this.lastErrorMap[`${type}_${code}`] = 'DB_NOT_INITIALIZED';
+          this.lastErrorMap[roomKey] = 'OFFLINE';
         }
 
-        this.modeMap[`${type}_${code}`] = 'local';
-        const key = getLocalRoomKey(type, code);
-        inMemoryRooms[key] = payload;
-        safeSetLocalStorage(key, JSON.stringify(payload));
-        if (roomBroadcast) {
-          try { roomBroadcast.postMessage({ key, data: payload }); } catch (e) {}
-        }
+        // 3순위: 동일 브라우저/기기 내장 저장소
+        this.modeMap[roomKey] = 'local';
+        this.emitLocalRoom(type, code, payload);
         return 'local';
       },
 
+      async joinP2P(type, code, guestLoadout) {
+        return await this.connectGuestPeer(type, code, guestLoadout);
+      },
+
       async get(type, code) {
-        try {
-          await withTimeout(initFirebase(), 4000);
-        } catch (e) {}
+        const roomKey = `${type}_${code}`;
+        if (this.hostStates[roomKey]) return this.hostStates[roomKey];
 
         if (db) {
           try {
-            const snap = await withTimeout(getDoc(this.getDocRef(type, code)), 4000);
+            const snap = await withTimeout(getDoc(this.getDocRef(type, code)), 3500);
             cloudAvailable = true;
             if (snap.exists()) {
-              this.modeMap[`${type}_${code}`] = 'cloud';
+              this.modeMap[roomKey] = 'cloud';
               return snap.data();
             }
           } catch (err) {
-            const errCode = err?.code || err?.message || 'GET_TIMEOUT';
-            lastCloudError = errCode;
-            console.warn(`Cloud ${type} room get fallback (${errCode}):`, err);
+            lastCloudError = err?.code || err?.message || 'GET_TIMEOUT';
           }
         }
         const key = getLocalRoomKey(type, code);
         const raw = safeGetLocalStorage(key);
         if (raw) {
-          this.modeMap[`${type}_${code}`] = 'local';
+          this.modeMap[roomKey] = 'local';
           return JSON.parse(raw);
         }
         if (inMemoryRooms[key]) {
-          this.modeMap[`${type}_${code}`] = 'local';
+          this.modeMap[roomKey] = 'local';
           return inMemoryRooms[key];
         }
         return null;
       },
 
       async update(type, code, updates) {
-        const mode = this.modeMap[`${type}_${code}`];
-        if (mode !== 'local' && db) {
+        const roomKey = `${type}_${code}`;
+        const mode = this.modeMap[roomKey];
+
+        if (mode === 'p2p') {
+          if (this.hostStates[roomKey]) {
+            const nextState = applyDotUpdate(this.hostStates[roomKey], updates);
+            this.hostStates[roomKey] = nextState;
+            const conn = this.conns[roomKey];
+            if (conn && conn.open) {
+              try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
+            }
+            this.emitLocalRoom(type, code, nextState);
+          } else {
+            const conn = this.conns[roomKey];
+            if (conn && conn.open) {
+              try { conn.send({ type: 'STATE_PATCH', updates }); } catch (e) {}
+            }
+            const storageKey = getLocalRoomKey(type, code);
+            const raw = safeGetLocalStorage(storageKey);
+            const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[storageKey];
+            if (baseObj) {
+              this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
+            }
+          }
+          return;
+        }
+
+        if (mode === 'cloud' && db) {
           try {
             await withTimeout(updateDoc(this.getDocRef(type, code), updates), 4000);
             return;
-          } catch (err) {
-            console.warn('Cloud room update fallback:', err?.code || err?.message || err);
-          }
+          } catch (err) {}
         }
+
         const key = getLocalRoomKey(type, code);
         const raw = safeGetLocalStorage(key);
         const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[key];
         if (!baseObj) return;
-        const nextData = applyDotUpdate(baseObj, updates);
-        inMemoryRooms[key] = nextData;
-        safeSetLocalStorage(key, JSON.stringify(nextData));
-        if (roomBroadcast) {
-          try { roomBroadcast.postMessage({ key, data: nextData }); } catch (e) {}
-        }
-        window.dispatchEvent(new CustomEvent('under-local-room-update', {
-          detail: { key, data: nextData }
-        }));
+        this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
       },
 
       async remove(type, code) {
-        const mode = this.modeMap[`${type}_${code}`];
-        if (mode !== 'local' && db) {
+        const roomKey = `${type}_${code}`;
+        this.cleanupP2P(type, code);
+        const mode = this.modeMap[roomKey];
+        if (mode === 'cloud' && db) {
           try {
             await withTimeout(deleteDoc(this.getDocRef(type, code)), 3000);
           } catch (err) {}
@@ -1196,13 +1421,14 @@
         const key = getLocalRoomKey(type, code);
         delete inMemoryRooms[key];
         safeRemoveLocalStorage(key);
-        delete this.modeMap[`${type}_${code}`];
-        delete this.lastErrorMap[`${type}_${code}`];
+        delete this.modeMap[roomKey];
+        delete this.lastErrorMap[roomKey];
       },
 
       subscribe(type, code, onData) {
-        const mode = this.modeMap[`${type}_${code}`];
-        if (mode !== 'local' && db) {
+        const roomKey = `${type}_${code}`;
+        const mode = this.modeMap[roomKey];
+        if (mode === 'cloud' && db) {
           return onSnapshot(
             this.getDocRef(type, code),
             (snap) => {
@@ -1214,14 +1440,23 @@
           );
         }
 
+        if (!this.listeners[roomKey]) this.listeners[roomKey] = [];
+        this.listeners[roomKey].push(onData);
+
         const key = getLocalRoomKey(type, code);
         let lastJson = '';
 
         const checkAndEmit = () => {
-          const curJson = safeGetLocalStorage(key) || (inMemoryRooms[key] ? JSON.stringify(inMemoryRooms[key]) : '');
-          if (curJson && curJson !== lastJson) {
-            lastJson = curJson;
-            try { onData(JSON.parse(curJson)); } catch (e) {}
+          const curObj = this.hostStates[roomKey] || inMemoryRooms[key] || (() => {
+            const raw = safeGetLocalStorage(key);
+            return raw ? JSON.parse(raw) : null;
+          })();
+          if (curObj) {
+            const curJson = JSON.stringify(curObj);
+            if (curJson !== lastJson) {
+              lastJson = curJson;
+              try { onData(curObj); } catch (e) {}
+            }
           }
         };
 
@@ -1231,15 +1466,6 @@
           if (e.key === key && e.newValue && e.newValue !== lastJson) {
             lastJson = e.newValue;
             try { onData(JSON.parse(e.newValue)); } catch (err) {}
-          }
-        };
-        const customHandler = (e) => {
-          if (e.detail?.key === key && e.detail?.data) {
-            const serialized = JSON.stringify(e.detail.data);
-            if (serialized !== lastJson) {
-              lastJson = serialized;
-              onData(e.detail.data);
-            }
           }
         };
         const bcHandler = (e) => {
@@ -1253,15 +1479,16 @@
         };
 
         window.addEventListener('storage', storageHandler);
-        window.addEventListener('under-local-room-update', customHandler);
         if (roomBroadcast) roomBroadcast.addEventListener('message', bcHandler);
         const pollId = setInterval(checkAndEmit, 250);
 
         return () => {
           window.removeEventListener('storage', storageHandler);
-          window.removeEventListener('under-local-room-update', customHandler);
           if (roomBroadcast) roomBroadcast.removeEventListener('message', bcHandler);
           clearInterval(pollId);
+          if (this.listeners[roomKey]) {
+            this.listeners[roomKey] = this.listeners[roomKey].filter(fn => fn !== onData);
+          }
         };
       }
     };
@@ -2617,9 +2844,14 @@
     };
 
     function cleanupPvpSubscription() {
+      const oldCode = pvpSession.roomCode;
+      const oldRole = pvpSession.role;
       if (pvpSession.unsub) {
         pvpSession.unsub();
         pvpSession.unsub = null;
+      }
+      if (oldCode && oldRole === 'host') {
+        RoomStore.cleanupP2P('pvp', oldCode);
       }
       pvpSession.roomCode = null;
       pvpSession.role = null;
@@ -2729,14 +2961,15 @@
       document.getElementById('pvp-host-wait-box').classList.remove('hidden');
       document.getElementById('pvp-generated-code').textContent = code;
       const syncBadge = document.getElementById('pvp-room-sync-badge');
-      if (roomMode === 'cloud') {
+      if (roomMode === 'p2p') {
+        syncBadge.textContent = '🟢 P2P 직통 서버 연결 완료! (어떤 기기·링크에서도 입장 가능)';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else if (roomMode === 'cloud') {
         syncBadge.textContent = '🟢 온라인 클라우드 방 활성화됨';
         syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
       } else {
-        const errDetail = RoomStore.lastErrorMap[`pvp_${code}`] || '오프라인';
-        syncBadge.textContent = `🟠 로컬/동일 브라우저 탭 방 (${errDetail})`;
+        syncBadge.textContent = '🟠 로컬 모드 방 (동일 브라우저 탭)';
         syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
-        showToast('📡 로컬 모드로 방이 생성되었습니다! (외부 브라우저는 크롬/사파리 권장)', 'border-cyan-400 text-cyan-200');
       }
 
       subscribePvpRoom(code);
@@ -2761,27 +2994,42 @@
         return;
       }
 
-      statusEl.textContent = '🔍 방을 찾는 중...';
+      statusEl.textContent = '🔗 P2P 직통 연결로 방장 기기를 찾는 중...';
       statusEl.className = 'text-[11px] text-amber-300 mt-2';
 
       try {
+        const guestLoadout = buildMyPvpLoadout();
+        pvpSession.roomCode = rawCode;
+        pvpSession.role = 'guest';
+
+        // 1순위: WebRTC P2P 직통 입장 시도
+        try {
+          const syncedState = await RoomStore.joinP2P('pvp', rawCode, guestLoadout);
+          subscribePvpRoom(rawCode);
+          handlePvpStateUpdate(syncedState);
+          return;
+        } catch (p2pErr) {
+          console.warn('P2P join fallback to cloud/local:', p2pErr?.message || p2pErr);
+        }
+
+        // 2순위: 클라우드/로컬 방 조회 및 입장
         const data = await RoomStore.get('pvp', rawCode);
 
         if (!data) {
-          statusEl.textContent = '❌ 존재하지 않는 방 코드입니다.';
+          pvpSession.roomCode = null;
+          pvpSession.role = null;
+          statusEl.textContent = '❌ 존재하지 않는 방 코드입니다. 방장이 방을 열어두었는지 확인해주세요.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
           return;
         }
 
         if (data.status !== 'waiting' || data.guest) {
+          pvpSession.roomCode = null;
+          pvpSession.role = null;
           statusEl.textContent = '❌ 이미 대전이 시작되었거나 만원인 방입니다.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
           return;
         }
-
-        const guestLoadout = buildMyPvpLoadout();
-        pvpSession.roomCode = rawCode;
-        pvpSession.role = 'guest';
 
         await RoomStore.update('pvp', rawCode, {
           status: 'playing',
@@ -3407,9 +3655,14 @@
     };
 
     function cleanupRaidSubscription() {
+      const oldCode = raidSession.roomCode;
+      const oldRole = raidSession.role;
       if (raidSession.unsub) {
         raidSession.unsub();
         raidSession.unsub = null;
+      }
+      if (oldCode && oldRole === 'host') {
+        RoomStore.cleanupP2P('raid', oldCode);
       }
       raidSession.roomCode = null;
       raidSession.role = null;
@@ -3602,14 +3855,15 @@
       document.getElementById('raid-host-wait-box').classList.remove('hidden');
       document.getElementById('raid-generated-code').textContent = code;
       const syncBadge = document.getElementById('raid-room-sync-badge');
-      if (roomMode === 'cloud') {
+      if (roomMode === 'p2p') {
+        syncBadge.textContent = '🟢 P2P 직통 레이드 서버 연결 완료! (어떤 기기에서도 입장 가능)';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else if (roomMode === 'cloud') {
         syncBadge.textContent = '🟢 온라인 클라우드 레이드 방 활성화됨';
         syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
       } else {
-        const errDetail = RoomStore.lastErrorMap[`raid_${code}`] || '오프라인';
-        syncBadge.textContent = `🟠 로컬/동일 브라우저 탭 방 (${errDetail})`;
+        syncBadge.textContent = '🟠 로컬 모드 방 (동일 브라우저 탭)';
         syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
-        showToast('📡 로컬 모드로 레이드 방이 생성되었습니다! (외부 브라우저는 크롬/사파리 권장)', 'border-sky-400 text-sky-200');
       }
 
       subscribeRaidRoom(code);
@@ -3634,24 +3888,10 @@
         return;
       }
 
-      statusEl.textContent = '🔍 레이드 방을 찾는 중...';
+      statusEl.textContent = '🔗 P2P 직통 연결로 레이드 방장을 찾는 중...';
       statusEl.className = 'text-[11px] text-amber-300 mt-2';
 
       try {
-        const data = await RoomStore.get('raid', rawCode);
-
-        if (!data) {
-          statusEl.textContent = '❌ 존재하지 않는 레이드 코드입니다.';
-          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-          return;
-        }
-
-        if (data.status !== 'waiting' || data.guest) {
-          statusEl.textContent = '❌ 이미 토벌이 시작되었거나 만원인 방입니다.';
-          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-          return;
-        }
-
         const guestLoadout = buildMyPvpLoadout();
         guestLoadout.nickname = loggedInUser?.nickname || '동료';
         guestLoadout.heartX = 260;
@@ -3659,6 +3899,35 @@
 
         raidSession.roomCode = rawCode;
         raidSession.role = 'guest';
+
+        // 1순위: WebRTC P2P 직통 입장 시도
+        try {
+          const syncedState = await RoomStore.joinP2P('raid', rawCode, guestLoadout);
+          subscribeRaidRoom(rawCode);
+          handleRaidStateUpdate(syncedState);
+          return;
+        } catch (p2pErr) {
+          console.warn('P2P raid join fallback to cloud/local:', p2pErr?.message || p2pErr);
+        }
+
+        // 2순위: 클라우드/로컬 방 조회 및 입장
+        const data = await RoomStore.get('raid', rawCode);
+
+        if (!data) {
+          raidSession.roomCode = null;
+          raidSession.role = null;
+          statusEl.textContent = '❌ 존재하지 않는 레이드 코드입니다. 방장이 대기 중인지 확인해주세요.';
+          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+          return;
+        }
+
+        if (data.status !== 'waiting' || data.guest) {
+          raidSession.roomCode = null;
+          raidSession.role = null;
+          statusEl.textContent = '❌ 이미 토벌이 시작되었거나 만원인 방입니다.';
+          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+          return;
+        }
 
         await RoomStore.update('raid', rawCode, {
           status: 'playing',
