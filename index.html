@@ -116,6 +116,16 @@
 </head>
 <body class="bg-black text-gray-100 select-none flex flex-col min-h-screen">
 
+  <!-- 카카오톡 인앱 브라우저 최상단 안내 배너 -->
+  <div id="kakao-top-banner" class="hidden sticky top-0 z-50 bg-yellow-400 text-black px-3 py-2 shadow-lg border-b border-yellow-500">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs font-black">
+      <span>🌐 카톡에서는 방 생성이 막힐 수 있어요!</span>
+      <button type="button" onclick="openInExternalBrowser()" class="px-3 py-1.5 rounded-lg bg-black text-yellow-300 hover:bg-zinc-900 font-black text-xs cursor-pointer shadow">
+        [크롬/사파리로 열기]
+      </button>
+    </div>
+  </div>
+
   <!-- 상단 고정 상태바 -->
   <header class="sticky top-0 z-40 bg-black/95 backdrop-blur border-b border-zinc-800 px-3 sm:px-6 py-2.5">
     <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -168,12 +178,17 @@
     <!-- 0. 로그인 & 회원가입 첫 화면 -->
     <section id="view-auth" class="flex-1 flex flex-col items-center justify-center py-6">
       <div class="w-full max-w-md rounded-3xl bg-zinc-950 border-2 border-zinc-800 p-6 sm:p-7 shadow-[0_0_50px_rgba(220,38,38,0.18)]">
-        <div class="text-center mb-6">
+        <div class="text-center mb-5">
           <div class="w-14 h-14 mx-auto rounded-2xl bg-red-950/80 border border-red-500/60 flex items-center justify-center text-3xl mb-3 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
             ⚔️
           </div>
           <h2 class="text-2xl font-black text-white tracking-tight">언더</h2>
           <p class="text-xs text-zinc-400 mt-1">닉네임으로 로그인하거나 새 계정을 만들어 전장에 입장하세요</p>
+          <div class="mt-2.5 flex justify-center">
+            <span id="cloud-status-badge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-bold text-zinc-400">
+              ⏳ 서버 연결 확인 중...
+            </span>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black border border-zinc-800 mb-5">
@@ -258,7 +273,7 @@
 
         <button onclick="openRaidModeModal()" class="group relative w-full rounded-2xl p-4 bg-gradient-to-r from-purple-950 via-indigo-950/90 to-zinc-950 border-2 border-purple-500/80 hover:border-purple-400 shadow-[0_0_28px_rgba(168,85,247,0.25)] hover:shadow-[0_0_38px_rgba(168,85,247,0.42)] flex items-center justify-between text-left cursor-pointer transition">
           <div class="flex items-center gap-4">
-            <div class="w-13 h-13 w-12 h-12 rounded-2xl bg-black/70 border border-purple-400/60 flex items-center justify-center text-2xl group-hover:scale-110 transition">👹</div>
+            <div class="w-12 h-12 rounded-2xl bg-black/70 border border-purple-400/60 flex items-center justify-center text-2xl group-hover:scale-110 transition">👹</div>
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="text-xl font-black text-white tracking-tight">레이드</h3>
@@ -417,16 +432,10 @@
               <div class="text-center mt-1">
                 <div class="text-sm font-black text-cyan-200">천둥의 쌍단검 · 라이트닝 팽</div>
                 <div class="text-[10px] text-cyan-300/80">아스리엘 나선 뇌전 & 격자 패턴</div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 z-10">
-              <button onclick="rollWeaponGacha('limited_thunder', 1)" class="py-2.5 px-3 rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-400/60 text-cyan-100 font-bold text-xs cursor-pointer transition">
-                한정 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
-              </button>
-              <button onclick="rollWeaponGacha('limited_thunder', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 hover:from-cyan-400 hover:to-sky-300 text-black font-black text-xs shadow-lg cursor-pointer transition">
-                한정 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
-              </button>
-            </div>
+          <div class="mt-2.5 flex flex-col items-center gap-1.5">
+            <span id="cloud-status-badge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-bold text-zinc-400">
+              ⏳ 서버 연결 확인 중...
+            </span>
           </div>
         </div>
       </div>
@@ -781,7 +790,7 @@
         <button onclick="startBotWar()" class="p-5 rounded-2xl bg-black hover:bg-red-950/30 border-2 border-zinc-700 hover:border-red-400 flex flex-col items-center text-center transition cursor-pointer">
           <span class="text-4xl mb-2">🤖</span>
           <span class="text-base font-black text-white">봇 (AI 대전)</span>
-          <span class="text-[11px] text-zinc-400 mt-1">스테이지 보스 AI와 쌍방향 탄막 대결</span>
+          <span class="text-[11px] text-zinc-400 mt-1">실제 캐릭터·무기 덱을 가진 AI와 대결</span>
         </button>
 
         <button onclick="showFriendPvpStep()" class="p-5 rounded-2xl bg-black hover:bg-cyan-950/30 border-2 border-zinc-700 hover:border-cyan-400 flex flex-col items-center text-center transition cursor-pointer">
@@ -804,6 +813,7 @@
         <div id="pvp-host-wait-box" class="hidden p-4 rounded-2xl bg-black border border-cyan-500/60 text-center">
           <div class="text-xs text-zinc-400">친구에게 아래 4자리 코드를 알려주세요!</div>
           <div id="pvp-generated-code" class="font-orbitron text-4xl font-black text-cyan-300 tracking-widest my-2">0000</div>
+          <div id="pvp-room-sync-badge" class="text-[10px] text-zinc-400 mb-1"></div>
           <div class="text-[11px] text-amber-300 animate-pulse">⏳ 친구의 입장을 기다리는 중...</div>
           <button onclick="cancelPvpRoom()" class="mt-3 px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 cursor-pointer">방 취소</button>
         </div>
@@ -868,6 +878,7 @@
         <div id="raid-host-wait-box" class="hidden p-4 rounded-2xl bg-black border border-sky-500/60 text-center">
           <div class="text-xs text-zinc-400">친구에게 아래 4자리 레이드 코드를 알려주세요!</div>
           <div id="raid-generated-code" class="font-orbitron text-4xl font-black text-sky-300 tracking-widest my-2">0000</div>
+          <div id="raid-room-sync-badge" class="text-[10px] text-zinc-400 mb-1"></div>
           <div class="text-[11px] text-amber-300 animate-pulse">⏳ 친구의 입장을 기다리는 중...</div>
           <button onclick="cancelRaidRoom()" class="mt-3 px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 cursor-pointer">방 취소</button>
         </div>
@@ -909,9 +920,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { initializeFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'under-game';
     const DEFAULT_FIREBASE_CONFIG = {
       apiKey: "AIzaSyAogAWq90Ui4REb1dgC1KXqOKJKtExk0tA",
       authDomain: "under-game.firebaseapp.com",
@@ -926,83 +936,363 @@
     let auth = null;
     let currentUser = null;
     let cloudAvailable = false;
+    let lastCloudError = '';
+    let firebaseInitPromise = null;
+    const APP_NAMESPACE = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'under-game';
+
+    function withTimeout(promise, ms = 4000) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms))
+      ]);
+    }
+
+    function checkKakaoInAppBrowser() {
+      const ua = navigator.userAgent || '';
+      if (/KAKAOTALK/i.test(ua)) {
+        const banner = document.getElementById('kakao-top-banner');
+        if (banner) banner.classList.remove('hidden');
+      }
+    }
+
+    function openInExternalBrowser() {
+      const targetUrl = window.location.href;
+      window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(targetUrl);
+    }
+
+    function updateCloudStatusBadge(isConnected, detailText = '') {
+      const badge = document.getElementById('cloud-status-badge');
+      if (!badge) return;
+      if (isConnected) {
+        badge.textContent = '🟢 클라우드 서버 연결됨 (친구 멀티·계정 동기화 가능)';
+        badge.className = 'px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/50 text-[11px] font-bold text-emerald-300';
+      } else {
+        const reason = detailText || (lastCloudError ? ` (${lastCloudError})` : '');
+        badge.textContent = `🟠 로컬/백업 모드 동작 중${reason}`;
+        badge.className = 'px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-500/50 text-[11px] font-bold text-amber-300';
+      }
+    }
 
     function getAccountDocRef(normKey) {
-      if (typeof __app_id !== 'undefined' && __app_id) {
-        return doc(db, 'artifacts', __app_id, 'public', 'data', 'under_accounts', normKey);
-      }
-      return doc(db, 'under_accounts', normKey);
+      return doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'users', normKey);
     }
 
     function getPvpRoomDocRef(code) {
-      if (typeof __app_id !== 'undefined' && __app_id) {
-        return doc(db, 'artifacts', __app_id, 'public', 'data', 'under_pvp_rooms', code);
-      }
-      return doc(db, 'under_pvp_rooms', code);
+      return doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'under_pvp_rooms', code);
     }
 
     function getRaidRoomDocRef(code) {
-      if (typeof __app_id !== 'undefined' && __app_id) {
-        return doc(db, 'artifacts', __app_id, 'public', 'data', 'under_raid_rooms', code);
-      }
-      return doc(db, 'under_raid_rooms', code);
+      return doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'under_raid_rooms', code);
     }
 
     async function initFirebase() {
-      try {
-        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-          ? JSON.parse(__firebase_config)
-          : DEFAULT_FIREBASE_CONFIG;
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
+      if (firebaseInitPromise) return firebaseInitPromise;
+      firebaseInitPromise = (async () => {
+        try {
+          const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+            ? JSON.parse(__firebase_config)
+            : DEFAULT_FIREBASE_CONFIG;
+          const app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+          // 카카오톡 웹뷰 및 모바일 네트워크에서 WebSocket/FetchStream 차단 방지
+          db = initializeFirestore(app, {
+            experimentalForceLongPolling: true,
+            useFetchStreams: false
+          });
 
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          const cred = await signInWithCustomToken(auth, __initial_auth_token);
-          currentUser = cred.user;
-        } else {
-          const cred = await signInAnonymously(auth);
-          currentUser = cred.user;
+          // 익명 인증은 백그라운드에서 3초 타임아웃으로 시도하며, 실패(도메인 미승인 등)해도 Firestore 진행 차단 안 함
+          (async () => {
+            try {
+              if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                const cred = await withTimeout(signInWithCustomToken(auth, __initial_auth_token), 3000);
+                currentUser = cred.user;
+              } else {
+                const cred = await withTimeout(signInAnonymously(auth), 3000);
+                currentUser = cred.user;
+              }
+            } catch (authErr) {
+              console.warn('Background anonymous auth skipped:', authErr?.code || authErr?.message || authErr);
+            }
+          })();
+
+          // 실제 Firestore 읽기 테스트로 서버 연결 상태 확인 (4초 타임아웃)
+          await withTimeout(getDoc(getAccountDocRef('__health_check__')), 4000);
+          cloudAvailable = true;
+          lastCloudError = '';
+          updateCloudStatusBadge(true);
+        } catch (err) {
+          cloudAvailable = false;
+          lastCloudError = err?.code || err?.message || '연결 지연';
+          updateCloudStatusBadge(false);
+          console.warn('Firebase Firestore unreachable, using local fallback:', err);
         }
-        cloudAvailable = true;
-      } catch (err) {
-        cloudAvailable = false;
-        console.warn('Firebase init fallback:', err);
-      }
+      })();
+      return firebaseInitPromise;
     }
 
+    checkKakaoInAppBrowser();
     initFirebase();
 
     /* ============================================================================
-       1. Web Audio API 효과음 엔진
+       HTML 내장 실시간 방 동기화 엔진 (클라우드 4초 타임아웃 + BroadcastChannel/localStorage 폴백)
+    ============================================================================ */
+    const LOCAL_ROOMS_PREFIX = 'under_html_room_v2_';
+    const inMemoryRooms = {};
+    let roomBroadcast = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        roomBroadcast = new BroadcastChannel('under_game_rooms_channel');
+      }
+    } catch (e) {}
+
+    function safeSetLocalStorage(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) {}
+    }
+
+    function safeGetLocalStorage(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function safeRemoveLocalStorage(key) {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    function getLocalRoomKey(type, code) {
+      return `${LOCAL_ROOMS_PREFIX}${type}_${code}`;
+    }
+
+    function applyDotUpdate(obj, updates) {
+      const clone = JSON.parse(JSON.stringify(obj));
+      Object.entries(updates).forEach(([key, val]) => {
+        if (key.includes('.')) {
+          const parts = key.split('.');
+          let cur = clone;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+            cur = cur[parts[i]];
+          }
+          cur[parts[parts.length - 1]] = val;
+        } else {
+          clone[key] = val;
+        }
+      });
+      return clone;
+    }
+
+    const RoomStore = {
+      modeMap: {},
+      lastErrorMap: {},
+
+      getDocRef(type, code) {
+        return type === 'pvp' ? getPvpRoomDocRef(code) : getRaidRoomDocRef(code);
+      },
+
+      async create(type, code, payload) {
+        try {
+          await withTimeout(initFirebase(), 4000);
+        } catch (e) {}
+
+        if (db) {
+          try {
+            await withTimeout(setDoc(this.getDocRef(type, code), payload), 4000);
+            cloudAvailable = true;
+            lastCloudError = '';
+            updateCloudStatusBadge(true);
+            this.modeMap[`${type}_${code}`] = 'cloud';
+            this.lastErrorMap[`${type}_${code}`] = '';
+            return 'cloud';
+          } catch (err) {
+            const errCode = err?.code || err?.message || 'FIRESTORE_ERROR';
+            lastCloudError = errCode;
+            cloudAvailable = false;
+            updateCloudStatusBadge(false);
+            this.lastErrorMap[`${type}_${code}`] = errCode;
+            console.warn(`Cloud ${type} room create failed (${errCode}), falling back to local/BroadcastChannel:`, err);
+          }
+        } else {
+          this.lastErrorMap[`${type}_${code}`] = 'DB_NOT_INITIALIZED';
+        }
+
+        this.modeMap[`${type}_${code}`] = 'local';
+        const key = getLocalRoomKey(type, code);
+        inMemoryRooms[key] = payload;
+        safeSetLocalStorage(key, JSON.stringify(payload));
+        if (roomBroadcast) {
+          try { roomBroadcast.postMessage({ key, data: payload }); } catch (e) {}
+        }
+        return 'local';
+      },
+
+      async get(type, code) {
+        try {
+          await withTimeout(initFirebase(), 4000);
+        } catch (e) {}
+
+        if (db) {
+          try {
+            const snap = await withTimeout(getDoc(this.getDocRef(type, code)), 4000);
+            cloudAvailable = true;
+            if (snap.exists()) {
+              this.modeMap[`${type}_${code}`] = 'cloud';
+              return snap.data();
+            }
+          } catch (err) {
+            const errCode = err?.code || err?.message || 'GET_TIMEOUT';
+            lastCloudError = errCode;
+            console.warn(`Cloud ${type} room get fallback (${errCode}):`, err);
+          }
+        }
+        const key = getLocalRoomKey(type, code);
+        const raw = safeGetLocalStorage(key);
+        if (raw) {
+          this.modeMap[`${type}_${code}`] = 'local';
+          return JSON.parse(raw);
+        }
+        if (inMemoryRooms[key]) {
+          this.modeMap[`${type}_${code}`] = 'local';
+          return inMemoryRooms[key];
+        }
+        return null;
+      },
+
+      async update(type, code, updates) {
+        const mode = this.modeMap[`${type}_${code}`];
+        if (mode !== 'local' && db) {
+          try {
+            await withTimeout(updateDoc(this.getDocRef(type, code), updates), 4000);
+            return;
+          } catch (err) {
+            console.warn('Cloud room update fallback:', err?.code || err?.message || err);
+          }
+        }
+        const key = getLocalRoomKey(type, code);
+        const raw = safeGetLocalStorage(key);
+        const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[key];
+        if (!baseObj) return;
+        const nextData = applyDotUpdate(baseObj, updates);
+        inMemoryRooms[key] = nextData;
+        safeSetLocalStorage(key, JSON.stringify(nextData));
+        if (roomBroadcast) {
+          try { roomBroadcast.postMessage({ key, data: nextData }); } catch (e) {}
+        }
+        window.dispatchEvent(new CustomEvent('under-local-room-update', {
+          detail: { key, data: nextData }
+        }));
+      },
+
+      async remove(type, code) {
+        const mode = this.modeMap[`${type}_${code}`];
+        if (mode !== 'local' && db) {
+          try {
+            await withTimeout(deleteDoc(this.getDocRef(type, code)), 3000);
+          } catch (err) {}
+        }
+        const key = getLocalRoomKey(type, code);
+        delete inMemoryRooms[key];
+        safeRemoveLocalStorage(key);
+        delete this.modeMap[`${type}_${code}`];
+        delete this.lastErrorMap[`${type}_${code}`];
+      },
+
+      subscribe(type, code, onData) {
+        const mode = this.modeMap[`${type}_${code}`];
+        if (mode !== 'local' && db) {
+          return onSnapshot(
+            this.getDocRef(type, code),
+            (snap) => {
+              if (snap.exists()) onData(snap.data());
+            },
+            (err) => {
+              console.warn('Cloud room snapshot error:', err?.code || err?.message || err);
+            }
+          );
+        }
+
+        const key = getLocalRoomKey(type, code);
+        let lastJson = '';
+
+        const checkAndEmit = () => {
+          const curJson = safeGetLocalStorage(key) || (inMemoryRooms[key] ? JSON.stringify(inMemoryRooms[key]) : '');
+          if (curJson && curJson !== lastJson) {
+            lastJson = curJson;
+            try { onData(JSON.parse(curJson)); } catch (e) {}
+          }
+        };
+
+        checkAndEmit();
+
+        const storageHandler = (e) => {
+          if (e.key === key && e.newValue && e.newValue !== lastJson) {
+            lastJson = e.newValue;
+            try { onData(JSON.parse(e.newValue)); } catch (err) {}
+          }
+        };
+        const customHandler = (e) => {
+          if (e.detail?.key === key && e.detail?.data) {
+            const serialized = JSON.stringify(e.detail.data);
+            if (serialized !== lastJson) {
+              lastJson = serialized;
+              onData(e.detail.data);
+            }
+          }
+        };
+        const bcHandler = (e) => {
+          if (e.data?.key === key && e.data?.data) {
+            const serialized = JSON.stringify(e.data.data);
+            if (serialized !== lastJson) {
+              lastJson = serialized;
+              onData(e.data.data);
+            }
+          }
+        };
+
+        window.addEventListener('storage', storageHandler);
+        window.addEventListener('under-local-room-update', customHandler);
+        if (roomBroadcast) roomBroadcast.addEventListener('message', bcHandler);
+        const pollId = setInterval(checkAndEmit, 250);
+
+        return () => {
+          window.removeEventListener('storage', storageHandler);
+          window.removeEventListener('under-local-room-update', customHandler);
+          if (roomBroadcast) roomBroadcast.removeEventListener('message', bcHandler);
+          clearInterval(pollId);
+        };
+      }
+    };
+
+    /* ============================================================================
+       1-B. Web Audio API 합성 효과음 (외부 오디오 URL 없음)
     ============================================================================ */
     const SoundFX = (() => {
       let ctx = null;
       let enabled = true;
 
-      function getCtx() {
+      function ensureCtx() {
         if (!ctx) {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           if (AudioCtx) ctx = new AudioCtx();
         }
-        if (ctx && ctx.state === 'suspended') ctx.resume();
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
         return ctx;
       }
 
-      function playTone(freq, type = 'sine', duration = 0.12, vol = 0.12, delay = 0) {
+      function playTone(freq, type, duration, vol = 0.08, delay = 0) {
         if (!enabled) return;
-        const c = getCtx();
+        const c = ensureCtx();
         if (!c) return;
+        const now = c.currentTime + delay;
         const osc = c.createOscillator();
         const gain = c.createGain();
         osc.type = type;
-        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
-        gain.gain.setValueAtTime(vol, c.currentTime + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration);
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         osc.connect(gain);
         gain.connect(c.destination);
-        osc.start(c.currentTime + delay);
-        osc.stop(c.currentTime + delay + duration);
+        osc.start(now);
+        osc.stop(now + duration);
       }
 
       return {
@@ -1010,41 +1300,44 @@
           enabled = !enabled;
           return enabled;
         },
-        click() { playTone(520, 'square', 0.06, 0.08); },
+        click() {
+          playTone(520, 'triangle', 0.06, 0.06);
+        },
         equip() {
-          playTone(440, 'triangle', 0.09, 0.12, 0);
-          playTone(660, 'triangle', 0.12, 0.12, 0.07);
+          playTone(440, 'sine', 0.08, 0.08);
+          playTone(660, 'sine', 0.12, 0.08, 0.06);
         },
         synergy() {
-          playTone(523.25, 'sine', 0.15, 0.15, 0);
-          playTone(659.25, 'sine', 0.15, 0.15, 0.08);
-          playTone(783.99, 'sine', 0.25, 0.16, 0.16);
+          playTone(523.25, 'triangle', 0.12, 0.09);
+          playTone(659.25, 'triangle', 0.12, 0.09, 0.08);
+          playTone(783.99, 'triangle', 0.14, 0.09, 0.16);
+          playTone(1046.5, 'sine', 0.25, 0.1, 0.24);
         },
         gachaRoll(isLegendary) {
           if (isLegendary) {
-            [392, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-              playTone(f, 'triangle', 0.22, 0.16, i * 0.07);
+            [440, 554, 659, 880, 1108].forEach((f, idx) => {
+              playTone(f, 'sawtooth', 0.18, 0.07, idx * 0.07);
             });
           } else {
-            playTone(330, 'sine', 0.12, 0.12, 0);
-            playTone(494, 'sine', 0.18, 0.12, 0.08);
+            playTone(392, 'triangle', 0.1, 0.07);
+            playTone(523, 'triangle', 0.14, 0.07, 0.07);
           }
         },
         slash() {
-          playTone(220, 'sawtooth', 0.14, 0.15, 0);
-          playTone(130, 'sawtooth', 0.16, 0.14, 0.05);
-        },
-        hurt() {
-          playTone(140, 'sawtooth', 0.22, 0.22, 0);
-          playTone(95, 'square', 0.22, 0.2, 0.06);
+          playTone(260, 'sawtooth', 0.12, 0.09);
+          playTone(140, 'square', 0.14, 0.07, 0.04);
         },
         heal() {
-          playTone(587.33, 'sine', 0.14, 0.14, 0);
-          playTone(880, 'sine', 0.2, 0.14, 0.09);
+          playTone(587.33, 'sine', 0.14, 0.08);
+          playTone(880, 'sine', 0.2, 0.08, 0.1);
+        },
+        hurt() {
+          playTone(150, 'sawtooth', 0.18, 0.11);
+          playTone(95, 'square', 0.2, 0.1, 0.05);
         },
         victory() {
-          [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-            playTone(f, 'square', 0.2, 0.13, i * 0.1);
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+            playTone(f, 'triangle', 0.18, 0.09, idx * 0.11);
           });
         }
       };
@@ -1072,14 +1365,11 @@
       bloodmoon_sword: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="52" cy="48" r="30" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/><polygon points="24,76 78,16 86,24 32,84" fill="#dc2626" stroke="#fecaca" stroke-width="1.5"/><line x1="18" y1="66" x2="40" y2="88" stroke="#facc15" stroke-width="5" stroke-linecap="round"/><line x1="29" y1="77" x2="14" y2="92" stroke="#450a0a" stroke-width="6" stroke-linecap="round"/></svg>`,
       lightning_daggers: `<svg viewBox="0 0 100 100" class="w-full h-full"><g transform="rotate(-22 50 50)"><polygon points="38,16 45,62 31,62" fill="#22d3ee" stroke="#cffafe" stroke-width="1.2"/><rect x="28" y="62" width="20" height="5" fill="#facc15"/><rect x="35" y="67" width="6" height="15" fill="#0f172a"/></g><g transform="rotate(22 50 50)"><polygon points="62,16 69,62 55,62" fill="#38bdf8" stroke="#cffafe" stroke-width="1.2"/><rect x="52" y="62" width="20" height="5" fill="#facc15"/><rect x="59" y="67" width="6" height="15" fill="#0f172a"/></g></svg>`,
 
-      enemy_slime: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 20 74 C 18 42, 82 42, 80 74 Z" fill="#10b981" stroke="#6ee7b7" stroke-width="2.5"/><circle cx="38" cy="60" r="4" fill="#000"/><circle cx="62" cy="60" r="4" fill="#000"/><path d="M 44 68 Q 50 73 56 68" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></svg>`,
-      enemy_golem: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="30,22 70,22 84,54 72,86 28,86 16,54" fill="#475569" stroke="#94a3b8" stroke-width="2.5"/><rect x="34" y="42" width="10" height="6" fill="#f59e0b"/><rect x="56" y="42" width="10" height="6" fill="#f59e0b"/><line x1="36" y1="66" x2="64" y2="66" stroke="#0f172a" stroke-width="4"/></svg>`,
-      enemy_demon: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 28 34 L 18 14 L 38 26 Z" fill="#dc2626"/><path d="M 72 34 L 82 14 L 62 26 Z" fill="#dc2626"/><circle cx="50" cy="54" r="28" fill="#18181b" stroke="#ef4444" stroke-width="2.5"/><polygon points="36,48 46,52 38,54" fill="#facc15"/><polygon points="64,48 54,52 62,54" fill="#facc15"/><path d="M 38 68 Q 50 60 62 68" fill="none" stroke="#ef4444" stroke-width="3"/></svg>`,
       raid_boss: `<svg viewBox="0 0 120 120" class="w-full h-full"><circle cx="60" cy="60" r="46" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 4" opacity="0.7"/><path d="M 24 38 L 10 12 L 42 26 Z" fill="#9333ea" stroke="#facc15" stroke-width="1.5"/><path d="M 96 38 L 110 12 L 78 26 Z" fill="#9333ea" stroke="#facc15" stroke-width="1.5"/><polygon points="60,16 48,30 60,24 72,30" fill="#facc15"/><circle cx="60" cy="62" r="32" fill="#09090b" stroke="#c084fc" stroke-width="3"/><polygon points="42,54 55,60 44,63" fill="#ef4444"/><polygon points="78,54 65,60 76,63" fill="#38bdf8"/><circle cx="60" cy="44" r="4" fill="#facc15"/><path d="M 42 76 Q 60 64 78 76 Q 60 86 42 76 Z" fill="#7e22ce" stroke="#e9d5ff" stroke-width="1.5"/></svg>`
     };
 
     /* ============================================================================
-       3. 게임 데이터 정의 (체급별 HP: 하급 20, 중급 25, 상급 40, 전설 50 / 모든 무기 대미지 동일)
+       3. 게임 데이터 정의
     ============================================================================ */
     const BASE_HP = 20;
 
@@ -1089,7 +1379,7 @@
         name: '하급인간',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        gradeHpBonus: 0, // 총 20 HP
+        gradeHpBonus: 20,
         atk: 2,
         speed: 3.4,
         art: SVG_ART.human_low
@@ -1099,7 +1389,7 @@
         name: '중급인간',
         rarity: '희귀',
         rarityColor: 'text-sky-300 border-sky-500/60 bg-sky-950/60',
-        gradeHpBonus: 5, // 총 25 HP
+        gradeHpBonus: 25,
         atk: 2,
         speed: 3.6,
         art: SVG_ART.human_mid
@@ -1109,7 +1399,7 @@
         name: '상급인간',
         rarity: '영웅',
         rarityColor: 'text-purple-300 border-purple-500/60 bg-purple-950/60',
-        gradeHpBonus: 20, // 총 40 HP
+        gradeHpBonus: 40,
         atk: 3,
         speed: 3.8,
         art: SVG_ART.human_high
@@ -1119,7 +1409,7 @@
         name: '그림자 암살자 · 카이',
         rarity: '전설',
         rarityColor: 'text-red-300 border-red-500/70 bg-red-950/70',
-        gradeHpBonus: 30, // 총 50 HP
+        gradeHpBonus: 50,
         atk: 3,
         speed: 4.1,
         art: SVG_ART.kai
@@ -1129,7 +1419,7 @@
         name: '뇌전의 검희 · 세라',
         rarity: '전설',
         rarityColor: 'text-amber-300 border-amber-400/70 bg-amber-950/70',
-        gradeHpBonus: 30, // 총 50 HP
+        gradeHpBonus: 50,
         atk: 3,
         speed: 4.1,
         art: SVG_ART.sera
@@ -1506,19 +1796,28 @@
       }
 
       const normKey = nickname.toLowerCase();
-      if (!db || !currentUser) {
-        await initFirebase();
-      }
+      try {
+        await withTimeout(initFirebase(), 4000);
+      } catch (e) {}
 
       try {
         let existingAccount = memoryAccounts[normKey] || null;
-        if (db && cloudAvailable) {
+        if (db) {
           try {
             const accRef = getAccountDocRef(normKey);
-            const snap = await getDoc(accRef);
-            if (snap.exists()) existingAccount = snap.data();
+            const snap = await withTimeout(getDoc(accRef), 4000);
+            cloudAvailable = true;
+            lastCloudError = '';
+            updateCloudStatusBadge(true);
+            if (snap.exists()) {
+              existingAccount = snap.data();
+              memoryAccounts[normKey] = existingAccount;
+              persistLocalAccounts();
+            }
           } catch (cloudReadErr) {
             cloudAvailable = false;
+            lastCloudError = cloudReadErr?.code || cloudReadErr?.message || 'READ_ERROR';
+            updateCloudStatusBadge(false);
             console.warn('Cloud read fallback to local:', cloudReadErr);
           }
         }
@@ -1539,12 +1838,16 @@
           };
           memoryAccounts[normKey] = payload;
           persistLocalAccounts();
-
-          if (db && cloudAvailable) {
+          if (db) {
             try {
-              await setDoc(getAccountDocRef(normKey), payload);
+              await withTimeout(setDoc(getAccountDocRef(normKey), payload), 4000);
+              cloudAvailable = true;
+              lastCloudError = '';
+              updateCloudStatusBadge(true);
             } catch (cloudWriteErr) {
               cloudAvailable = false;
+              lastCloudError = cloudWriteErr?.code || cloudWriteErr?.message || 'WRITE_ERROR';
+              updateCloudStatusBadge(false);
               console.warn('Cloud write fallback to local:', cloudWriteErr);
             }
           }
@@ -1601,13 +1904,14 @@
         gameState: state,
         updatedAt: Date.now()
       };
-      memoryAccounts[normKey] = payload;
-      persistLocalAccounts();
-      if (db && cloudAvailable) {
+      if (db) {
         try {
-          await setDoc(getAccountDocRef(normKey), payload);
+          await withTimeout(setDoc(getAccountDocRef(normKey), payload), 4000);
+          cloudAvailable = true;
         } catch (e) {
           cloudAvailable = false;
+          lastCloudError = e?.code || e?.message || 'SAVE_ERROR';
+          updateCloudStatusBadge(false);
           console.warn('Cloud save skipped:', e);
         }
       }
@@ -1617,6 +1921,7 @@
       SoundFX.click();
       stopArenaLoop();
       cleanupPvpSubscription();
+      cleanupRaidSubscription();
       battle.active = false;
       loggedInUser = null;
       state = DEFAULT_STATE();
@@ -2370,6 +2675,7 @@
       SoundFX.equip();
       closeWarModeModal();
       cleanupPvpSubscription();
+      cleanupRaidSubscription();
       navigateTo('battle');
       initBotBattle();
     }
@@ -2393,53 +2699,46 @@
 
     async function createPvpRoom() {
       SoundFX.click();
-      if (!db || !currentUser) {
-        await initFirebase();
-      }
-      if (!db || !currentUser) {
-        showToast('⚠️ 실시간 멀티 서버 연결 중입니다. 잠시 후 다시 눌러주세요.', 'border-red-400 text-red-200');
-        return;
-      }
-
       cleanupPvpSubscription();
       const code = String(Math.floor(1000 + Math.random() * 9000));
-      const roomRef = getPvpRoomDocRef(code);
       const hostLoadout = buildMyPvpLoadout();
 
-      try {
-        await setDoc(roomRef, {
-          code,
-          status: 'waiting',
-          host: hostLoadout,
-          guest: null,
-          activeAttacker: 'host',
-          phase: 'choose_skill',
-          turnSeq: 0,
-          selectedSkill: null,
-          winner: null,
-          createdAt: Date.now()
-        });
+      const roomMode = await RoomStore.create('pvp', code, {
+        code,
+        status: 'waiting',
+        host: hostLoadout,
+        guest: null,
+        activeAttacker: 'host',
+        phase: 'choose_skill',
+        turnSeq: 0,
+        selectedSkill: null,
+        winner: null,
+        createdAt: Date.now()
+      });
 
-        pvpSession.roomCode = code;
-        pvpSession.role = 'host';
+      pvpSession.roomCode = code;
+      pvpSession.role = 'host';
 
-        document.getElementById('pvp-join-input-box').classList.add('hidden');
-        document.getElementById('pvp-host-wait-box').classList.remove('hidden');
-        document.getElementById('pvp-generated-code').textContent = code;
-
-        subscribePvpRoom(code);
-      } catch (e) {
-        console.error(e);
-        showToast('방 생성에 실패했습니다. 다시 시도해주세요.', 'border-red-400 text-red-200');
+      document.getElementById('pvp-join-input-box').classList.add('hidden');
+      document.getElementById('pvp-host-wait-box').classList.remove('hidden');
+      document.getElementById('pvp-generated-code').textContent = code;
+      const syncBadge = document.getElementById('pvp-room-sync-badge');
+      if (roomMode === 'cloud') {
+        syncBadge.textContent = '🟢 온라인 클라우드 방 활성화됨';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else {
+        const errDetail = RoomStore.lastErrorMap[`pvp_${code}`] || '오프라인';
+        syncBadge.textContent = `🟠 로컬/동일 브라우저 탭 방 (${errDetail})`;
+        syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
+        showToast('📡 로컬 모드로 방이 생성되었습니다! (외부 브라우저는 크롬/사파리 권장)', 'border-cyan-400 text-cyan-200');
       }
+
+      subscribePvpRoom(code);
     }
 
     async function cancelPvpRoom() {
-      if (pvpSession.roomCode && db) {
-        try {
-          const roomRef = getPvpRoomDocRef(pvpSession.roomCode);
-          await deleteDoc(roomRef);
-        } catch (e) {}
+      if (pvpSession.roomCode) {
+        await RoomStore.remove('pvp', pvpSession.roomCode);
       }
       cleanupPvpSubscription();
       document.getElementById('pvp-host-wait-box').classList.add('hidden');
@@ -2456,28 +2755,18 @@
         return;
       }
 
-      if (!db || !currentUser) {
-        await initFirebase();
-      }
-      if (!db || !currentUser) {
-        statusEl.textContent = '⚠️ 서버 연결 중입니다. 다시 시도해주세요.';
-        return;
-      }
-
       statusEl.textContent = '🔍 방을 찾는 중...';
       statusEl.className = 'text-[11px] text-amber-300 mt-2';
 
       try {
-        const roomRef = getPvpRoomDocRef(rawCode);
-        const snap = await getDoc(roomRef);
+        const data = await RoomStore.get('pvp', rawCode);
 
-        if (!snap.exists()) {
+        if (!data) {
           statusEl.textContent = '❌ 존재하지 않는 방 코드입니다.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
           return;
         }
 
-        const data = snap.data();
         if (data.status !== 'waiting' || data.guest) {
           statusEl.textContent = '❌ 이미 대전이 시작되었거나 만원인 방입니다.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
@@ -2488,7 +2777,7 @@
         pvpSession.roomCode = rawCode;
         pvpSession.role = 'guest';
 
-        await updateDoc(roomRef, {
+        await RoomStore.update('pvp', rawCode, {
           status: 'playing',
           guest: guestLoadout,
           turnSeq: 1
@@ -2504,119 +2793,154 @@
 
     function subscribePvpRoom(code) {
       if (pvpSession.unsub) pvpSession.unsub();
-      const roomRef = getPvpRoomDocRef(code);
-
-      pvpSession.unsub = onSnapshot(
-        roomRef,
-        (snap) => {
-          if (!snap.exists()) return;
-          const data = snap.data();
-          handlePvpStateUpdate(data);
-        },
-        (err) => {
-          console.error('PvP sync error:', err);
-          showToast('⚠️ 대전 동기화 연결이 불안정합니다.', 'border-red-400 text-red-200');
-        }
-      );
+      pvpSession.unsub = RoomStore.subscribe('pvp', code, (data) => {
+        handlePvpStateUpdate(data);
+      });
     }
 
-    function handlePvpStateUpdate(data) {
-      if (data.status === 'waiting') return;
+    /* ============================================================================
+       11. 전투 엔진 (봇 덱 대전 + 실시간 1:1 PvP)
+    ============================================================================ */
+    let battle = {
+      active: false,
+      mode: 'bot',
+      turn: 'player',
+      enemyDeck: null,
+      enemyHealed: false,
+      enemyHp: 20,
+      enemyMaxHp: 20,
+      enemyHitDamage: 5,
+      playerHp: 20,
+      playerMaxHp: 20,
+      allyHp: 0,
+      allyMaxHp: 0,
+      stats: null
+    };
 
-      if (data.status === 'playing' && (!battle.active || battle.mode !== 'pvp')) {
-        closeWarModeModal();
-        SoundFX.synergy();
-        showToast(`⚔️ 방 [${data.code}] 매치 성사! 실시간 대전 시작!`, 'border-cyan-400 text-cyan-200');
-        navigateTo('battle');
-        initPvpBattle(data);
-        return;
+    function showBattlePanel(panelName) {
+      const skillsPanel = document.getElementById('battle-player-turn-panel');
+      const waitPanel = document.getElementById('battle-pvp-wait-panel');
+      const arenaPanel = document.getElementById('battle-arena-panel');
+
+      skillsPanel.classList.add('hidden');
+      waitPanel.classList.add('hidden');
+      arenaPanel.classList.add('hidden');
+      arenaPanel.classList.remove('flex');
+
+      if (panelName === 'player_skills') {
+        skillsPanel.classList.remove('hidden');
+      } else if (panelName === 'pvp_wait') {
+        waitPanel.classList.remove('hidden');
+      } else if (panelName === 'arena') {
+        arenaPanel.classList.remove('hidden');
+        arenaPanel.classList.add('flex');
+      }
+    }
+
+    function updateBattleBars() {
+      const ePct = Math.max(0, Math.min(100, (battle.enemyHp / Math.max(1, battle.enemyMaxHp)) * 100));
+      document.getElementById('enemy-hp-bar').style.width = `${ePct}%`;
+      document.getElementById('enemy-hp-text').textContent = `${Math.max(0, battle.enemyHp)} / ${battle.enemyMaxHp}`;
+
+      const pPct = Math.max(0, Math.min(100, (battle.playerHp / Math.max(1, battle.playerMaxHp)) * 100));
+      document.getElementById('player-hp-bar').style.width = `${pPct}%`;
+      document.getElementById('player-hp-text').textContent = `${Math.max(0, battle.playerHp)} / ${battle.playerMaxHp}`;
+
+      if (battle.mode === 'coop_raid') {
+        const aPct = Math.max(0, Math.min(100, (battle.allyHp / Math.max(1, battle.allyMaxHp)) * 100));
+        document.getElementById('ally-hp-bar').style.width = `${aPct}%`;
+        document.getElementById('ally-hp-text').textContent = `${Math.max(0, battle.allyHp)} / ${battle.allyMaxHp}`;
+      }
+    }
+
+    function renderPlayerSkills() {
+      const grid = document.getElementById('battle-skills-grid');
+      grid.innerHTML = '';
+      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
+
+      weapon.skills.forEach((sk, idx) => {
+        const isHeal = sk.type === 'heal';
+        const dmg = isHeal ? 0 : Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
+        const btn = document.createElement('button');
+        btn.onclick = () => usePlayerWeaponSkill(idx);
+        btn.className = `p-3 rounded-xl border text-left transition cursor-pointer ${
+          isHeal
+            ? 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-500/60'
+            : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-700 hover:border-amber-400'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs sm:text-sm font-black ${isHeal ? 'text-emerald-300' : 'text-white'}">${sk.name}</span>
+            <span class="px-2 py-0.5 rounded bg-black border border-zinc-700 font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : 'text-amber-300'}">
+              ${isHeal ? `+${sk.heal} HP` : `위력 ${dmg}`}
+            </span>
+          </div>
+          <div class="text-[11px] text-zinc-400 mt-1">${sk.desc}</div>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function initBotBattle() {
+      stopArenaLoop();
+      const stats = calculateCombatStats();
+      const preset = BOT_DECK_PRESETS[Math.floor(Math.random() * BOT_DECK_PRESETS.length)];
+      const botChar = getCharById(preset.charId) || CHARACTERS[0];
+      const botWeapon = getWeaponById(preset.weaponId) || WEAPONS[0];
+      const botSynergy = SYNERGIES.find(s => s.charId === botChar.id && s.weaponId === botWeapon.id) || null;
+
+      const botMaxHp = BASE_HP + botChar.gradeHpBonus + (botSynergy ? botSynergy.bonusHp : 0);
+      const botHitDmg = botChar.atk + botWeapon.atk + (botSynergy ? botSynergy.bonusDmg : 0);
+
+      battle = {
+        active: true,
+        mode: 'bot',
+        turn: 'player',
+        enemyDeck: { char: botChar, weapon: botWeapon, synergy: botSynergy },
+        enemyHealed: false,
+        enemyHp: botMaxHp,
+        enemyMaxHp: botMaxHp,
+        enemyHitDamage: botHitDmg,
+        playerHp: stats.maxHp,
+        playerMaxHp: stats.maxHp,
+        allyHp: 0,
+        allyMaxHp: 0,
+        stats
+      };
+
+      document.getElementById('battle-stage-badge').textContent = 'BOT 1:1';
+      document.getElementById('battle-stage-controls').classList.remove('hidden');
+      document.getElementById('ally-hp-container').classList.add('hidden');
+      document.getElementById('ally-hp-container').classList.remove('flex');
+
+      const enemySynBadge = document.getElementById('enemy-synergy-badge');
+      if (botSynergy) {
+        enemySynBadge.textContent = `✨ 적 시너지: ${botSynergy.name}`;
+        enemySynBadge.classList.remove('hidden');
+      } else {
+        enemySynBadge.classList.add('hidden');
       }
 
-      if (battle.mode !== 'pvp') return;
+      document.getElementById('battle-enemy-title').textContent = `${botChar.name} (${botWeapon.name})`;
+      document.getElementById('enemy-name-display').textContent = `${botChar.name} · ${botWeapon.name}`;
+      document.getElementById('enemy-sprite-container').innerHTML = botChar.art;
+      document.getElementById('battle-dialogue-text').textContent =
+        `야생의 [${botChar.name} + ${botWeapon.name}] 덱이 나타났습니다! 무기 스킬을 선택하세요!`;
 
-      const meKey = pvpSession.role;
-      const oppKey = meKey === 'host' ? 'guest' : 'host';
-      const meData = data[meKey];
-      const oppData = data[oppKey];
-      if (!meData || !oppData) return;
+      document.getElementById('battle-player-name').textContent = stats.char.name;
+      document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
 
-      battle.playerHp = meData.hp;
-      battle.playerMaxHp = meData.maxHp;
-      battle.enemyHp = oppData.hp;
-      battle.enemyMaxHp = oppData.maxHp;
+      const synTag = document.getElementById('battle-synergy-active-tag');
+      if (stats.synergy) {
+        synTag.textContent = `✨ 시너지: ${stats.synergy.name}`;
+        synTag.classList.remove('hidden');
+      } else {
+        synTag.classList.add('hidden');
+      }
+
       updateBattleBars();
-
-      if (data.phase === 'finished' || meData.hp <= 0 || oppData.hp <= 0) {
-        const iWon = (data.winner === meKey) || (oppData.hp <= 0 && meData.hp > 0);
-        finishPvpBattle(iWon, oppData.charName);
-        return;
-      }
-
-      if (data.turnSeq === pvpSession.lastTurnSeq) return;
-      pvpSession.lastTurnSeq = data.turnSeq;
-
-      const isMyAttackTurn = data.activeAttacker === meKey;
-
-      if (data.phase === 'choose_skill') {
-        stopArenaLoop();
-        if (isMyAttackTurn) {
-          showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = `당신의 공격 턴! 무기 스킬을 골라 [${oppData.charName}]에게 탄막을 날리세요!`;
-        } else {
-          showBattlePanel('pvp_wait');
-          document.getElementById('battle-dialogue-text').textContent = `[${oppData.charName}]이(가) 공격할 스킬을 선택하고 있습니다...`;
-        }
-      } else if (data.phase === 'dodge_round' && data.selectedSkill) {
-        const sk = data.selectedSkill;
-        showBattlePanel('arena');
-
-        if (isMyAttackTurn) {
-          document.getElementById('mobile-touch-pad').classList.add('hidden');
-          document.getElementById('dodge-pattern-label').textContent = `🔥 [${sk.name}] 발사! 상대방이 회피 중...`;
-          document.getElementById('battle-dialogue-text').textContent = `[${sk.name}] 발동! 상대방의 하트를 탄막으로 저격합니다!`;
-          startArenaPhase({
-            controller: 'pvp_spectate',
-            pattern: sk.pattern,
-            hitDamage: sk.damage,
-            defenderSpeed: oppData.speed,
-            defenderReduce: oppData.dmgReduce,
-            duration: 6.0
-          });
-        } else {
-          document.getElementById('mobile-touch-pad').classList.remove('hidden');
-          document.getElementById('dodge-pattern-label').textContent = `⚠️ 상대 스킬 [${sk.name}]! 직접 회피하세요!`;
-          document.getElementById('battle-dialogue-text').textContent = `상대의 [${sk.name}] 공격! 방향키 / 드래그로 하트를 피하세요!`;
-          startArenaPhase({
-            controller: 'human_defend',
-            pattern: sk.pattern,
-            hitDamage: sk.damage,
-            defenderSpeed: meData.speed,
-            defenderReduce: meData.dmgReduce,
-            duration: 6.0,
-            onPvpDefendComplete: async (finalHp) => {
-              if (!db || !pvpSession.roomCode) return;
-              const roomRef = getPvpRoomDocRef(pvpSession.roomCode);
-              const nextAttacker = meKey;
-              if (finalHp <= 0) {
-                await updateDoc(roomRef, {
-                  [`${meKey}.hp`]: 0,
-                  phase: 'finished',
-                  winner: oppKey,
-                  turnSeq: data.turnSeq + 1
-                });
-              } else {
-                await updateDoc(roomRef, {
-                  [`${meKey}.hp`]: finalHp,
-                  activeAttacker: nextAttacker,
-                  phase: 'choose_skill',
-                  selectedSkill: null,
-                  turnSeq: data.turnSeq + 1
-                });
-              }
-            }
-          });
-        }
-      }
+      renderPlayerSkills();
+      showBattlePanel('player_skills');
     }
 
     function initPvpBattle(data) {
@@ -2631,20 +2955,32 @@
       battle = {
         active: true,
         mode: 'pvp',
-        turn: 'player',
-        stageData: null,
+        turn: data.activeAttacker === meKey ? 'player' : 'enemy',
+        enemyDeck: null,
+        enemyHealed: false,
         enemyHp: oppData.hp,
         enemyMaxHp: oppData.maxHp,
         enemyHitDamage: oppData.hitDamage,
-        enemyAiSkill: 0.7,
-        enemyAiSpeed: oppData.speed,
         playerHp: meData.hp,
         playerMaxHp: meData.maxHp,
+        allyHp: 0,
+        allyMaxHp: 0,
         stats: myStats
       };
 
-      document.getElementById('battle-stage-badge').textContent = `PVP 방 #${data.code}`;
-      document.getElementById('battle-stage-controls').classList.add('hidden');
+      document.getElementById('battle-stage-badge').textContent = `PVP #${data.code}`;
+      document.getElementById('battle-stage-controls').classList.remove('hidden');
+      document.getElementById('ally-hp-container').classList.add('hidden');
+      document.getElementById('ally-hp-container').classList.remove('flex');
+
+      const enemySynBadge = document.getElementById('enemy-synergy-badge');
+      if (oppData.synergyName) {
+        enemySynBadge.textContent = `✨ 적 시너지: ${oppData.synergyName}`;
+        enemySynBadge.classList.remove('hidden');
+      } else {
+        enemySynBadge.classList.add('hidden');
+      }
+
       document.getElementById('battle-enemy-title').textContent = `${oppData.charName} (${oppData.weaponName})`;
       document.getElementById('enemy-name-display').textContent = `상대: ${oppData.charName}`;
       document.getElementById('enemy-sprite-container').innerHTML = oppChar.art;
@@ -2666,187 +3002,149 @@
       handlePvpStateUpdate(data);
     }
 
-    function finishPvpBattle(iWon, oppName) {
-      if (!battle.active) return;
-      battle.active = false;
-      stopArenaLoop();
+    function handlePvpStateUpdate(data) {
+      if (data.status === 'waiting') return;
 
-      if (iWon) {
-        SoundFX.victory();
-        state.wins += 1;
-        updateGlobalUI();
-        saveAccountProgress();
-        showCustomModal({
-          icon: '👑',
-          title: '친구 대전(PvP) 승리!',
-          desc: `상대 [${oppName}]의 하트를 격파했습니다!\n승리 보상: +1 W 획득! (현재 보유: ${state.wins} W)`,
-          buttons: [
-            {
-              label: '뽑기 하러 가기',
-              className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
-              onClick: () => {
-                cleanupPvpSubscription();
-                navigateTo('gacha');
-              }
-            },
-            {
-              label: '메인 화면으로',
-              className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-black text-xs cursor-pointer',
-              onClick: () => {
-                cleanupPvpSubscription();
-                navigateTo('lobby');
-              }
-            }
-          ]
-        });
-      } else {
-        SoundFX.hurt();
-        showCustomModal({
-          icon: '💀',
-          title: '친구 대전(PvP) 패배...',
-          desc: `[${oppName}]의 탄막에 하트가 파괴되었습니다!`,
-          buttons: [
-            {
-              label: '메인 화면으로',
-              className: 'px-5 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
-              onClick: () => {
-                cleanupPvpSubscription();
-                navigateTo('lobby');
-              }
-            }
-          ]
-        });
-      }
-    }
-
-    /* ============================================================================
-       11. 봇 전쟁 시스템 (실제 덱 기반 1:1 턴제 전투)
-    ============================================================================ */
-    let battle = {
-      active: false,
-      mode: 'bot',
-      turn: 'player',
-      enemyDeck: null,
-      enemyHealed: false,
-      enemyHp: 25,
-      enemyMaxHp: 25,
-      enemyHitDamage: 5,
-      playerHp: 20,
-      playerMaxHp: 20,
-      stats: null
-    };
-
-    function generateBotDeck() {
-      const preset = BOT_DECK_PRESETS[Math.floor(Math.random() * BOT_DECK_PRESETS.length)];
-      const char = getCharById(preset.charId) || CHARACTERS[0];
-      const weapon = getWeaponById(preset.weaponId) || WEAPONS[1];
-      const synergy = SYNERGIES.find(s => s.charId === char.id && s.weaponId === weapon.id) || null;
-
-      const maxHp = BASE_HP + char.gradeHpBonus + (synergy ? synergy.bonusHp : 0);
-      const hitDamage = char.atk + weapon.atk + (synergy ? synergy.bonusDmg : 0);
-
-      return {
-        char,
-        weapon,
-        synergy,
-        maxHp,
-        hitDamage
-      };
-    }
-
-    function initBotBattle() {
-      stopArenaLoop();
-      const stats = calculateCombatStats();
-      const botDeck = generateBotDeck();
-
-      battle = {
-        active: true,
-        mode: 'bot',
-        turn: 'player',
-        enemyDeck: botDeck,
-        enemyHealed: false,
-        enemyHp: botDeck.maxHp,
-        enemyMaxHp: botDeck.maxHp,
-        enemyHitDamage: botDeck.hitDamage,
-        playerHp: stats.maxHp,
-        playerMaxHp: stats.maxHp,
-        stats
-      };
-
-      document.getElementById('battle-stage-badge').textContent = 'BOT 덱 대전';
-      document.getElementById('battle-stage-controls').classList.remove('hidden');
-      document.getElementById('ally-hp-container').classList.add('hidden');
-      document.getElementById('ally-hp-container').classList.remove('flex');
-      document.getElementById('battle-enemy-title').textContent = `${botDeck.char.name} (${botDeck.weapon.name})`;
-      document.getElementById('enemy-name-display').textContent = `상대 덱: ${botDeck.char.name} + ${botDeck.weapon.name}`;
-      document.getElementById('enemy-sprite-container').innerHTML = botDeck.char.art;
-      document.getElementById('battle-dialogue-text').textContent =
-        `봇이 [${botDeck.char.name} + ${botDeck.weapon.name}] 덱으로 출전했습니다!`;
-
-      const enemySynBadge = document.getElementById('enemy-synergy-badge');
-      if (botDeck.synergy) {
-        enemySynBadge.textContent = `✨ 적 시너지: ${botDeck.synergy.name}`;
-        enemySynBadge.classList.remove('hidden');
-      } else {
-        enemySynBadge.classList.add('hidden');
+      if (data.status === 'playing' && (!battle.active || battle.mode !== 'pvp')) {
+        closeWarModeModal();
+        SoundFX.synergy();
+        showToast(`⚔️ 방 [${data.code}] 매치 성사! 실시간 1:1 대전을 시작합니다!`, 'border-cyan-400 text-cyan-200');
+        navigateTo('battle');
+        initPvpBattle(data);
+        return;
       }
 
-      document.getElementById('battle-player-name').textContent = stats.char.name;
-      document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
+      if (battle.mode !== 'pvp') return;
 
-      const synTag = document.getElementById('battle-synergy-active-tag');
-      if (stats.synergy) {
-        synTag.textContent = `✨ 시너지: ${stats.synergy.name}`;
-        synTag.classList.remove('hidden');
-      } else {
-        synTag.classList.add('hidden');
+      const meKey = pvpSession.role;
+      const oppKey = meKey === 'host' ? 'guest' : 'host';
+      const meData = data[meKey];
+      const oppData = data[oppKey];
+      if (!meData || !oppData) return;
+
+      if (battle.enemyHp > oppData.hp) {
+        spawnDamagePopup(`-${battle.enemyHp - oppData.hp}`, 'text-amber-300');
+        const sprite = document.getElementById('enemy-sprite-container');
+        sprite.classList.remove('animate-shake');
+        void sprite.offsetWidth;
+        sprite.classList.add('animate-shake');
       }
 
+      battle.enemyHp = oppData.hp;
+      battle.enemyMaxHp = oppData.maxHp;
+      if (data.phase !== 'dodge_round' || data.activeAttacker === meKey) {
+        battle.playerHp = meData.hp;
+      }
       updateBattleBars();
-      renderPlayerSkills();
-      showBattlePanel('player_skills');
-    }
 
-    function updateBattleBars() {
-      const ePct = Math.max(0, Math.min(100, (battle.enemyHp / battle.enemyMaxHp) * 100));
-      document.getElementById('enemy-hp-bar').style.width = `${ePct}%`;
-      document.getElementById('enemy-hp-text').textContent = `${Math.max(0, battle.enemyHp)} / ${battle.enemyMaxHp}`;
+      if (data.phase === 'finished' || data.winner || meData.hp <= 0 || oppData.hp <= 0) {
+        const iWon = data.winner === meKey || (oppData.hp <= 0 && meData.hp > 0);
+        battle.active = false;
+        stopArenaLoop();
+        cleanupPvpSubscription();
 
-      const pPct = Math.max(0, Math.min(100, (battle.playerHp / battle.playerMaxHp) * 100));
-      document.getElementById('player-hp-bar').style.width = `${pPct}%`;
-      document.getElementById('player-hp-text').textContent = `${Math.max(0, battle.playerHp)} / ${battle.playerMaxHp}`;
-
-      if (battle.mode === 'coop_raid') {
-        const aPct = Math.max(0, Math.min(100, (battle.allyHp / battle.allyMaxHp) * 100));
-        document.getElementById('ally-hp-bar').style.width = `${aPct}%`;
-        document.getElementById('ally-hp-text').textContent = `${Math.max(0, battle.allyHp)} / ${battle.allyMaxHp}`;
+        if (iWon) {
+          SoundFX.victory();
+          state.wins += 1;
+          updateGlobalUI();
+          saveAccountProgress();
+          showCustomModal({
+            icon: '🏆',
+            title: '1:1 친구 대전 승리!',
+            desc: `상대방을 격파하고 +1 W를 획득했습니다! (보유: ${state.wins} W)`,
+            buttons: [
+              {
+                label: '메인 화면으로',
+                className: 'px-4 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
+                onClick: () => navigateTo('lobby')
+              }
+            ]
+          });
+        } else {
+          SoundFX.hurt();
+          showCustomModal({
+            icon: '💀',
+            title: '1:1 친구 대전 패배...',
+            desc: '상대방의 탄막을 버텨내지 못했습니다.',
+            buttons: [
+              {
+                label: '메인 화면으로',
+                className: 'px-4 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
+                onClick: () => navigateTo('lobby')
+              }
+            ]
+          });
+        }
+        return;
       }
-    }
 
-    function renderPlayerSkills() {
-      const grid = document.getElementById('battle-skills-grid');
-      grid.innerHTML = '';
-      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
+      if (data.turnSeq === pvpSession.lastTurnSeq) return;
+      pvpSession.lastTurnSeq = data.turnSeq;
 
-      weapon.skills.forEach((sk, idx) => {
-        const estDmg = sk.type === 'attack' ? Math.max(2, Math.round(battle.stats.hitDamage * sk.mult)) : 0;
-        const dmgLabel = battle.mode === 'pvp' ? `탄막 1발당 ${estDmg}` : `피해 ${estDmg}`;
-        const btn = document.createElement('button');
-        btn.onclick = () => usePlayerWeaponSkill(idx);
-        btn.className = 'group p-3 rounded-xl bg-black hover:bg-zinc-900 border-2 border-zinc-700 hover:border-amber-400 text-left transition cursor-pointer flex flex-col justify-between';
-        btn.innerHTML = `
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-black text-sm text-white group-hover:text-amber-300">${sk.name}</span>
-            ${
-              sk.type === 'attack'
-                ? `<span class="px-2 py-0.5 rounded bg-red-950 border border-red-500/50 text-red-300 font-orbitron font-bold text-[11px]">${dmgLabel}</span>`
-                : `<span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/50 text-emerald-300 font-orbitron font-bold text-[11px]">회복 +${sk.heal}</span>`
+      const isMyAttackTurn = data.activeAttacker === meKey;
+
+      if (data.phase === 'choose_skill') {
+        stopArenaLoop();
+        if (isMyAttackTurn) {
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 사용할 무기 스킬을 선택하세요!';
+        } else {
+          showBattlePanel('pvp_wait');
+          document.getElementById('battle-pvp-wait-panel').innerHTML = `
+            <div class="text-sm font-black text-cyan-300 animate-pulse">⏳ 상대방이 공격할 무기 스킬을 고르고 있습니다...</div>
+            <div class="text-xs text-zinc-400 mt-1">잠시 후 날아오는 탄막을 피할 준비를 하세요!</div>
+          `;
+          document.getElementById('battle-dialogue-text').textContent = '상대방이 스킬을 고르는 중입니다...';
+        }
+      } else if (data.phase === 'dodge_round' && data.selectedSkill) {
+        const sk = data.selectedSkill;
+        if (isMyAttackTurn) {
+          showBattlePanel('arena');
+          document.getElementById('mobile-touch-pad').classList.add('hidden');
+          document.getElementById('dodge-pattern-label').textContent = `⚔️ 내 [${sk.name}] 시전 중! 상대 회피 관전`;
+          document.getElementById('battle-dialogue-text').textContent = `[${sk.name}] 탄막을 발사했습니다! 상대방이 회피 중입니다...`;
+          startArenaPhase({
+            controller: 'pvp_spectate',
+            pattern: sk.pattern,
+            hitDamage: sk.damage,
+            defenderSpeed: oppData.speed || 3.4,
+            duration: 6.0
+          });
+        } else {
+          showBattlePanel('arena');
+          document.getElementById('mobile-touch-pad').classList.remove('hidden');
+          document.getElementById('dodge-pattern-label').textContent = `⚠️ 상대의 [${sk.name}]! 빨간 하트로 피하세요!`;
+          document.getElementById('battle-dialogue-text').textContent = `상대방의 [${sk.name}] 공격! 방향키 / WASD / 드래그로 회피하세요!`;
+          startArenaPhase({
+            controller: 'human_defend',
+            pattern: sk.pattern,
+            hitDamage: sk.damage,
+            defenderSpeed: battle.stats.speed,
+            defenderReduce: battle.stats.dmgReduce,
+            duration: 6.0,
+            onPvpDefendComplete: async (finalHp) => {
+              if (!pvpSession.roomCode) return;
+              const nextAttacker = meKey;
+              if (finalHp <= 0) {
+                await RoomStore.update('pvp', pvpSession.roomCode, {
+                  [`${meKey}.hp`]: 0,
+                  phase: 'finished',
+                  winner: oppKey,
+                  turnSeq: data.turnSeq + 1
+                });
+              } else {
+                await RoomStore.update('pvp', pvpSession.roomCode, {
+                  [`${meKey}.hp`]: finalHp,
+                  activeAttacker: nextAttacker,
+                  phase: 'choose_skill',
+                  selectedSkill: null,
+                  turnSeq: data.turnSeq + 1
+                });
+              }
             }
-          </div>
-          <p class="text-[11px] text-zinc-400 mt-1 line-clamp-1">${sk.desc}</p>
-        `;
-        grid.appendChild(btn);
-      });
+          });
+        }
+      }
     }
 
     function spawnDamagePopup(text, colorClass = 'text-amber-300') {
@@ -2872,11 +3170,10 @@
         document.getElementById('battle-dialogue-text').textContent = `[${sk.name}] 발동! 체력을 ${sk.heal} 회복했습니다!`;
 
         if (battle.mode === 'pvp') {
-          if (db && pvpSession.roomCode) {
-            const roomRef = getPvpRoomDocRef(pvpSession.roomCode);
+          if (pvpSession.roomCode) {
             const meKey = pvpSession.role;
             const oppKey = meKey === 'host' ? 'guest' : 'host';
-            await updateDoc(roomRef, {
+            await RoomStore.update('pvp', pvpSession.roomCode, {
               [`${meKey}.hp`]: battle.playerHp,
               activeAttacker: oppKey,
               phase: 'choose_skill',
@@ -2908,9 +3205,8 @@
       SoundFX.slash();
 
       if (battle.mode === 'pvp') {
-        if (db && pvpSession.roomCode) {
-          const roomRef = getPvpRoomDocRef(pvpSession.roomCode);
-          await updateDoc(roomRef, {
+        if (pvpSession.roomCode) {
+          await RoomStore.update('pvp', pvpSession.roomCode, {
             phase: 'dodge_round',
             selectedSkill: {
               name: sk.name,
@@ -2957,7 +3253,6 @@
         return;
       }
 
-      // 봇 대전: AI 회피 단계 없이 즉시 직접 타격
       battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
       updateBattleBars();
       spawnDamagePopup(`-${dmgPerHit}`, 'text-amber-300');
@@ -2992,7 +3287,6 @@
       const attackSkills = botWeapon.skills.filter(s => s.type === 'attack');
       const healSkill = botWeapon.skills.find(s => s.type === 'heal');
 
-      // 체력이 40% 이하이고 아직 회복을 안 썼다면 35% 확률로 회복 스킬 사용
       if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * 0.4 && Math.random() < 0.35) {
         battle.enemyHealed = true;
         SoundFX.heal();
@@ -3094,7 +3388,7 @@
     /* ============================================================================
        11-B. 레이드 시스템 (최강 캐릭터 50 HP × 10 = 500 HP · 보스 2스킬 동시 발동 · 혼자 / 친구)
     ============================================================================ */
-    const RAID_BOSS_MAX_HP = 500; // 가장 쎈 캐릭터(50 HP) * 10
+    const RAID_BOSS_MAX_HP = 500;
     const RAID_BOSS_HIT_DAMAGE = 6;
 
     let raidSession = {
@@ -3273,57 +3567,51 @@
 
     async function createRaidRoom() {
       SoundFX.click();
-      if (!db || !currentUser) {
-        await initFirebase();
-      }
-      if (!db || !currentUser) {
-        showToast('⚠️ 실시간 멀티 서버 연결 중입니다. 잠시 후 다시 눌러주세요.', 'border-red-400 text-red-200');
-        return;
-      }
-
       cleanupRaidSubscription();
       const code = String(Math.floor(1000 + Math.random() * 9000));
-      const roomRef = getRaidRoomDocRef(code);
       const hostLoadout = buildMyPvpLoadout();
       hostLoadout.nickname = loggedInUser?.nickname || '방장';
       hostLoadout.heartX = 160;
       hostLoadout.heartY = 110;
 
-      try {
-        await setDoc(roomRef, {
-          code,
-          status: 'waiting',
-          bossHp: RAID_BOSS_MAX_HP,
-          bossMaxHp: RAID_BOSS_MAX_HP,
-          host: hostLoadout,
-          guest: null,
-          phase: 'host_attack',
-          turnSeq: 0,
-          bossSkills: null,
-          lastActionLog: '',
-          winner: null,
-          createdAt: Date.now()
-        });
+      const roomMode = await RoomStore.create('raid', code, {
+        code,
+        status: 'waiting',
+        bossHp: RAID_BOSS_MAX_HP,
+        bossMaxHp: RAID_BOSS_MAX_HP,
+        host: hostLoadout,
+        guest: null,
+        phase: 'host_attack',
+        turnSeq: 0,
+        bossSkills: null,
+        lastActionLog: '',
+        winner: null,
+        createdAt: Date.now()
+      });
 
-        raidSession.roomCode = code;
-        raidSession.role = 'host';
+      raidSession.roomCode = code;
+      raidSession.role = 'host';
 
-        document.getElementById('raid-join-input-box').classList.add('hidden');
-        document.getElementById('raid-host-wait-box').classList.remove('hidden');
-        document.getElementById('raid-generated-code').textContent = code;
-
-        subscribeRaidRoom(code);
-      } catch (e) {
-        console.error(e);
-        showToast('레이드 방 생성에 실패했습니다. 다시 시도해주세요.', 'border-red-400 text-red-200');
+      document.getElementById('raid-join-input-box').classList.add('hidden');
+      document.getElementById('raid-host-wait-box').classList.remove('hidden');
+      document.getElementById('raid-generated-code').textContent = code;
+      const syncBadge = document.getElementById('raid-room-sync-badge');
+      if (roomMode === 'cloud') {
+        syncBadge.textContent = '🟢 온라인 클라우드 레이드 방 활성화됨';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else {
+        const errDetail = RoomStore.lastErrorMap[`raid_${code}`] || '오프라인';
+        syncBadge.textContent = `🟠 로컬/동일 브라우저 탭 방 (${errDetail})`;
+        syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
+        showToast('📡 로컬 모드로 레이드 방이 생성되었습니다! (외부 브라우저는 크롬/사파리 권장)', 'border-sky-400 text-sky-200');
       }
+
+      subscribeRaidRoom(code);
     }
 
     async function cancelRaidRoom() {
-      if (raidSession.roomCode && db) {
-        try {
-          await deleteDoc(getRaidRoomDocRef(raidSession.roomCode));
-        } catch (e) {}
+      if (raidSession.roomCode) {
+        await RoomStore.remove('raid', raidSession.roomCode);
       }
       cleanupRaidSubscription();
       document.getElementById('raid-host-wait-box').classList.add('hidden');
@@ -3340,28 +3628,18 @@
         return;
       }
 
-      if (!db || !currentUser) {
-        await initFirebase();
-      }
-      if (!db || !currentUser) {
-        statusEl.textContent = '⚠️ 서버 연결 중입니다. 다시 시도해주세요.';
-        return;
-      }
-
       statusEl.textContent = '🔍 레이드 방을 찾는 중...';
       statusEl.className = 'text-[11px] text-amber-300 mt-2';
 
       try {
-        const roomRef = getRaidRoomDocRef(rawCode);
-        const snap = await getDoc(roomRef);
+        const data = await RoomStore.get('raid', rawCode);
 
-        if (!snap.exists()) {
+        if (!data) {
           statusEl.textContent = '❌ 존재하지 않는 레이드 코드입니다.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
           return;
         }
 
-        const data = snap.data();
         if (data.status !== 'waiting' || data.guest) {
           statusEl.textContent = '❌ 이미 토벌이 시작되었거나 만원인 방입니다.';
           statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
@@ -3376,7 +3654,7 @@
         raidSession.roomCode = rawCode;
         raidSession.role = 'guest';
 
-        await updateDoc(roomRef, {
+        await RoomStore.update('raid', rawCode, {
           status: 'playing',
           guest: guestLoadout,
           phase: 'host_attack',
@@ -3394,20 +3672,9 @@
 
     function subscribeRaidRoom(code) {
       if (raidSession.unsub) raidSession.unsub();
-      const roomRef = getRaidRoomDocRef(code);
-
-      raidSession.unsub = onSnapshot(
-        roomRef,
-        (snap) => {
-          if (!snap.exists()) return;
-          const data = snap.data();
-          handleRaidStateUpdate(data);
-        },
-        (err) => {
-          console.error('Raid sync error:', err);
-          showToast('⚠️ 레이드 동기화 연결이 불안정합니다.', 'border-red-400 text-red-200');
-        }
-      );
+      raidSession.unsub = RoomStore.subscribe('raid', code, (data) => {
+        handleRaidStateUpdate(data);
+      });
     }
 
     function initCoopRaidBattle(data) {
@@ -3471,10 +3738,8 @@
     }
 
     async function advanceCoopRaidTurn(damageDealt, skillName, isHeal) {
-      if (!db || !raidSession.roomCode) return;
-      const roomRef = getRaidRoomDocRef(raidSession.roomCode);
+      if (!raidSession.roomCode) return;
       const meKey = raidSession.role;
-      const allyKey = meKey === 'host' ? 'guest' : 'host';
       const myName = loggedInUser?.nickname || (meKey === 'host' ? '방장' : '동료');
 
       const newBossHp = Math.max(0, battle.enemyHp - damageDealt);
@@ -3483,7 +3748,7 @@
         : `[${myName}]님의 [${skillName}] 명중! 보스에게 -${damageDealt} 피해!`;
 
       if (newBossHp <= 0) {
-        await updateDoc(roomRef, {
+        await RoomStore.update('raid', raidSession.roomCode, {
           bossHp: 0,
           [`${meKey}.hp`]: battle.playerHp,
           phase: 'finished',
@@ -3494,10 +3759,9 @@
         return;
       }
 
-      // 순서: 방장 공격(host_attack) -> 친구 공격(guest_attack) -> 보스 2스킬 동시 공격(boss_dodge)
       if (meKey === 'host') {
         if (battle.allyHp > 0) {
-          await updateDoc(roomRef, {
+          await RoomStore.update('raid', raidSession.roomCode, {
             bossHp: newBossHp,
             [`${meKey}.hp`]: battle.playerHp,
             phase: 'guest_attack',
@@ -3506,7 +3770,7 @@
           });
         } else {
           const [sk1, sk2] = pickTwoBossSkills();
-          await updateDoc(roomRef, {
+          await RoomStore.update('raid', raidSession.roomCode, {
             bossHp: newBossHp,
             [`${meKey}.hp`]: battle.playerHp,
             phase: 'boss_dodge',
@@ -3517,7 +3781,7 @@
         }
       } else {
         const [sk1, sk2] = pickTwoBossSkills();
-        await updateDoc(roomRef, {
+        await RoomStore.update('raid', raidSession.roomCode, {
           bossHp: newBossHp,
           [`${meKey}.hp`]: battle.playerHp,
           phase: 'boss_dodge',
@@ -3548,7 +3812,6 @@
       const allyData = data[allyKey];
       if (!meData || !allyData) return;
 
-      // 친구의 실시간 파란 하트 위치 동기화
       if (typeof allyData.heartX === 'number' && typeof allyData.heartY === 'number') {
         raidSession.allyHeartPos.x = allyData.heartX;
         raidSession.allyHeartPos.y = allyData.heartY;
@@ -3609,12 +3872,12 @@
             return;
           }
           showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = '이제 당신의 공격 턴! 무기 스킬로 보스를 공격하세요!';
+          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 이어서 보스를 공격하세요!';
         } else {
           showBattlePanel('pvp_wait');
           document.getElementById('battle-pvp-wait-panel').innerHTML = `
-            <div class="text-sm font-black text-sky-300 animate-pulse">⚔️ 친구 [${allyData.nickname}]님이 보스를 공격할 스킬을 고르고 있습니다...</div>
-            <div class="text-xs text-zinc-400 mt-1">친구의 공격 후 보스의 2중 탄막 회피가 시작됩니다!</div>
+            <div class="text-sm font-black text-sky-300 animate-pulse">⚔️ [${allyData.nickname}]님이 연계 공격 스킬을 고르고 있습니다...</div>
+            <div class="text-xs text-zinc-400 mt-1">친구의 공격이 끝나면 보스의 2중 공격을 함께 회피합니다!</div>
           `;
         }
       } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 2) {
@@ -3622,12 +3885,12 @@
         showBattlePanel('arena');
         document.getElementById('mobile-touch-pad').classList.remove('hidden');
         document.getElementById('dodge-pattern-label').textContent =
-          `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]! (나:빨강 / 친구:파랑)`;
+          `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]! (빨간 하트=나 / 파란 하트=친구)`;
         document.getElementById('battle-dialogue-text').textContent =
-          `보스가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구(파란 하트)와 함께 피하세요!`;
+          `심연의 군주가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
 
         startArenaPhase({
-          controller: 'human_defend',
+          controller: meData.hp > 0 ? 'human_defend' : 'pvp_spectate',
           coopAllyHeart: true,
           pattern: sk1.pattern,
           pattern2: sk2.pattern,
@@ -3637,18 +3900,18 @@
           duration: 6.5,
           onHumanDefendComplete: async () => {
             if (!battle.active || battle.mode !== 'coop_raid') return;
-            if (!db || !raidSession.roomCode) return;
-            const roomRef = getRaidRoomDocRef(raidSession.roomCode);
+            if (!raidSession.roomCode) return;
 
-            // 방장이 다음 턴(host_attack) 전환을 주도
             if (meKey === 'host') {
-              const latestSnap = await getDoc(roomRef);
-              if (!latestSnap.exists()) return;
-              const latest = latestSnap.data();
+              await RoomStore.update('raid', raidSession.roomCode, {
+                'host.hp': Math.max(0, battle.playerHp)
+              });
+              const latest = await RoomStore.get('raid', raidSession.roomCode);
+              if (!latest) return;
               const guestHp = latest.guest?.hp ?? 0;
 
               if (battle.playerHp <= 0 && guestHp <= 0) {
-                await updateDoc(roomRef, {
+                await RoomStore.update('raid', raidSession.roomCode, {
                   'host.hp': 0,
                   phase: 'finished',
                   winner: 'boss',
@@ -3656,7 +3919,7 @@
                 });
               } else {
                 const nextPhase = battle.playerHp > 0 ? 'host_attack' : 'guest_attack';
-                await updateDoc(roomRef, {
+                await RoomStore.update('raid', raidSession.roomCode, {
                   'host.hp': Math.max(0, battle.playerHp),
                   phase: nextPhase,
                   bossSkills: null,
@@ -3665,7 +3928,7 @@
                 });
               }
             } else {
-              await updateDoc(roomRef, {
+              await RoomStore.update('raid', raidSession.roomCode, {
                 'guest.hp': Math.max(0, battle.playerHp)
               });
             }
@@ -3675,90 +3938,58 @@
     }
 
     function handleRaidVictory(isCoop) {
-      if (!battle.active) return;
       battle.active = false;
       stopArenaLoop();
+      cleanupRaidSubscription();
       SoundFX.victory();
 
-      const rewardWins = isCoop ? 2 : 2;
-      state.wins += rewardWins;
+      const reward = 3;
+      state.wins += reward;
       updateGlobalUI();
       saveAccountProgress();
 
       showCustomModal({
         icon: '👑',
-        title: isCoop ? '친구 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
-        desc: `HP 500 심연의 군주를 격파했습니다!\n토벌 보상: +${rewardWins} W 획득! (현재 보유: ${state.wins} W)`,
+        title: isCoop ? '2인 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
+        desc: `심연의 군주(500 HP)를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)`,
         buttons: [
           {
-            label: `뽑기 하러 가기 (${state.wins} W)`,
+            label: `뽑기 (보유 ${state.wins} W)`,
             className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
-            onClick: () => {
-              cleanupRaidSubscription();
-              navigateTo('gacha');
-            }
+            onClick: () => navigateTo('gacha')
           },
           {
             label: '메인 화면으로',
-            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-black text-xs cursor-pointer',
-            onClick: () => {
-              cleanupRaidSubscription();
-              navigateTo('lobby');
-            }
+            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-bold text-xs cursor-pointer',
+            onClick: () => navigateTo('lobby')
           }
         ]
       });
     }
 
     function handleRaidDefeat(isCoop) {
-      if (!battle.active) return;
       battle.active = false;
       stopArenaLoop();
+      cleanupRaidSubscription();
       SoundFX.hurt();
 
       showCustomModal({
         icon: '💀',
-        title: '레이드 토벌 실패...',
-        desc: isCoop
-          ? '두 전사의 하트가 모두 보스의 2중 탄막에 파괴되었습니다.'
-          : '보스의 2중 탄막 공격에 하트가 파괴되었습니다.',
+        title: isCoop ? '협동 레이드 전멸...' : '솔로 레이드 패배...',
+        desc: '심연의 군주의 2중 탄막을 버텨내지 못했습니다.\n더 강한 캐릭터와 시너지를 편성해 다시 도전하세요!',
         buttons: [
           {
             label: '메인 화면으로',
-            className: 'px-5 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
-            onClick: () => {
-              cleanupRaidSubscription();
-              navigateTo('lobby');
-            }
+            className: 'px-4 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
+            onClick: () => navigateTo('lobby')
           }
         ]
       });
     }
 
     /* ============================================================================
-       12. 언더테일 직사각형 탄막 회피 아레나 엔진 (11종 무기 고유 패턴 + 협동 2인 하트)
+       12. 언더테일 스타일 Canvas 탄막 회피 & 쌍방향 공격 엔진
     ============================================================================ */
-    function showBattlePanel(panelType) {
-      const skillPanel = document.getElementById('battle-player-turn-panel');
-      const waitPanel = document.getElementById('battle-pvp-wait-panel');
-      const arenaPanel = document.getElementById('battle-arena-panel');
-
-      skillPanel.classList.add('hidden');
-      waitPanel.classList.add('hidden');
-      arenaPanel.classList.add('hidden');
-      arenaPanel.classList.remove('flex');
-
-      if (panelType === 'player_skills') {
-        skillPanel.classList.remove('hidden');
-      } else if (panelType === 'pvp_wait') {
-        waitPanel.classList.remove('hidden');
-      } else if (panelType === 'arena') {
-        arenaPanel.classList.remove('hidden');
-        arenaPanel.classList.add('flex');
-        resizeArenaCanvas();
-      }
-    }
-
     let arenaAnimId = null;
     let arenaState = null;
     const keysPressed = { up: false, down: false, left: false, right: false };
@@ -4160,37 +4391,31 @@
           const startAng = tState.patternPhase * 1.5;
           for (let i = 0; i < count; i++) {
             const a = startAng + (i * Math.PI * 2) / count;
-            const sx = cx + Math.cos(a) * (w * 0.46);
-            const sy = cy + Math.sin(a) * (h * 0.46);
-            const aim = Math.atan2(cy - sy, cx - sx) + 0.28;
-            addDagger(sx, sy, aim, 185, '#c084fc', 0.45, 6);
+            const sx = cx + Math.cos(a) * (w * 0.44);
+            const sy = cy + Math.sin(a) * (h * 0.44);
+            addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 210, '#e879f9', 0.58);
           }
         }
       } else if (pattern === 'bm_1') {
-        if (tState.spawnTimer >= 0.68) {
-          tState.spawnTimer = 0;
-          const side = Math.floor(Math.random() * 4);
-          let bx = 0, by = 0;
-          if (side === 0) { bx = 20 + Math.random() * (w - 40); by = 14; }
-          else if (side === 1) { bx = w - 14; by = 20 + Math.random() * (h - 40); }
-          else if (side === 2) { bx = 20 + Math.random() * (w - 40); by = h - 14; }
-          else { bx = 14; by = 20 + Math.random() * (h - 40); }
-
-          const ang = Math.atan2(heart.y - by, heart.x - bx);
-          const ex = bx + Math.cos(ang) * 520;
-          const ey = by + Math.sin(ang) * 520;
-          addBeam(bx, by, ex, ey, 0.62, 0.30, 15, '#ef4444', true);
-        }
-      } else if (pattern === 'bm_2') {
         if (tState.spawnTimer >= 0.78) {
           tState.spawnTimer = 0;
-          for (let k = 0; k < 2; k++) {
-            if (Math.random() < 0.5) {
-              addBeam(0, Math.random() * h, w, Math.random() * h, 0.64, 0.24, 9, '#f43f5e', false);
-            } else {
-              addBeam(Math.random() * w, 0, Math.random() * w, h, 0.64, 0.24, 9, '#dc2626', false);
-            }
-          }
+          const side = Math.floor(Math.random() * 4);
+          let bx = 14, by = 14;
+          if (side === 0) { bx = 18 + Math.random() * (w - 36); by = 10; }
+          else if (side === 1) { bx = w - 10; by = 18 + Math.random() * (h - 36); }
+          else if (side === 2) { bx = 18 + Math.random() * (w - 36); by = h - 10; }
+          else { bx = 10; by = 18 + Math.random() * (h - 36); }
+          const ang = Math.atan2(heart.y - by, heart.x - bx);
+          addBeam(bx, by, bx + Math.cos(ang) * 520, by + Math.sin(ang) * 520, 0.68, 0.28, 12, '#ef4444', true);
+        }
+      } else if (pattern === 'bm_2') {
+        if (tState.spawnTimer >= 0.92) {
+          tState.spawnTimer = 0;
+          const y1 = 16 + Math.random() * (h - 32);
+          const y2 = 16 + Math.random() * (h - 32);
+          addBeam(0, y1, w, y2, 0.65, 0.25, 9, '#ef4444', false);
+          const x1 = 20 + Math.random() * (w - 40);
+          addBeam(x1, 0, w - x1, h, 0.65, 0.25, 9, '#f87171', false);
         }
       } else if (pattern === 'bm_3') {
         if (tState.waveTimer >= 0.95) {
@@ -4365,13 +4590,12 @@
       as.heart.x = Math.max(pad, Math.min(as.width - pad, as.heart.x));
       as.heart.y = Math.max(pad, Math.min(as.height - pad, as.heart.y));
 
-      // 협동 레이드 중 내 빨간 하트 좌표를 친구 화면에 실시간 전송
-      if (as.coopAllyHeart && db && raidSession.roomCode && raidSession.role) {
+      if (as.coopAllyHeart && raidSession.roomCode && raidSession.role) {
         const now = performance.now();
         if (now - raidSession.lastPosSync > 130) {
           raidSession.lastPosSync = now;
           const meKey = raidSession.role;
-          updateDoc(getRaidRoomDocRef(raidSession.roomCode), {
+          RoomStore.update('raid', raidSession.roomCode, {
             [`${meKey}.heartX`]: Math.round(as.heart.x),
             [`${meKey}.heartY`]: Math.round(as.heart.y),
             [`${meKey}.hp`]: Math.max(0, battle.playerHp)
@@ -4514,9 +4738,8 @@
 
         if (battle.playerHp <= 0) {
           if (battle.mode === 'coop_raid') {
-            // 협동 레이드에서는 한 명이 쓰러져도 시간이 끝날 때까지 친구의 파란 하트 회피를 관전
-            if (db && raidSession.roomCode && raidSession.role) {
-              updateDoc(getRaidRoomDocRef(raidSession.roomCode), {
+            if (raidSession.roomCode && raidSession.role) {
+              RoomStore.update('raid', raidSession.roomCode, {
                 [`${raidSession.role}.hp`]: 0
               }).catch(() => {});
             }
@@ -4691,7 +4914,6 @@
         }
       });
 
-      // 협동 레이드 친구의 파란색 하트 렌더링
       if (arenaState.coopAllyHeart && battle.allyHp > 0) {
         const ax = Math.max(12, Math.min(w - 12, raidSession.allyHeartPos.x));
         const ay = Math.max(12, Math.min(h - 12, raidSession.allyHeartPos.y));
@@ -4752,6 +4974,7 @@
        13. 전역 함수 바인딩 & 초기 구동
     ============================================================================ */
     Object.assign(window, {
+      openInExternalBrowser,
       switchAuthTab,
       handleAuthSubmit,
       logoutAccount,
