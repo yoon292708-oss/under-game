@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>언더 : 뽑기와 시너지 RPG</title>
+  <title>땔타룬 : 뽑기와 시너지 RPG</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -149,7 +149,7 @@
         <button id="btn-home-logo" onclick="navigateTo('lobby')" class="flex items-center gap-2 text-left group cursor-pointer">
           <span class="w-8 h-8 rounded-lg bg-red-950/80 border border-red-600/60 flex items-center justify-center text-red-400 font-black text-base group-hover:scale-105 transition">⚔️</span>
           <div>
-            <h1 class="text-sm sm:text-base font-black tracking-tight text-white group-hover:text-red-400 transition">언더</h1>
+            <h1 class="text-sm sm:text-base font-black tracking-tight text-white group-hover:text-red-400 transition">땔타룬</h1>
             <p class="text-[10px] text-zinc-400 hidden sm:block">뽑기 · 시너지 · 쌍방향 탄막 & PvP</p>
           </div>
         </button>
@@ -198,7 +198,7 @@
           <div class="w-14 h-14 mx-auto rounded-2xl bg-red-950/80 border border-red-500/60 flex items-center justify-center text-3xl mb-3 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
             ⚔️
           </div>
-          <h2 class="text-2xl font-black text-white tracking-tight">언더</h2>
+          <h2 class="text-2xl font-black text-white tracking-tight">땔타룬</h2>
           <p class="text-xs text-zinc-400 mt-1">닉네임으로 로그인하거나 새 계정을 만들어 전장에 입장하세요</p>
           <div class="mt-2.5 flex justify-center">
             <span id="cloud-status-badge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-bold text-zinc-400">
@@ -334,6 +334,91 @@
           <span class="text-cyan-400 font-bold text-sm">설정 ›</span>
         </button>
 
+        <button onclick="navigateTo('craft')" class="group w-full rounded-2xl p-4 card-black hover:border-emerald-400/70 flex items-center justify-between text-left cursor-pointer">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-400/40 flex items-center justify-center text-2xl group-hover:scale-105 transition">🔨</div>
+            <div>
+              <h3 class="text-lg font-black text-white group-hover:text-emerald-300 transition">합성</h3>
+              <p class="text-xs text-zinc-400 mt-0.5">무기 + 무기 융합 제작 (예: 녹슨 단검 + 사냥꾼의 활 = 단검활)</p>
+            </div>
+          </div>
+          <span class="text-emerald-400 font-bold text-sm">제작 ›</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- 1-B. 무기 합성 화면 -->
+    <section id="view-craft" class="hidden flex-col gap-6 pb-8">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+            <span>🔨</span> 무기 합성 대장간
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">두 무기를 하나로 합성해 더 강력한 융합 무기를 만드세요. (재료 무기 각 1개 소모)</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="clearCraftSlots()" class="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold text-zinc-300 cursor-pointer">슬롯 비우기</button>
+          <button onclick="navigateTo('formation')" class="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold text-cyan-300 cursor-pointer">🛡️ 편성하기</button>
+        </div>
+      </div>
+
+      <!-- 합성 작업대 (재료 1 + 재료 2 = 결과물) -->
+      <div class="rounded-3xl p-5 bg-zinc-950 border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.12)]">
+        <div class="grid grid-cols-1 sm:grid-cols-7 gap-3 items-center">
+          <!-- 재료 슬롯 1 -->
+          <div id="craft-slot-1" onclick="clearCraftSlot(1)" class="sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition">
+            <span class="text-2xl text-zinc-700 mb-1">🗡️</span>
+            <span class="text-xs font-bold text-zinc-400">재료 무기 1</span>
+            <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
+          </div>
+
+          <div class="text-center font-black text-2xl text-emerald-400">+</div>
+
+          <!-- 재료 슬롯 2 -->
+          <div id="craft-slot-2" onclick="clearCraftSlot(2)" class="sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition">
+            <span class="text-2xl text-zinc-700 mb-1">🏹</span>
+            <span class="text-xs font-bold text-zinc-400">재료 무기 2</span>
+            <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
+          </div>
+
+          <div class="text-center font-black text-2xl text-amber-400">=</div>
+
+          <!-- 합성 결과 미리보기 -->
+          <div id="craft-result-preview" class="sm:col-span-1 rounded-2xl p-3 bg-zinc-900/70 border border-zinc-800 flex flex-col items-center justify-center min-h-[140px] text-center">
+            <span class="text-2xl text-zinc-600 mb-1">❓</span>
+            <span class="text-[11px] font-bold text-zinc-400">합성 결과</span>
+          </div>
+        </div>
+
+        <div id="craft-status-banner" class="mt-4 p-3 rounded-xl bg-black/80 border border-zinc-800 text-xs text-center text-zinc-300">
+          아래 [보유한 무기] 또는 [합성 조합표]에서 재료를 선택하세요!
+        </div>
+
+        <div class="mt-4 flex justify-center">
+          <button id="btn-execute-craft" onclick="executeWeaponCraft()" disabled class="px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed">
+            🔨 합성하기
+          </button>
+        </div>
+      </div>
+
+      <!-- 보유 무기 선택 & 합성 조합표 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card-black rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-black text-amber-300">🗡️ 보유한 무기 (클릭하여 재료 투입)</h3>
+            <span class="text-[11px] text-zinc-400">수량 Lv = 보유 개수</span>
+          </div>
+          <div id="craft-owned-weapons-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+        </div>
+
+        <div class="card-black rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-black text-emerald-300">📜 무기 합성 조합표</h3>
+            <span class="text-[11px] text-zinc-400">클릭 시 재료 자동 배치</span>
+          </div>
+          <div id="craft-recipes-list" class="flex flex-col gap-2.5"></div>
+        </div>
       </div>
     </section>
 
@@ -388,40 +473,7 @@
             </div>
           </div>
 
-          <!-- 2번째 칸: 기간 한정 무기 뽑기 1 -->
-          <div class="banner-crimson rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
-            <div class="flex items-center justify-between z-10">
-              <span class="px-2 py-0.5 rounded bg-red-950 border border-red-500/70 text-[11px] font-black text-red-200">🔥 기간 한정 픽업</span>
-              <span class="text-[11px] font-bold text-red-300">픽업 4.0% UP!</span>
-            </div>
-            <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
-              <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
-                <svg viewBox="0 0 160 160" class="w-full h-full drop-shadow-[0_0_18px_rgba(239,68,68,0.85)]">
-                  <circle cx="84" cy="76" r="52" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.55"/>
-                  <path d="M 112 28 A 42 42 0 1 0 132 95 A 33 33 0 1 1 112 28 Z" fill="#dc2626" opacity="0.35"/>
-                  <path d="M 38 122 L 122 26 L 136 22 L 132 38 L 48 130 Z" fill="#dc2626" stroke="#fecaca" stroke-width="1.5"/>
-                  <path d="M 46 118 L 124 32 L 52 123 Z" fill="#fef2f2"/>
-                  <path d="M 26 106 L 56 134 L 49 140 L 20 112 Z" fill="#18181b" stroke="#facc15" stroke-width="2"/>
-                  <circle cx="38" cy="123" r="5" fill="#ef4444" stroke="#fde047" stroke-width="1.5"/>
-                  <line x1="35" y1="126" x2="18" y2="143" stroke="#713f12" stroke-width="6" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <div class="text-center mt-1">
-                <div class="text-sm font-black text-red-200">적월의 마검 · 블러드문</div>
-                <div class="text-[10px] text-red-300/80">가스터 블래스터 적월 레이저 패턴</div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 z-10">
-              <button onclick="rollWeaponGacha('limited_blood', 1)" class="py-2.5 px-3 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-500/60 text-red-100 font-bold text-xs cursor-pointer transition">
-                한정 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
-              </button>
-              <button onclick="rollWeaponGacha('limited_blood', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-black text-xs shadow-lg cursor-pointer transition">
-                한정 5연속<br><span class="text-[11px] text-yellow-200 font-orbitron">5 W</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 3번째 칸: 기간 한정 무기 뽑기 2 -->
+          <!-- 2번째 칸: 기간 한정 무기 뽑기 1 (천둥의 쌍단검) -->
           <div class="banner-cyan rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
               <span class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400/70 text-[11px] font-black text-cyan-200">⚡ 기간 한정 픽업</span>
@@ -460,7 +512,7 @@
             </div>
           </div>
 
-          <!-- 4번째 칸: 기간 한정 무기 뽑기 3 (이상한 뼈다귀) -->
+          <!-- 3번째 칸: 기간 한정 무기 뽑기 2 (이상한 뼈다귀) -->
           <div class="banner-cyan rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
               <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 심판의 한정 픽업</span>
@@ -492,6 +544,114 @@
               </button>
               <button onclick="rollWeaponGacha('limited_sans', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-black font-black text-xs shadow-lg cursor-pointer transition">
                 한정 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사람 뽑기 3칸 -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base sm:text-lg font-black text-purple-300 flex items-center gap-2">
+            <span>👤</span> 사람 뽑기 <span class="text-[11px] font-normal text-zinc-400">(1회 1 W / 5연속 5 W · 전쟁 1승당 +1 W)</span>
+          </h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <!-- 1번째 칸: 하급/중급/상급 인간 -->
+          <div class="card-black rounded-2xl p-4 flex flex-col justify-between min-h-[240px]">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[11px] font-bold text-zinc-300">기본 인간 소환</span>
+                <span class="text-[11px] text-purple-300">체급 보너스</span>
+              </div>
+              <h4 class="text-lg font-black text-white mt-2">하급 · 중급 · 상급인간</h4>
+              <p class="text-xs text-zinc-400 mt-1.5 leading-relaxed">
+                전장에 투입할 하급인간(HP 20), 중급인간(HP 25), 상급인간(HP 40)을 소환합니다.
+              </p>
+              <div class="mt-3 p-2.5 rounded-xl bg-black/80 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+                <div>• 하급인간 (총 20 HP): <span class="text-zinc-200 font-bold">70%</span></div>
+                <div>• 중급인간 (총 25 HP): <span class="text-sky-300 font-bold">24%</span></div>
+                <div>• 상급인간 (총 40 HP): <span class="text-purple-300 font-bold">6%</span></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <button onclick="rollCharGacha('basic', 1)" class="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs cursor-pointer transition">
+                1회 뽑기<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollCharGacha('basic', 5)" class="py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs cursor-pointer transition">
+                5연속 뽑기<br><span class="text-[11px] text-purple-100 font-orbitron">5 W</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2번째 칸: 기간 한정 영웅 1 (샌즈) -->
+          <div class="banner-cyan rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
+            <div class="flex items-center justify-between z-10">
+              <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 한정 영웅 픽업</span>
+              <span class="text-[11px] font-bold text-sky-300">픽업 4.0% UP!</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
+              <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
+                <svg viewBox="0 0 160 160" class="w-full h-full drop-shadow-[0_0_18px_rgba(56,189,248,0.85)]">
+                  <path d="M 36 142 C 40 94, 54 78, 80 76 C 106 78, 120 94, 124 142 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+                  <rect x="70" y="78" width="20" height="64" fill="#f8fafc"/>
+                  <ellipse cx="80" cy="52" rx="22" ry="20" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+                  <rect x="68" y="64" width="24" height="12" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+                  <circle cx="72" cy="50" r="5" fill="#09090b"/>
+                  <circle cx="88" cy="50" r="5" fill="#09090b"/>
+                  <circle cx="88" cy="50" r="3" fill="#38bdf8"/>
+                  <path d="M 70 68 Q 80 74 90 68" fill="none" stroke="#09090b" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="text-center mt-1">
+                <div class="text-sm font-black text-sky-200">심판의 해골 · 샌즈</div>
+                <div class="text-[10px] text-sky-300/80">총 50 HP · 전용 무기 [이상한 뼈다귀]</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 z-10">
+              <button onclick="rollCharGacha('limited_sans', 1)" class="py-2.5 px-3 rounded-xl bg-sky-950/90 hover:bg-sky-900 border border-sky-400/60 text-sky-100 font-bold text-xs cursor-pointer transition">
+                영웅 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollCharGacha('limited_sans', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                영웅 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3번째 칸: 기간 한정 영웅 2 (세라) -->
+          <div class="banner-gold rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
+            <div class="flex items-center justify-between z-10">
+              <span class="px-2 py-0.5 rounded bg-yellow-950 border border-yellow-400/70 text-[11px] font-black text-yellow-200">⚡ 한정 영웅 픽업</span>
+              <span class="text-[11px] font-bold text-yellow-300">픽업 4.0% UP!</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
+              <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
+                <svg viewBox="0 0 160 160" class="w-full h-full drop-shadow-[0_0_18px_rgba(250,204,21,0.8)]">
+                  <circle cx="80" cy="56" r="28" fill="#fef08a" opacity="0.22"/>
+                  <path d="M 50 56 C 46 34, 62 22, 80 22 C 98 22, 114 34, 110 56 L 118 106 L 42 106 Z" fill="#facc15"/>
+                  <path d="M 44 142 L 56 84 L 104 84 L 116 142 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/>
+                  <polygon points="80,86 68,118 80,134 92,118" fill="#0284c7"/>
+                  <circle cx="80" cy="56" r="16" fill="#ffedd5"/>
+                  <circle cx="74" cy="56" r="2.5" fill="#0284c7"/>
+                  <circle cx="86" cy="56" r="2.5" fill="#0284c7"/>
+                  <path d="M 62 44 L 80 34 L 98 44" fill="none" stroke="#eab308" stroke-width="3"/>
+                  <polyline points="28,74 44,64 38,52 56,42" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+                  <polyline points="132,74 116,64 122,52 104,42" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+                </svg>
+              </div>
+              <div class="text-center mt-1">
+                <div class="text-sm font-black text-yellow-200">뇌전의 검희 · 세라</div>
+                <div class="text-[10px] text-yellow-300/80">총 50 HP · 전용 무기 [천둥의 쌍단검]</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 z-10">
+              <button onclick="rollCharGacha('limited_sera', 1)" class="py-2.5 px-3 rounded-xl bg-yellow-950/90 hover:bg-yellow-900 border border-yellow-400/60 text-yellow-100 font-bold text-xs cursor-pointer transition">
+                영웅 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollCharGacha('limited_sera', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                영웅 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
               </button>
             </div>
           </div>
@@ -1763,7 +1923,7 @@
       human_low: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="34" r="14" fill="#d6d3d1"/><path d="M 28 84 C 30 58, 70 58, 72 84 Z" fill="#78716c"/><circle cx="45" cy="33" r="2" fill="#1c1917"/><circle cx="55" cy="33" r="2" fill="#1c1917"/></svg>`,
       human_mid: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="32" r="14" fill="#fed7aa"/><path d="M 25 85 C 28 55, 72 55, 75 85 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/><path d="M 38 24 Q 50 14 62 24" fill="none" stroke="#92400e" stroke-width="5" stroke-linecap="round"/><circle cx="45" cy="32" r="2" fill="#0f172a"/><circle cx="55" cy="32" r="2" fill="#0f172a"/></svg>`,
       human_high: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="31" r="14" fill="#ffedd5"/><path d="M 22 86 C 26 52, 74 52, 78 86 Z" fill="#6d28d9" stroke="#facc15" stroke-width="2.5"/><polygon points="38,20 44,12 50,19 56,12 62,20" fill="#facc15"/><circle cx="45" cy="31" r="2" fill="#1e1b4b"/><circle cx="55" cy="31" r="2" fill="#1e1b4b"/></svg>`,
-      kai: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 22 88 C 26 58, 74 58, 78 88 Z" fill="#18181b" stroke="#ef4444" stroke-width="2"/><path d="M 32 48 C 30 24, 70 24, 68 48 Z" fill="#09090b" stroke="#dc2626" stroke-width="2"/><ellipse cx="50" cy="36" rx="12" ry="10" fill="#000"/><path d="M 41 35 L 47 37 L 42 38 Z" fill="#ef4444"/><path d="M 59 35 L 53 37 L 58 38 Z" fill="#ef4444"/><path d="M 35 50 Q 50 57 65 50 L 82 60 L 74 67 L 60 57 L 40 57 Z" fill="#b91c1c"/></svg>`,
+      sans: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 22 88 C 25 58, 75 58, 78 88 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/><rect x="44" y="58" width="12" height="30" fill="#f8fafc"/><ellipse cx="50" cy="34" rx="14" ry="13" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><rect x="42" y="42" width="16" height="8" rx="3" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><circle cx="45" cy="33" r="3" fill="#09090b"/><circle cx="55" cy="33" r="3" fill="#09090b"/><circle cx="55" cy="33" r="1.8" fill="#38bdf8"/><path d="M 44 45 Q 50 49 56 45" fill="none" stroke="#09090b" stroke-width="1.5" stroke-linecap="round"/></svg>`,
       sera: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 30 38 C 28 20, 72 20, 70 38 L 76 70 L 24 70 Z" fill="#facc15"/><path d="M 26 88 L 34 52 L 66 52 L 74 88 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="50" cy="36" r="11" fill="#ffedd5"/><circle cx="46" cy="36" r="2" fill="#0284c7"/><circle cx="54" cy="36" r="2" fill="#0284c7"/><path d="M 38 27 L 50 20 L 62 27" fill="none" stroke="#eab308" stroke-width="2.5"/></svg>`,
 
       rusty_dagger: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="32,68 68,26 74,32 38,74" fill="#a8a29e" stroke="#78716c" stroke-width="1.5"/><line x1="26" y1="62" x2="44" y2="80" stroke="#78350f" stroke-width="4" stroke-linecap="round"/><line x1="35" y1="71" x2="22" y2="84" stroke="#451a03" stroke-width="5" stroke-linecap="round"/></svg>`,
@@ -1775,9 +1935,13 @@
       stone_hammer: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="26" y1="82" x2="66" y2="34" stroke="#713f12" stroke-width="5.5" stroke-linecap="round"/><rect x="48" y="18" width="34" height="22" rx="4" transform="rotate(38 65 29)" fill="#78716c" stroke="#d6d3d1" stroke-width="2"/></svg>`,
       steel_spear: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="18" y1="84" x2="72" y2="30" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/><polygon points="66,24 86,16 78,36" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.5"/></svg>`,
       knight_greatsword: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="24,74 78,16 86,24 32,82" fill="#f3e8ff" stroke="#c084fc" stroke-width="2"/><line x1="18" y1="64" x2="40" y2="86" stroke="#facc15" stroke-width="5.5" stroke-linecap="round"/><line x1="29" y1="75" x2="14" y2="90" stroke="#4c1d95" stroke-width="6" stroke-linecap="round"/></svg>`,
-      bloodmoon_sword: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="52" cy="48" r="30" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/><polygon points="24,76 78,16 86,24 32,84" fill="#dc2626" stroke="#fecaca" stroke-width="1.5"/><line x1="18" y1="66" x2="40" y2="88" stroke="#facc15" stroke-width="5" stroke-linecap="round"/><line x1="29" y1="77" x2="14" y2="92" stroke="#450a0a" stroke-width="6" stroke-linecap="round"/></svg>`,
       lightning_daggers: `<svg viewBox="0 0 100 100" class="w-full h-full"><g transform="rotate(-22 50 50)"><polygon points="38,16 45,62 31,62" fill="#22d3ee" stroke="#cffafe" stroke-width="1.2"/><rect x="28" y="62" width="20" height="5" fill="#facc15"/><rect x="35" y="67" width="6" height="15" fill="#0f172a"/></g><g transform="rotate(22 50 50)"><polygon points="62,16 69,62 55,62" fill="#38bdf8" stroke="#cffafe" stroke-width="1.2"/><rect x="52" y="62" width="20" height="5" fill="#facc15"/><rect x="59" y="67" width="6" height="15" fill="#0f172a"/></g></svg>`,
       strange_bone: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="34" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.65"/><g transform="rotate(-38 50 50)"><rect x="45" y="20" width="10" height="60" rx="3" fill="#f8fafc" stroke="#38bdf8" stroke-width="1.5"/><circle cx="44" cy="20" r="6.5" fill="#f8fafc" stroke="#38bdf8" stroke-width="1.5"/><circle cx="56" cy="20" r="6.5" fill="#f8fafc" stroke="#38bdf8" stroke-width="1.5"/><circle cx="44" cy="80" r="6.5" fill="#f8fafc" stroke="#38bdf8" stroke-width="1.5"/><circle cx="56" cy="80" r="6.5" fill="#f8fafc" stroke="#38bdf8" stroke-width="1.5"/></g></svg>`,
+      dagger_bow: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 30 16 Q 82 50 30 84" fill="none" stroke="#d97706" stroke-width="5" stroke-linecap="round"/><line x1="30" y1="16" x2="30" y2="84" stroke="#e5e7eb" stroke-width="1.5"/><polygon points="24,50 74,45 88,50 74,55" fill="#cbd5e1" stroke="#38bdf8" stroke-width="1.5"/><line x1="36" y1="42" x2="36" y2="58" stroke="#facc15" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+      sword_axe: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="26,74 76,18 82,24 32,80" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"/><path d="M 50 32 Q 78 16 84 48 Q 62 54 50 32 Z" fill="#f59e0b" stroke="#fef08a" stroke-width="1.5"/><line x1="20" y1="64" x2="40" y2="84" stroke="#facc15" stroke-width="4.5" stroke-linecap="round"/></svg>`,
+      staff_hammer: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="24" y1="84" x2="68" y2="32" stroke="#92400e" stroke-width="5.5" stroke-linecap="round"/><rect x="46" y="16" width="36" height="22" rx="5" transform="rotate(38 64 27)" fill="#475569" stroke="#38bdf8" stroke-width="2"/><circle cx="64" cy="27" r="7" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.5"/></svg>`,
+      spear_greatsword: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="20,80 82,14 88,20 26,86" fill="#f3e8ff" stroke="#38bdf8" stroke-width="2"/><polygon points="74,14 92,8 86,26" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.5"/><line x1="22" y1="62" x2="44" y2="84" stroke="#facc15" stroke-width="5" stroke-linecap="round"/></svg>`,
+      thunder_bone: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="36" fill="none" stroke="#facc15" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.75"/><g transform="rotate(-38 50 50)"><rect x="44" y="18" width="12" height="64" rx="4" fill="#fef9c3" stroke="#22d3ee" stroke-width="2"/><circle cx="43" cy="18" r="7" fill="#f8fafc" stroke="#22d3ee" stroke-width="2"/><circle cx="57" cy="18" r="7" fill="#f8fafc" stroke="#22d3ee" stroke-width="2"/><circle cx="43" cy="82" r="7" fill="#f8fafc" stroke="#22d3ee" stroke-width="2"/><circle cx="57" cy="82" r="7" fill="#f8fafc" stroke="#22d3ee" stroke-width="2"/></g><polyline points="22,36 38,46 32,56 48,64" fill="none" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/></svg>`,
 
       raid_boss: `<svg viewBox="0 0 120 120" class="w-full h-full"><circle cx="60" cy="60" r="46" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 4" opacity="0.7"/><path d="M 24 38 L 10 12 L 42 26 Z" fill="#9333ea" stroke="#facc15" stroke-width="1.5"/><path d="M 96 38 L 110 12 L 78 26 Z" fill="#9333ea" stroke="#facc15" stroke-width="1.5"/><polygon points="60,16 48,30 60,24 72,30" fill="#facc15"/><circle cx="60" cy="62" r="32" fill="#09090b" stroke="#c084fc" stroke-width="3"/><polygon points="42,54 55,60 44,63" fill="#ef4444"/><polygon points="78,54 65,60 76,63" fill="#38bdf8"/><circle cx="60" cy="44" r="4" fill="#facc15"/><path d="M 42 76 Q 60 64 78 76 Q 60 86 42 76 Z" fill="#7e22ce" stroke="#e9d5ff" stroke-width="1.5"/></svg>`
     };
@@ -1819,14 +1983,14 @@
         art: SVG_ART.human_high
       },
       {
-        id: 'kai',
-        name: '그림자 암살자 · 카이',
+        id: 'sans',
+        name: '심판의 해골 · 샌즈',
         rarity: '전설',
-        rarityColor: 'text-red-300 border-red-500/70 bg-red-950/70',
+        rarityColor: 'text-sky-300 border-sky-400/70 bg-sky-950/70',
         gradeHpBonus: 50,
         atk: 3,
-        speed: 4.1,
-        art: SVG_ART.kai
+        speed: 4.2,
+        art: SVG_ART.sans
       },
       {
         id: 'sera',
@@ -1977,21 +2141,6 @@
         ]
       },
       {
-        id: 'bloodmoon_sword',
-        name: '적월의 마검',
-        rarity: '전설',
-        rarityColor: 'text-red-300 border-red-500/70 bg-red-950/70',
-        atk: 3,
-        desc: '[기간 한정] 가스터 블래스터형 적월 레이저와 다중 차원 절단 패턴!',
-        art: SVG_ART.bloodmoon_sword,
-        skills: [
-          { name: '적월 블래스터 포격', type: 'attack', mult: 1.0, pattern: 'bm_1', desc: '블래스터 포구에서 초고속 적월 레이저 발사' },
-          { name: '차원 난도질', type: 'attack', mult: 1.0, pattern: 'bm_2', desc: '동시에 2줄기의 핏빛 참격선이 화면 절단' },
-          { name: '핏빛 기둥 터널', type: 'attack', mult: 1.0, pattern: 'bm_3', desc: '출렁이는 기둥 터널과 추적 혈단검' },
-          { name: '혈월의 흡수', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
-        ]
-      },
-      {
         id: 'lightning_daggers',
         name: '천둥의 쌍단검',
         rarity: '전설',
@@ -2011,30 +2160,126 @@
         name: '이상한 뼈다귀',
         rarity: '전설',
         rarityColor: 'text-sky-300 border-sky-400/70 bg-sky-950/70',
-        atk: 4,
-        desc: '[기간 한정] 샌즈의 뼈다귀 파도와 가스터 블래스터 심판 레이저를 소환합니다!',
+        atk: 3,
+        desc: '[기간 한정] 심판의 해골이 사용하는 뼈다귀 파도와 가스터 블래스터 포격!',
         art: SVG_ART.strange_bone,
         skills: [
-          { name: '뼈다귀 파도', type: 'attack', mult: 1.0, pattern: 'sb_1', desc: '위아래로 솟구치는 뼈다귀 물결이 쇄도' },
-          { name: '가스터 블래스터 교차포', type: 'attack', mult: 1.2, pattern: 'sb_2', desc: '블래스터 포구에서 푸른 심판 레이저 교차 발사' },
-          { name: '심판의 뼈다귀 감옥', type: 'attack', mult: 1.1, pattern: 'sb_3', desc: '좁은 틈새 뼈벽과 조준 뼈창이 동시 압박' },
+          { name: '뼈다귀 파도', type: 'attack', mult: 1.0, pattern: 'sb_1', desc: '출렁이는 뼈다귀 벽 사이 틈새를 돌파' },
+          { name: '가스터 블래스터', type: 'attack', mult: 1.0, pattern: 'sb_2', desc: '블래스터 포구에서 푸른 심판의 광선 발사' },
+          { name: '뼈다귀 감옥 & 낙하', type: 'attack', mult: 1.0, pattern: 'sb_3', desc: '우측 뼈벽과 상단 푸른 뼈다귀 동시 낙하' },
           { name: '케첩 한 모금', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
+        ]
+      },
+      {
+        id: 'dagger_bow',
+        name: '단검활',
+        rarity: '희귀',
+        rarityColor: 'text-emerald-300 border-emerald-500/70 bg-emerald-950/70',
+        atk: 5,
+        isCrafted: true,
+        desc: '[합성 무기] 녹슨 단검과 사냥꾼의 활을 결합해 단검을 화살처럼 연사합니다.',
+        art: SVG_ART.dagger_bow,
+        skills: [
+          { name: '단검화살 삼연사', type: 'attack', mult: 1.1, pattern: 'hb_2', desc: '3갈래로 날아가는 단검 화살' },
+          { name: '조준 비수 사격', type: 'attack', mult: 1.15, pattern: 'hb_1', desc: '사방에서 하트를 조준하는 단검시위' },
+          { name: '비수 화살비', type: 'attack', mult: 1.1, pattern: 'rd_3', desc: '하늘에서 쏟아지는 단검 화살비' },
+          { name: '사냥꾼의 응급처치', type: 'heal', heal: 7, desc: '체력을 7 회복합니다' }
+        ]
+      },
+      {
+        id: 'sword_axe',
+        name: '대검도끼',
+        rarity: '희귀',
+        rarityColor: 'text-emerald-300 border-emerald-500/70 bg-emerald-950/70',
+        atk: 5,
+        isCrafted: true,
+        desc: '[합성 무기] 철검의 날카로운 검기와 청동 도끼의 묵직한 내려찍기를 겸비했습니다.',
+        art: SVG_ART.sword_axe,
+        skills: [
+          { name: '검기 도끼 투척', type: 'attack', mult: 1.1, pattern: 'is_1', desc: '좌우에서 초승달 검기와 도끼가 쇄도' },
+          { name: '대지 절단 내려찍기', type: 'attack', mult: 1.2, pattern: 'ba_2', desc: '예고선 후 강력한 수직 참격 낙하' },
+          { name: '쌍날 교차 파동', type: 'attack', mult: 1.1, pattern: 'ba_3', desc: '대각선으로 교차하는 도끼 검격' },
+          { name: '전사의 숨결', type: 'heal', heal: 7, desc: '체력을 7 회복합니다' }
+        ]
+      },
+      {
+        id: 'staff_hammer',
+        name: '마력철퇴',
+        rarity: '영웅',
+        rarityColor: 'text-purple-300 border-purple-500/70 bg-purple-950/70',
+        atk: 6,
+        isCrafted: true,
+        desc: '[합성 무기] 수련용 지팡이의 마력 코어를 돌 망치에 박아넣은 마도 철퇴입니다.',
+        art: SVG_ART.staff_hammer,
+        skills: [
+          { name: '비전 지반 강타', type: 'attack', mult: 1.2, pattern: 'sh_1', desc: '바닥에서 마력 돌기둥이 솟아오름' },
+          { name: '사방 마력 유성', type: 'attack', mult: 1.25, pattern: 'ts_2', desc: '중앙에서 4방향으로 회전하는 마력탄' },
+          { name: '중력 낙석 폭발', type: 'attack', mult: 1.2, pattern: 'sh_3', desc: '천장에서 거대 마력 암석이 낙하' },
+          { name: '마나 재생', type: 'heal', heal: 9, desc: '체력을 9 회복합니다' }
+        ]
+      },
+      {
+        id: 'spear_greatsword',
+        name: '성광의 창검',
+        rarity: '전설',
+        rarityColor: 'text-amber-300 border-amber-400/70 bg-amber-950/70',
+        atk: 7,
+        isCrafted: true,
+        desc: '[합성 무기] 강철 창과 기사단의 장검이 융합된 왕국 최고의 성광 무기입니다.',
+        art: SVG_ART.spear_greatsword,
+        skills: [
+          { name: '원형 성광 포위진', type: 'attack', mult: 1.3, pattern: 'ss_1', desc: '하트를 포위하는 5자루의 성광 창검' },
+          { name: '천공 성광 절단선', type: 'attack', mult: 1.35, pattern: 'kg_2', desc: '화면 전체를 가르는 성광 참격 레이저' },
+          { name: '파도 성검벽', type: 'attack', mult: 1.3, pattern: 'kg_1', desc: '상하로 출렁이며 날아오는 거대 성검기' },
+          { name: '성기사의 가호', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
+        ]
+      },
+      {
+        id: 'thunder_bone',
+        name: '뇌전의 뼈다귀',
+        rarity: '신화',
+        rarityColor: 'text-yellow-200 border-yellow-300 bg-gradient-to-r from-sky-950 to-amber-950',
+        atk: 9,
+        isCrafted: true,
+        desc: '[최종 합성] 천둥의 쌍단검과 이상한 뼈다귀가 융합된 초월 병기!',
+        art: SVG_ART.thunder_bone,
+        skills: [
+          { name: '뇌전 가스터 블래스터', type: 'attack', mult: 1.45, pattern: 'sb_2', desc: '전격을 머금은 가스터 블래스터 포격' },
+          { name: '쌍단검 뇌전 폭풍', type: 'attack', mult: 1.45, pattern: 'ld_1', desc: '중앙에서 회전하며 쏟아지는 뇌전 나선탄' },
+          { name: '심판의 번개 격자', type: 'attack', mult: 1.5, pattern: 'sb_ult', desc: '십자·X자 교차 번개 블래스터와 뼈다귀 폭풍' },
+          { name: '시공의 케첩 충전', type: 'heal', heal: 12, desc: '체력을 12 회복합니다' }
         ]
       }
     ];
 
+    const CRAFT_RECIPES = [
+      { id: 'rec_dagger_bow', mat1: 'rusty_dagger', mat2: 'hunter_bow', result: 'dagger_bow' },
+      { id: 'rec_sword_axe', mat1: 'iron_sword', mat2: 'bronze_axe', result: 'sword_axe' },
+      { id: 'rec_staff_hammer', mat1: 'training_staff', mat2: 'stone_hammer', result: 'staff_hammer' },
+      { id: 'rec_spear_greatsword', mat1: 'steel_spear', mat2: 'knight_greatsword', result: 'spear_greatsword' },
+      { id: 'rec_thunder_bone', mat1: 'lightning_daggers', mat2: 'strange_bone', result: 'thunder_bone' }
+    ];
+
     const SYNERGIES = [
       {
-        id: 'syn_kai_blood',
-        name: '적월의 암살자',
-        charId: 'kai',
-        weaponId: 'bloodmoon_sword',
-        badgeColor: 'text-red-300 border-red-500/70 bg-red-950/60',
-        bonusHp: 10,
+        id: 'syn_sans_bone',
+        name: '심판의 시간',
+        charId: 'sans',
+        weaponId: 'strange_bone',
+        badgeColor: 'text-sky-300 border-sky-400/70 bg-sky-950/60',
+        bonusHp: 12,
         bonusDmg: 2,
-        bonusSpeed: 0.4,
+        bonusSpeed: 0.5,
         dmgReduce: 0.15,
-        effectText: '최대 HP +10, 탄막 1발당 피해 +2, 이동속도 증가, 받는 피해 15% 감소'
+        synergySkill: {
+          name: '✨ 최후의 심판 (시너지 필살기)',
+          type: 'attack',
+          mult: 1.8,
+          pattern: 'sb_ult',
+          isSynergySkill: true,
+          desc: '[심판의 시간 전용] 4방향 가스터 블래스터 교차 포격 + 심판의 뼈다귀 폭풍!'
+        },
+        effectText: '전용 스킬 [최후의 심판] 해금 · 최대 HP +12, 탄막 피해 +2, 이동속도 증가, 받는 피해 15% 감소'
       },
       {
         id: 'syn_sera_thunder',
@@ -2071,18 +2316,6 @@
         bonusSpeed: 0.2,
         dmgReduce: 0.10,
         effectText: '최대 HP +5, 탄막 1발당 피해 +1, 받는 피해 10% 감소'
-      },
-      {
-        id: 'syn_low_bone',
-        name: '심판의 방관자',
-        charId: 'human_low',
-        weaponId: 'strange_bone',
-        badgeColor: 'text-sky-300 border-sky-400/70 bg-sky-950/60',
-        bonusHp: 12,
-        bonusDmg: 2,
-        bonusSpeed: 0.5,
-        dmgReduce: 0.15,
-        effectText: '최대 HP +12, 탄막 1발당 피해 +2, 이동속도 대폭 증가, 받는 피해 15% 감소'
       }
     ];
 
@@ -2097,9 +2330,8 @@
       { charId: 'human_mid', weaponId: 'steel_spear' },
       { charId: 'human_high', weaponId: 'steel_spear' },
       { charId: 'human_high', weaponId: 'knight_greatsword' },
-      { charId: 'kai', weaponId: 'bloodmoon_sword' },
       { charId: 'sera', weaponId: 'lightning_daggers' },
-      { charId: 'human_low', weaponId: 'strange_bone' }
+      { charId: 'sans', weaponId: 'strange_bone' }
     ];
 
     /* ============================================================================
@@ -2466,6 +2698,7 @@
 
       if (viewName === 'codex') renderCodex();
       if (viewName === 'formation') renderFormation();
+      if (viewName === 'craft') renderCraft();
       updateGlobalUI();
     }
 
@@ -2587,15 +2820,9 @@
         const r = Math.random() * 100;
         let pickedId = 'rusty_dagger';
 
-        if (bannerType === 'limited_blood') {
-          if (r < 4.0) pickedId = 'bloodmoon_sword';
-          else if (r < 4.75) pickedId = 'lightning_daggers';
-          else if (r < 12.0) pickedId = 'knight_greatsword';
-          else if (r < 27.0) pickedId = 'steel_spear';
-          else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
-        } else if (bannerType === 'limited_thunder') {
+        if (bannerType === 'limited_thunder') {
           if (r < 4.0) pickedId = 'lightning_daggers';
-          else if (r < 4.75) pickedId = 'bloodmoon_sword';
+          else if (r < 4.75) pickedId = 'strange_bone';
           else if (r < 12.0) pickedId = 'knight_greatsword';
           else if (r < 27.0) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
@@ -2606,8 +2833,7 @@
           else if (r < 27.0) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else {
-          if (r < 0.5) pickedId = 'bloodmoon_sword';
-          else if (r < 1.0) pickedId = 'lightning_daggers';
+          if (r < 0.75) pickedId = 'lightning_daggers';
           else if (r < 1.5) pickedId = 'strange_bone';
           else if (r < 8.5) pickedId = 'knight_greatsword';
           else if (r < 24.5) pickedId = 'steel_spear';
@@ -2651,15 +2877,15 @@
         const r = Math.random() * 100;
         let pickedId = 'human_low';
 
-        if (bannerType === 'limited_kai') {
-          if (r < 4.0) pickedId = 'kai';
+        if (bannerType === 'limited_sans') {
+          if (r < 4.0) pickedId = 'sans';
           else if (r < 4.75) pickedId = 'sera';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
         } else if (bannerType === 'limited_sera') {
           if (r < 4.0) pickedId = 'sera';
-          else if (r < 4.75) pickedId = 'kai';
+          else if (r < 4.75) pickedId = 'sans';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
@@ -2840,6 +3066,246 @@
           </div>
         `;
         weaponGrid.appendChild(card);
+      });
+    }
+
+    /* ============================================================================
+       8-B. 무기 합성 시스템 (단검 + 활 = 단검활 등)
+    ============================================================================ */
+    let craftSlots = [null, null];
+
+    function findMatchingRecipe(id1, id2) {
+      if (!id1 || !id2) return null;
+      return CRAFT_RECIPES.find(r =>
+        (r.mat1 === id1 && r.mat2 === id2) || (r.mat1 === id2 && r.mat2 === id1)
+      ) || null;
+    }
+
+    function selectWeaponForCraft(weaponId) {
+      if (!state.ownedWeapons[weaponId]) return;
+      SoundFX.click();
+
+      if (craftSlots[0] === weaponId) {
+        craftSlots[0] = null;
+      } else if (craftSlots[1] === weaponId) {
+        craftSlots[1] = null;
+      } else if (!craftSlots[0]) {
+        craftSlots[0] = weaponId;
+      } else if (!craftSlots[1]) {
+        craftSlots[1] = weaponId;
+      } else {
+        craftSlots[0] = craftSlots[1];
+        craftSlots[1] = weaponId;
+      }
+      renderCraft();
+    }
+
+    function clearCraftSlot(slotNum) {
+      SoundFX.click();
+      craftSlots[slotNum - 1] = null;
+      renderCraft();
+    }
+
+    function clearCraftSlots() {
+      SoundFX.click();
+      craftSlots = [null, null];
+      renderCraft();
+    }
+
+    function applyRecipeToSlots(recipeId) {
+      const rec = CRAFT_RECIPES.find(r => r.id === recipeId);
+      if (!rec) return;
+      SoundFX.click();
+      craftSlots = [rec.mat1, rec.mat2];
+      renderCraft();
+    }
+
+    function executeWeaponCraft() {
+      const recipe = findMatchingRecipe(craftSlots[0], craftSlots[1]);
+      if (!recipe) {
+        showToast('⚠️ 올바른 합성 조합을 선택해주세요!', 'border-red-400 text-red-200');
+        return;
+      }
+
+      const w1 = state.ownedWeapons[recipe.mat1];
+      const w2 = state.ownedWeapons[recipe.mat2];
+      if (!w1 || !w2) {
+        showToast('⚠️ 재료 무기를 모두 보유하고 있어야 합성할 수 있습니다!', 'border-red-400 text-red-200');
+        return;
+      }
+
+      // 재료 무기 각 1개(1레벨) 소모
+      [recipe.mat1, recipe.mat2].forEach(matId => {
+        if (state.ownedWeapons[matId].level > 1) {
+          state.ownedWeapons[matId].level -= 1;
+        } else {
+          delete state.ownedWeapons[matId];
+          if (state.equippedWeaponId === matId) {
+            state.equippedWeaponId = null;
+          }
+        }
+      });
+
+      // 합성 결과 무기 지급
+      const resWeapon = getWeaponById(recipe.result);
+      let isNew = false;
+      if (!state.ownedWeapons[recipe.result]) {
+        state.ownedWeapons[recipe.result] = { level: 1 };
+        isNew = true;
+      } else {
+        state.ownedWeapons[recipe.result].level += 1;
+      }
+
+      // 장착 무기가 비어 있으면 자동 장착
+      if (!state.equippedWeaponId) {
+        state.equippedWeaponId = recipe.result;
+      }
+
+      craftSlots = [null, null];
+      SoundFX.synergy();
+      updateGlobalUI();
+      saveAccountProgress();
+      renderCraft();
+
+      showGachaResultModal('🔨 무기 합성 성공!', [{
+        name: resWeapon.name,
+        rarity: resWeapon.rarity,
+        rarityColor: resWeapon.rarityColor,
+        art: resWeapon.art,
+        isNew,
+        level: state.ownedWeapons[recipe.result].level,
+        subText: `탄막 위력 +${resWeapon.atk}`
+      }]);
+    }
+
+    function renderCraft() {
+      const slot1El = document.getElementById('craft-slot-1');
+      const slot2El = document.getElementById('craft-slot-2');
+      const resEl = document.getElementById('craft-result-preview');
+      const statusEl = document.getElementById('craft-status-banner');
+      const btnEl = document.getElementById('btn-execute-craft');
+
+      const renderSlotBox = (el, wId, label) => {
+        const w = wId ? getWeaponById(wId) : null;
+        const owned = wId ? state.ownedWeapons[wId] : null;
+        if (w) {
+          el.className = `sm:col-span-2 rounded-2xl p-3.5 ${owned ? 'bg-emerald-950/20 border-emerald-400/70' : 'bg-red-950/20 border-red-500/70'} border flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition`;
+          el.innerHTML = `
+            <div class="w-14 h-14 mb-1">${w.art}</div>
+            <div class="text-xs font-black text-white">${w.name}</div>
+            <div class="text-[10px] font-bold mt-0.5 ${owned ? 'text-emerald-300' : 'text-red-400'}">
+              ${owned ? `보유 중 (Lv.${owned.level}) · 클릭 시 해제` : '미보유 재료'}
+            </div>
+          `;
+        } else {
+          el.className = 'sm:col-span-2 rounded-2xl p-3.5 bg-black/90 border border-dashed border-zinc-700 hover:border-emerald-400 flex flex-col items-center justify-center min-h-[140px] text-center cursor-pointer transition';
+          el.innerHTML = `
+            <span class="text-2xl text-zinc-700 mb-1">🗡️</span>
+            <span class="text-xs font-bold text-zinc-400">${label}</span>
+            <span class="text-[10px] text-zinc-600 mt-0.5">아래에서 선택</span>
+          `;
+        }
+      };
+
+      renderSlotBox(slot1El, craftSlots[0], '재료 무기 1');
+      renderSlotBox(slot2El, craftSlots[1], '재료 무기 2');
+
+      const matched = findMatchingRecipe(craftSlots[0], craftSlots[1]);
+      if (matched) {
+        const resW = getWeaponById(matched.result);
+        const canCraft = !!state.ownedWeapons[matched.mat1] && !!state.ownedWeapons[matched.mat2];
+        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-amber-950/25 border-2 border-amber-400 flex flex-col items-center justify-center min-h-[140px] text-center shadow-[0_0_20px_rgba(250,204,21,0.2)]';
+        resEl.innerHTML = `
+          <span class="px-1.5 py-0.5 rounded border text-[9px] font-bold mb-1 ${resW.rarityColor}">${resW.rarity}</span>
+          <div class="w-12 h-12">${resW.art}</div>
+          <div class="text-xs font-black text-amber-200 mt-1">${resW.name}</div>
+          <div class="text-[10px] text-amber-300 font-orbitron">위력 +${resW.atk}</div>
+        `;
+
+        if (canCraft) {
+          statusEl.textContent = `✨ 합성 가능! [${getWeaponById(matched.mat1).name}] + [${getWeaponById(matched.mat2).name}] → [${resW.name}]`;
+          statusEl.className = 'mt-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/60 text-xs text-center text-emerald-200 font-bold';
+          btnEl.disabled = false;
+          btnEl.className = 'px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-sm shadow-lg transition cursor-pointer';
+        } else {
+          statusEl.textContent = `⚠️ [${resW.name}] 조합법이지만 보유하지 않은 재료가 포함되어 있습니다.`;
+          statusEl.className = 'mt-4 p-3 rounded-xl bg-red-950/40 border border-red-500/50 text-xs text-center text-red-300 font-bold';
+          btnEl.disabled = true;
+          btnEl.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
+        }
+      } else {
+        resEl.className = 'sm:col-span-1 rounded-2xl p-3 bg-zinc-900/70 border border-zinc-800 flex flex-col items-center justify-center min-h-[140px] text-center';
+        resEl.innerHTML = `
+          <span class="text-2xl text-zinc-600 mb-1">❓</span>
+          <span class="text-[11px] font-bold text-zinc-400">${(craftSlots[0] && craftSlots[1]) ? '조합법 없음' : '합성 결과'}</span>
+        `;
+        statusEl.textContent = (craftSlots[0] && craftSlots[1])
+          ? '❌ 선택한 두 무기는 합성 조합법이 없습니다. 오른쪽 조합표를 참고하세요!'
+          : '아래 [보유한 무기] 또는 [합성 조합표]에서 재료를 선택하세요!';
+        statusEl.className = 'mt-4 p-3 rounded-xl bg-black/80 border border-zinc-800 text-xs text-center text-zinc-300';
+        btnEl.disabled = true;
+        btnEl.className = 'px-8 py-3 rounded-xl bg-zinc-800 text-zinc-500 font-black text-sm transition cursor-not-allowed';
+      }
+
+      // 보유 무기 목록 렌더링
+      const ownedGrid = document.getElementById('craft-owned-weapons-grid');
+      ownedGrid.innerHTML = '';
+      const ownedWeapons = WEAPONS.filter(w => state.ownedWeapons[w.id]);
+      if (ownedWeapons.length === 0) {
+        ownedGrid.innerHTML = `<div class="col-span-full text-center py-6 text-xs text-zinc-500">보유한 무기가 없습니다. 뽑기에서 무기를 획득하세요!</div>`;
+      } else {
+        ownedWeapons.forEach(w => {
+          const lv = state.ownedWeapons[w.id].level;
+          const isSelected = craftSlots.includes(w.id);
+          const btn = document.createElement('button');
+          btn.onclick = () => selectWeaponForCraft(w.id);
+          btn.className = `p-2.5 rounded-xl border text-center flex flex-col items-center cursor-pointer transition ${
+            isSelected
+              ? 'bg-emerald-950/50 border-emerald-400 shadow-md'
+              : 'bg-black hover:bg-zinc-900 border-zinc-800'
+          }`;
+          btn.innerHTML = `
+            <div class="w-11 h-11 mb-1">${w.art}</div>
+            <div class="text-[11px] font-black text-white line-clamp-1">${w.name}</div>
+            <div class="text-[10px] text-amber-300">보유 Lv.${lv}</div>
+          `;
+          ownedGrid.appendChild(btn);
+        });
+      }
+
+      // 합성 조합표 렌더링
+      const recipesList = document.getElementById('craft-recipes-list');
+      recipesList.innerHTML = '';
+      CRAFT_RECIPES.forEach(rec => {
+        const m1 = getWeaponById(rec.mat1);
+        const m2 = getWeaponById(rec.mat2);
+        const res = getWeaponById(rec.result);
+        const has1 = !!state.ownedWeapons[rec.mat1];
+        const has2 = !!state.ownedWeapons[rec.mat2];
+        const ready = has1 && has2;
+
+        const row = document.createElement('button');
+        row.onclick = () => applyRecipeToSlots(rec.id);
+        row.className = `w-full p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 cursor-pointer transition ${
+          ready
+            ? 'bg-emerald-950/25 hover:bg-emerald-950/40 border-emerald-500/60'
+            : 'bg-black/80 hover:bg-zinc-900 border-zinc-800'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs flex-wrap">
+            <span class="font-bold ${has1 ? 'text-white' : 'text-zinc-500'}">${m1.name}</span>
+            <span class="text-emerald-400 font-black">+</span>
+            <span class="font-bold ${has2 ? 'text-white' : 'text-zinc-500'}">${m2.name}</span>
+            <span class="text-amber-400 font-black">=</span>
+            <span class="font-black text-amber-300">${res.name}</span>
+          </div>
+          <span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-black ${
+            ready ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/50' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
+          }">
+            ${ready ? '제작 가능' : '재료 부족'}
+          </span>
+        `;
+        recipesList.appendChild(row);
       });
     }
 
@@ -3218,7 +3684,6 @@
         pvpSession.roomCode = rawCode;
         pvpSession.role = 'guest';
 
-        // 1순위: WebRTC P2P 직통 입장 시도
         try {
           const syncedState = await RoomStore.joinP2P('pvp', rawCode, guestLoadout);
           subscribePvpRoom(rawCode);
@@ -3228,7 +3693,6 @@
           console.warn('P2P join fallback to cloud/local:', p2pErr?.message || p2pErr);
         }
 
-        // 2순위: 클라우드/로컬 방 조회 및 입장
         const data = await RoomStore.get('pvp', rawCode);
 
         if (!data) {
@@ -3323,29 +3787,41 @@
       }
     }
 
+    function getAvailablePlayerSkills() {
+      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
+      const skills = [...weapon.skills];
+      if (battle.stats.synergy && battle.stats.synergy.synergySkill) {
+        skills.push(battle.stats.synergy.synergySkill);
+      }
+      return skills;
+    }
+
     function renderPlayerSkills() {
       const grid = document.getElementById('battle-skills-grid');
       grid.innerHTML = '';
-      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
+      const skills = getAvailablePlayerSkills();
 
-      weapon.skills.forEach((sk, idx) => {
+      skills.forEach((sk, idx) => {
         const isHeal = sk.type === 'heal';
+        const isSynSkill = !!sk.isSynergySkill;
         const dmg = isHeal ? 0 : Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
         const btn = document.createElement('button');
         btn.onclick = () => usePlayerWeaponSkill(idx);
         btn.className = `p-3 rounded-xl border text-left transition cursor-pointer ${
-          isHeal
-            ? 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-500/60'
-            : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-700 hover:border-amber-400'
+          isSynSkill
+            ? 'sm:col-span-2 bg-gradient-to-r from-sky-950/80 via-indigo-950/70 to-sky-950/80 hover:from-sky-900/90 hover:to-indigo-900/80 border-2 border-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.3)]'
+            : isHeal
+              ? 'bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-500/60'
+              : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-700 hover:border-amber-400'
         }`;
         btn.innerHTML = `
           <div class="flex items-center justify-between gap-2">
-            <span class="text-xs sm:text-sm font-black ${isHeal ? 'text-emerald-300' : 'text-white'}">${sk.name}</span>
-            <span class="px-2 py-0.5 rounded bg-black border border-zinc-700 font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : 'text-amber-300'}">
+            <span class="text-xs sm:text-sm font-black ${isSynSkill ? 'text-sky-200' : isHeal ? 'text-emerald-300' : 'text-white'}">${sk.name}</span>
+            <span class="px-2 py-0.5 rounded bg-black border ${isSynSkill ? 'border-sky-400/70 text-sky-300' : 'border-zinc-700'} font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : isSynSkill ? 'text-sky-300' : 'text-amber-300'}">
               ${isHeal ? `+${sk.heal} HP` : `위력 ${dmg}`}
             </span>
           </div>
-          <div class="text-[11px] text-zinc-400 mt-1">${sk.desc}</div>
+          <div class="text-[11px] ${isSynSkill ? 'text-sky-100/90' : 'text-zinc-400'} mt-1">${sk.desc}</div>
         `;
         grid.appendChild(btn);
       });
@@ -3628,8 +4104,9 @@
 
     async function usePlayerWeaponSkill(skillIndex) {
       if (!battle.active) return;
-      const weapon = battle.stats.weapon || getWeaponById('iron_sword');
-      const sk = weapon.skills[skillIndex];
+      const skills = getAvailablePlayerSkills();
+      const sk = skills[skillIndex];
+      if (!sk) return;
       const dmgPerHit = sk.type === 'attack' ? Math.max(2, Math.round(battle.stats.hitDamage * sk.mult)) : 0;
 
       if (sk.type === 'heal') {
@@ -4976,6 +5453,25 @@
           const rx = 20 + Math.random() * (w - 40);
           addDagger(rx, 10, Math.PI / 2, 225, '#38bdf8', 0.38, 5);
         }
+      } else if (pattern === 'sb_ult') {
+        if (tState.spawnTimer >= 0.72) {
+          tState.spawnTimer = 0;
+          const isDiag = Math.floor(tState.patternPhase * 1.4) % 2 === 0;
+          if (isDiag) {
+            addBeam(12, 12, w - 12, h - 12, 0.58, 0.28, 11, '#38bdf8', true);
+            addBeam(w - 12, 12, 12, h - 12, 0.58, 0.28, 11, '#facc15', true);
+          } else {
+            const tx = Math.max(28, Math.min(w - 28, heart.x));
+            const ty = Math.max(28, Math.min(h - 28, heart.y));
+            addBeam(tx, 8, tx, h - 8, 0.58, 0.28, 11, '#38bdf8', true);
+            addBeam(8, ty, w - 8, ty, 0.58, 0.28, 11, '#38bdf8', true);
+          }
+        }
+        if (tState.waveTimer >= 0.45) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addDagger(fromLeft ? 10 : w - 10, 18 + Math.random() * (h - 36), fromLeft ? 0 : Math.PI, 235, '#e0f2fe', 0.28, 5);
+        }
       }
     }
 
@@ -5508,6 +6004,11 @@
       selectCharacterForSlot,
       selectWeaponForSlot,
       resetFormation,
+      selectWeaponForCraft,
+      clearCraftSlot,
+      clearCraftSlots,
+      applyRecipeToSlots,
+      executeWeaponCraft,
       openWarModeModal,
       closeWarModeModal,
       backToWarStepSelect,
