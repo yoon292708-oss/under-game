@@ -266,7 +266,7 @@
             <div>
               <div class="text-[11px] text-zinc-400 font-bold">현재 출전 편성</div>
               <div id="lobby-equipped-text" class="text-sm font-black text-white">하급인간 + 철검</div>
-              <div id="lobby-hp-formula-text" class="text-[11px] text-emerald-400 font-bold mt-0.5">체력: 20 HP (기본 20 + 체급 0)</div>
+              <div id="lobby-hp-formula-text" class="text-[11px] text-emerald-400 font-bold mt-0.5">체력: 20 HP (하급인간 20)</div>
               <div id="lobby-synergy-text" class="hidden text-[11px] text-amber-300 font-bold mt-0.5">✨ 시너지 발동</div>
             </div>
           </div>
@@ -512,11 +512,11 @@
             </div>
           </div>
 
-          <!-- 3번째 칸: 기간 한정 무기 뽑기 2 (이상한 뼈다귀) -->
+          <!-- 3번째 칸: 레이드 토벌 한정 무기 안내 (이상한 뼈다귀) -->
           <div class="banner-cyan rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
-              <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 심판의 한정 픽업</span>
-              <span class="text-[11px] font-bold text-sky-300">픽업 4.0% UP!</span>
+              <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 레이드 토벌 보상</span>
+              <span class="text-[11px] font-bold text-amber-300">뽑기 불가 · 클리어 획득</span>
             </div>
             <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
               <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
@@ -535,15 +535,12 @@
               </div>
               <div class="text-center mt-1">
                 <div class="text-sm font-black text-sky-200">이상한 뼈다귀 · 심판의 유물</div>
-                <div class="text-[10px] text-sky-300/80">가스터 블래스터 & 뼈다귀 파도 패턴</div>
+                <div class="text-[10px] text-sky-300/80">[레이드]에서 심판의 해골 · 샌즈 처치 시 획득!</div>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 z-10">
-              <button onclick="rollWeaponGacha('limited_sans', 1)" class="py-2.5 px-3 rounded-xl bg-sky-950/90 hover:bg-sky-900 border border-sky-400/60 text-sky-100 font-bold text-xs cursor-pointer transition">
-                한정 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
-              </button>
-              <button onclick="rollWeaponGacha('limited_sans', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-black font-black text-xs shadow-lg cursor-pointer transition">
-                한정 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+            <div class="z-10">
+              <button onclick="openRaidModeModal(); selectRaidBossType('sans');" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                💀 샌즈 레이드 도전하러 가기
               </button>
             </div>
           </div>
@@ -677,7 +674,7 @@
 
       <div>
         <h3 class="text-sm font-black text-purple-300 mb-3 flex items-center gap-1.5">
-          <span>👤</span> 인간 체급 도감 (기본 HP 20 + 체급 보너스)
+          <span>👤</span> 인간 체급 도감 (캐릭터 고유 체력)
         </h3>
         <div id="codex-char-list" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
       </div>
@@ -733,7 +730,7 @@
           <div class="mt-3 pt-3 border-t border-zinc-800/90 flex flex-col gap-1 text-xs">
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">체력 공식:</span>
-              <span id="formation-hp-breakdown" class="font-bold text-emerald-400">기본 20 + 체급 0 = 20 HP</span>
+              <span id="formation-hp-breakdown" class="font-bold text-emerald-400">하급인간 20 = 20 HP</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">전투 능력치:</span>
@@ -973,7 +970,7 @@
 
       <!-- 레이드 보스 선택 2종 -->
       <div class="mb-4">
-        <div class="text-[11px] font-black text-zinc-400 mb-2">1단계 · 토벌할 레이드 보스 선택 (HP 100 · 3스킬 동시 발사)</div>
+        <div class="text-[11px] font-black text-zinc-400 mb-2">1단계 · 토벌할 레이드 보스 선택</div>
         <div class="grid grid-cols-2 gap-2.5">
           <button id="raid-boss-opt-abyss" type="button" onclick="selectRaidBossType('abyss')" class="p-3 rounded-2xl bg-purple-950/40 border-2 border-purple-400 text-left transition cursor-pointer">
             <div class="flex items-center justify-between">
@@ -987,10 +984,10 @@
           <button id="raid-boss-opt-sans" type="button" onclick="selectRaidBossType('sans')" class="p-3 rounded-2xl bg-black hover:bg-sky-950/30 border-2 border-zinc-800 text-left transition cursor-pointer">
             <div class="flex items-center justify-between">
               <span class="text-xl">💀</span>
-              <span class="px-1.5 py-0.5 rounded bg-black/70 font-orbitron text-[10px] font-bold text-sky-300">HP 100</span>
+              <span class="px-1.5 py-0.5 rounded bg-black/70 font-orbitron text-[10px] font-bold text-sky-300">HP 3 · 메탈</span>
             </div>
             <div class="text-xs font-black text-sky-200 mt-1.5">심판의 해골 · 샌즈</div>
-            <div class="text-[10px] text-sky-300/80 mt-0.5">블래스터·뼈다귀 3중 심판</div>
+            <div class="text-[10px] text-sky-300/80 mt-0.5">피해 1 고정 · 클리어 시 뼈다귀 지급</div>
           </button>
         </div>
       </div>
@@ -1005,7 +1002,7 @@
         <button onclick="startSoloRaid()" class="p-5 rounded-2xl bg-black hover:bg-purple-950/30 border-2 border-zinc-700 hover:border-purple-400 flex flex-col items-center text-center transition cursor-pointer">
           <span class="text-4xl mb-2">🧍</span>
           <span class="text-base font-black text-white">혼자 (솔로 레이드)</span>
-          <span class="text-[11px] text-zinc-400 mt-1">홀로 100 HP 보스의 3중 탄막 돌파</span>
+          <span class="text-[11px] text-zinc-400 mt-1">홀로 레이드 보스 패턴 돌파</span>
         </button>
 
         <button onclick="showFriendRaidStep()" class="p-5 rounded-2xl bg-black hover:bg-sky-950/30 border-2 border-zinc-700 hover:border-sky-400 flex flex-col items-center text-center transition cursor-pointer">
@@ -1989,7 +1986,7 @@
     /* ============================================================================
        3. 게임 데이터 정의
     ============================================================================ */
-    const BASE_HP = 20;
+    const BASE_HP = 0;
 
     const CHARACTERS = [
       {
@@ -2050,13 +2047,13 @@
         name: '녹슨 단검',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 2,
         desc: '가볍고 다루기 쉬운 단검. 느린 직선 투척 탄막을 날립니다.',
         art: SVG_ART.rusty_dagger,
         skills: [
           { name: '단검 던지기', type: 'attack', mult: 1.0, pattern: 'rd_1', desc: '사방에서 단검 1자루씩 조준 투척' },
-          { name: '양손 투척', type: 'attack', mult: 1.0, pattern: 'rd_2', desc: '좌우에서 번갈아 단검 발사' },
-          { name: '단검 비', type: 'attack', mult: 1.0, pattern: 'rd_3', desc: '위에서 아래로 단검이 떨어짐' },
+          { name: '양손 투척', type: 'attack', mult: 1.15, pattern: 'rd_2', desc: '좌우에서 번갈아 단검 발사' },
+          { name: '단검 비', type: 'attack', mult: 1.25, pattern: 'rd_3', desc: '위에서 아래로 단검이 떨어짐' },
           { name: '응급 처치', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2065,13 +2062,13 @@
         name: '철검',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 4,
         desc: '기본적인 장검. 초승달 검기와 틈새 검벽 탄막을 발사합니다.',
         art: SVG_ART.iron_sword,
         skills: [
           { name: '검기 발사', type: 'attack', mult: 1.0, pattern: 'is_1', desc: '좌우에서 초승달 검기가 날아옴' },
-          { name: '틈새 검벽', type: 'attack', mult: 1.0, pattern: 'is_2', desc: '안전 틈새가 있는 검벽이 이동' },
-          { name: '검기 & 단검', type: 'attack', mult: 1.0, pattern: 'is_3', desc: '검기와 상단 단검이 함께 공격' },
+          { name: '틈새 검벽', type: 'attack', mult: 1.15, pattern: 'is_2', desc: '안전 틈새가 있는 검벽이 이동' },
+          { name: '검기 & 단검', type: 'attack', mult: 1.3, pattern: 'is_3', desc: '검기와 상단 단검이 함께 공격' },
           { name: '전투 호흡', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2085,8 +2082,8 @@
         art: SVG_ART.wooden_club,
         skills: [
           { name: '몽둥이 후려치기', type: 'attack', mult: 1.0, pattern: 'wc_1', desc: '바닥을 타고 이동하는 충격파' },
-          { name: '나무 파편 비산', type: 'attack', mult: 1.0, pattern: 'wc_2', desc: '천장에서 나무 파편 낙하' },
-          { name: '회전 몽둥이 투척', type: 'attack', mult: 1.0, pattern: 'wc_3', desc: '좌우 직선 몽둥이 투척' },
+          { name: '나무 파편 비산', type: 'attack', mult: 1.2, pattern: 'wc_2', desc: '천장에서 나무 파편 낙하' },
+          { name: '회전 몽둥이 투척', type: 'attack', mult: 1.3, pattern: 'wc_3', desc: '좌우 직선 몽둥이 투척' },
           { name: '휴식 취하기', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2095,13 +2092,13 @@
         name: '사냥꾼의 활',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 4,
         desc: '정교한 사냥용 활. 조준 화살과 부채꼴 삼연사를 쏩니다.',
         art: SVG_ART.hunter_bow,
         skills: [
           { name: '조준 사격', type: 'attack', mult: 1.0, pattern: 'hb_1', desc: '하트를 조준하는 사방 화살' },
-          { name: '부채꼴 삼연사', type: 'attack', mult: 1.0, pattern: 'hb_2', desc: '3갈래로 퍼지는 화살 발사' },
-          { name: '화살 비', type: 'attack', mult: 1.0, pattern: 'hb_3', desc: '하늘에서 쏟아지는 화살' },
+          { name: '부채꼴 삼연사', type: 'attack', mult: 1.15, pattern: 'hb_2', desc: '3갈래로 퍼지는 화살 발사' },
+          { name: '화살 비', type: 'attack', mult: 1.3, pattern: 'hb_3', desc: '하늘에서 쏟아지는 화살' },
           { name: '약초 바르기', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2110,13 +2107,13 @@
         name: '청동 도끼',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 5,
         desc: '묵직한 청동 도끼. 수평 투척과 수직 내려찍기 참격을 씁니다.',
         art: SVG_ART.bronze_axe,
         skills: [
           { name: '도끼 투척', type: 'attack', mult: 1.0, pattern: 'ba_1', desc: '좌우 교차 수평 도끼 투척' },
-          { name: '수직 내려찍기', type: 'attack', mult: 1.0, pattern: 'ba_2', desc: '예고선 후 수직 참격 낙하' },
-          { name: '쌍도끼 교차', type: 'attack', mult: 1.0, pattern: 'ba_3', desc: '상단 모서리에서 대각선 투척' },
+          { name: '수직 내려찍기', type: 'attack', mult: 1.25, pattern: 'ba_2', desc: '예고선 후 수직 참격 낙하' },
+          { name: '쌍도끼 교차', type: 'attack', mult: 1.35, pattern: 'ba_3', desc: '상단 모서리에서 대각선 투척' },
           { name: '기합 충전', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2125,13 +2122,13 @@
         name: '수련용 지팡이',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 5,
         desc: '푸른 마력석이 박힌 지팡이. 4방향 마력탄과 별빛 방울을 발사합니다.',
         art: SVG_ART.training_staff,
         skills: [
           { name: '마력 구체', type: 'attack', mult: 1.0, pattern: 'ts_1', desc: '하트를 향해 날아오는 마력구' },
-          { name: '사방 마력탄', type: 'attack', mult: 1.0, pattern: 'ts_2', desc: '중앙에서 4방향으로 퍼지는 마력' },
-          { name: '별빛 방울', type: 'attack', mult: 1.0, pattern: 'ts_3', desc: '위아래에서 교차하는 마력 방울' },
+          { name: '사방 마력탄', type: 'attack', mult: 1.2, pattern: 'ts_2', desc: '중앙에서 4방향으로 퍼지는 마력' },
+          { name: '별빛 방울', type: 'attack', mult: 1.3, pattern: 'ts_3', desc: '위아래에서 교차하는 마력 방울' },
           { name: '치유의 빛', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2140,13 +2137,13 @@
         name: '돌 망치',
         rarity: '일반',
         rarityColor: 'text-zinc-300 border-zinc-600 bg-zinc-900',
-        atk: 3,
+        atk: 6,
         desc: '단단한 화강암 망치. 바닥 돌기둥과 구르는 바위를 일으킵니다.',
         art: SVG_ART.stone_hammer,
         skills: [
           { name: '지반 강타', type: 'attack', mult: 1.0, pattern: 'sh_1', desc: '바닥에서 솟아오르는 돌기둥' },
-          { name: '구르는 바위', type: 'attack', mult: 1.0, pattern: 'sh_2', desc: '바닥을 굴러가는 거대 바위' },
-          { name: '낙석 주의', type: 'attack', mult: 1.0, pattern: 'sh_3', desc: '천장에서 떨어지는 돌덩이' },
+          { name: '구르는 바위', type: 'attack', mult: 1.2, pattern: 'sh_2', desc: '바닥을 굴러가는 거대 바위' },
+          { name: '낙석 주의', type: 'attack', mult: 1.35, pattern: 'sh_3', desc: '천장에서 떨어지는 돌덩이' },
           { name: '단단한 방어', type: 'heal', heal: 6, desc: '체력을 6 회복합니다' }
         ]
       },
@@ -2155,13 +2152,13 @@
         name: '강철 창',
         rarity: '희귀',
         rarityColor: 'text-sky-300 border-sky-500/60 bg-sky-950/60',
-        atk: 3,
+        atk: 7,
         desc: '언다인 스타일 원형 포위 창진과 바닥 솟구침 창 패턴을 구사합니다.',
         art: SVG_ART.steel_spear,
         skills: [
-          { name: '원형 포위 창진', type: 'attack', mult: 1.0, pattern: 'ss_1', desc: '하트 주위를 5자루의 창이 포위 조준' },
-          { name: '솟구치는 창', type: 'attack', mult: 1.0, pattern: 'ss_2', desc: '바닥과 천장에서 예고 후 창 돌출' },
-          { name: '고속 창벽 돌파', type: 'attack', mult: 1.0, pattern: 'ss_3', desc: '빠르게 다가오는 틈새 창벽' },
+          { name: '원형 포위 창진', type: 'attack', mult: 1.05, pattern: 'ss_1', desc: '하트 주위를 5자루의 창이 포위 조준' },
+          { name: '솟구치는 창', type: 'attack', mult: 1.2, pattern: 'ss_2', desc: '바닥과 천장에서 예고 후 창 돌출' },
+          { name: '고속 창벽 돌파', type: 'attack', mult: 1.35, pattern: 'ss_3', desc: '빠르게 다가오는 틈새 창벽' },
           { name: '전열 정비', type: 'heal', heal: 7, desc: '체력을 7 회복합니다' }
         ]
       },
@@ -2170,13 +2167,13 @@
         name: '기사단의 장검',
         rarity: '영웅',
         rarityColor: 'text-purple-300 border-purple-500/60 bg-purple-950/60',
-        atk: 3,
+        atk: 9,
         desc: '파도치는 거대 대검기와 화면을 가르는 성광 레이저 패턴을 발동합니다.',
         art: SVG_ART.knight_greatsword,
         skills: [
-          { name: '파도 대검기', type: 'attack', mult: 1.0, pattern: 'kg_1', desc: '상하로 출렁이며 날아오는 대검기' },
-          { name: '성광 절단선', type: 'attack', mult: 1.0, pattern: 'kg_2', desc: '화면 전체를 가르는 빛의 참격 레이저' },
-          { name: '회전 성검륜', type: 'attack', mult: 1.0, pattern: 'kg_3', desc: '회전하며 안쪽으로 조여오는 검륜' },
+          { name: '파도 대검기', type: 'attack', mult: 1.05, pattern: 'kg_1', desc: '상하로 출렁이며 날아오는 대검기' },
+          { name: '성광 절단선', type: 'attack', mult: 1.25, pattern: 'kg_2', desc: '화면 전체를 가르는 빛의 참격 레이저' },
+          { name: '회전 성검륜', type: 'attack', mult: 1.4, pattern: 'kg_3', desc: '회전하며 안쪽으로 조여오는 검륜' },
           { name: '기사의 축복', type: 'heal', heal: 8, desc: '체력을 8 회복합니다' }
         ]
       },
@@ -2185,13 +2182,13 @@
         name: '천둥의 쌍단검',
         rarity: '전설',
         rarityColor: 'text-cyan-300 border-cyan-400/70 bg-cyan-950/70',
-        atk: 3,
+        atk: 12,
         desc: '[기간 한정] 아스리엘풍 뇌전 나선 폭풍과 가로·세로 전격 격자 감옥!',
         art: SVG_ART.lightning_daggers,
         skills: [
-          { name: '뇌전 나선 폭풍', type: 'attack', mult: 1.0, pattern: 'ld_1', desc: '중앙에서 회전하며 쏟아지는 쌍빛 나선탄' },
-          { name: '전격 격자 감옥', type: 'attack', mult: 1.0, pattern: 'ld_2', desc: '가로·세로 십자 번개 레이저 동시 작렬' },
-          { name: '초고속 쌍단검 난무', type: 'attack', mult: 1.0, pattern: 'ld_3', desc: '네 모서리에서 초고속 쌍단검 연사' },
+          { name: '뇌전 나선 폭풍', type: 'attack', mult: 1.1, pattern: 'ld_1', desc: '중앙에서 회전하며 쏟아지는 쌍빛 나선탄' },
+          { name: '전격 격자 감옥', type: 'attack', mult: 1.25, pattern: 'ld_2', desc: '가로·세로 십자 번개 레이저 동시 작렬' },
+          { name: '초고속 쌍단검 난무', type: 'attack', mult: 1.4, pattern: 'ld_3', desc: '네 모서리에서 초고속 쌍단검 연사' },
           { name: '번개 충전', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
         ]
       },
@@ -2200,13 +2197,13 @@
         name: '이상한 뼈다귀',
         rarity: '전설',
         rarityColor: 'text-sky-300 border-sky-400/70 bg-sky-950/70',
-        atk: 3,
-        desc: '[기간 한정] 심판의 해골이 사용하는 뼈다귀 파도와 가스터 블래스터 포격!',
+        atk: 11,
+        desc: '[샌즈 레이드 보상] 심판의 해골이 사용하는 뼈다귀 파도와 가스터 블래스터 포격!',
         art: SVG_ART.strange_bone,
         skills: [
-          { name: '뼈다귀 파도', type: 'attack', mult: 1.0, pattern: 'sb_1', desc: '출렁이는 뼈다귀 벽 사이 틈새를 돌파' },
-          { name: '가스터 블래스터', type: 'attack', mult: 1.0, pattern: 'sb_2', desc: '블래스터 포구에서 푸른 심판의 광선 발사' },
-          { name: '뼈다귀 감옥 & 낙하', type: 'attack', mult: 1.0, pattern: 'sb_3', desc: '우측 뼈벽과 상단 푸른 뼈다귀 동시 낙하' },
+          { name: '뼈다귀 파도', type: 'attack', mult: 1.1, pattern: 'sb_1', desc: '출렁이는 뼈다귀 벽과 가시 돌출' },
+          { name: '가스터 블래스터', type: 'attack', mult: 1.25, pattern: 'sb_2', desc: '블래스터 포구에서 심판 광선 발사' },
+          { name: '뼈다귀 감옥 & 낙하', type: 'attack', mult: 1.35, pattern: 'sb_3', desc: '좌우 뼈벽과 상단 뼈다귀 비 연사' },
           { name: '케첩 한 모금', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
         ]
       },
@@ -2215,14 +2212,14 @@
         name: '단검활',
         rarity: '희귀',
         rarityColor: 'text-emerald-300 border-emerald-500/70 bg-emerald-950/70',
-        atk: 5,
+        atk: 8,
         isCrafted: true,
         desc: '[합성 무기] 녹슨 단검과 사냥꾼의 활을 결합해 단검을 화살처럼 연사합니다.',
         art: SVG_ART.dagger_bow,
         skills: [
           { name: '단검화살 삼연사', type: 'attack', mult: 1.1, pattern: 'hb_2', desc: '3갈래로 날아가는 단검 화살' },
-          { name: '조준 비수 사격', type: 'attack', mult: 1.15, pattern: 'hb_1', desc: '사방에서 하트를 조준하는 단검시위' },
-          { name: '비수 화살비', type: 'attack', mult: 1.1, pattern: 'rd_3', desc: '하늘에서 쏟아지는 단검 화살비' },
+          { name: '조준 비수 사격', type: 'attack', mult: 1.25, pattern: 'hb_1', desc: '사방에서 하트를 조준하는 단검시위' },
+          { name: '비수 화살비', type: 'attack', mult: 1.35, pattern: 'rd_3', desc: '하늘에서 쏟아지는 단검 화살비' },
           { name: '사냥꾼의 응급처치', type: 'heal', heal: 7, desc: '체력을 7 회복합니다' }
         ]
       },
@@ -2231,14 +2228,14 @@
         name: '대검도끼',
         rarity: '희귀',
         rarityColor: 'text-emerald-300 border-emerald-500/70 bg-emerald-950/70',
-        atk: 5,
+        atk: 9,
         isCrafted: true,
         desc: '[합성 무기] 철검의 날카로운 검기와 청동 도끼의 묵직한 내려찍기를 겸비했습니다.',
         art: SVG_ART.sword_axe,
         skills: [
           { name: '검기 도끼 투척', type: 'attack', mult: 1.1, pattern: 'is_1', desc: '좌우에서 초승달 검기와 도끼가 쇄도' },
-          { name: '대지 절단 내려찍기', type: 'attack', mult: 1.2, pattern: 'ba_2', desc: '예고선 후 강력한 수직 참격 낙하' },
-          { name: '쌍날 교차 파동', type: 'attack', mult: 1.1, pattern: 'ba_3', desc: '대각선으로 교차하는 도끼 검격' },
+          { name: '대지 절단 내려찍기', type: 'attack', mult: 1.25, pattern: 'ba_2', desc: '예고선 후 강력한 수직 참격 낙하' },
+          { name: '쌍날 교차 파동', type: 'attack', mult: 1.4, pattern: 'ba_3', desc: '대각선으로 교차하는 도끼 검격' },
           { name: '전사의 숨결', type: 'heal', heal: 7, desc: '체력을 7 회복합니다' }
         ]
       },
@@ -2247,14 +2244,14 @@
         name: '마력철퇴',
         rarity: '영웅',
         rarityColor: 'text-purple-300 border-purple-500/70 bg-purple-950/70',
-        atk: 6,
+        atk: 10,
         isCrafted: true,
         desc: '[합성 무기] 수련용 지팡이의 마력 코어를 돌 망치에 박아넣은 마도 철퇴입니다.',
         art: SVG_ART.staff_hammer,
         skills: [
-          { name: '비전 지반 강타', type: 'attack', mult: 1.2, pattern: 'sh_1', desc: '바닥에서 마력 돌기둥이 솟아오름' },
-          { name: '사방 마력 유성', type: 'attack', mult: 1.25, pattern: 'ts_2', desc: '중앙에서 4방향으로 회전하는 마력탄' },
-          { name: '중력 낙석 폭발', type: 'attack', mult: 1.2, pattern: 'sh_3', desc: '천장에서 거대 마력 암석이 낙하' },
+          { name: '비전 지반 강타', type: 'attack', mult: 1.15, pattern: 'sh_1', desc: '바닥에서 마력 돌기둥이 솟아오름' },
+          { name: '사방 마력 유성', type: 'attack', mult: 1.3, pattern: 'ts_2', desc: '중앙에서 4방향으로 회전하는 마력탄' },
+          { name: '중력 낙석 폭발', type: 'attack', mult: 1.45, pattern: 'sh_3', desc: '천장에서 거대 마력 암석이 낙하' },
           { name: '마나 재생', type: 'heal', heal: 9, desc: '체력을 9 회복합니다' }
         ]
       },
@@ -2263,14 +2260,14 @@
         name: '성광의 창검',
         rarity: '전설',
         rarityColor: 'text-amber-300 border-amber-400/70 bg-amber-950/70',
-        atk: 7,
+        atk: 12,
         isCrafted: true,
         desc: '[합성 무기] 강철 창과 기사단의 장검이 융합된 왕국 최고의 성광 무기입니다.',
         art: SVG_ART.spear_greatsword,
         skills: [
-          { name: '원형 성광 포위진', type: 'attack', mult: 1.3, pattern: 'ss_1', desc: '하트를 포위하는 5자루의 성광 창검' },
+          { name: '원형 성광 포위진', type: 'attack', mult: 1.15, pattern: 'ss_1', desc: '하트를 포위하는 5자루의 성광 창검' },
           { name: '천공 성광 절단선', type: 'attack', mult: 1.35, pattern: 'kg_2', desc: '화면 전체를 가르는 성광 참격 레이저' },
-          { name: '파도 성검벽', type: 'attack', mult: 1.3, pattern: 'kg_1', desc: '상하로 출렁이며 날아오는 거대 성검기' },
+          { name: '파도 성검벽', type: 'attack', mult: 1.5, pattern: 'kg_1', desc: '상하로 출렁이며 날아오는 거대 성검기' },
           { name: '성기사의 가호', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
         ]
       },
@@ -2279,14 +2276,14 @@
         name: '뇌전의 뼈다귀',
         rarity: '신화',
         rarityColor: 'text-yellow-200 border-yellow-300 bg-gradient-to-r from-sky-950 to-amber-950',
-        atk: 9,
+        atk: 15,
         isCrafted: true,
         desc: '[최종 합성] 천둥의 쌍단검과 이상한 뼈다귀가 융합된 초월 병기!',
         art: SVG_ART.thunder_bone,
         skills: [
-          { name: '뇌전 가스터 블래스터', type: 'attack', mult: 1.45, pattern: 'sb_2', desc: '전격을 머금은 가스터 블래스터 포격' },
+          { name: '뇌전 가스터 블래스터', type: 'attack', mult: 1.25, pattern: 'sb_2', desc: '전격을 머금은 가스터 블래스터 포격' },
           { name: '쌍단검 뇌전 폭풍', type: 'attack', mult: 1.45, pattern: 'ld_1', desc: '중앙에서 회전하며 쏟아지는 뇌전 나선탄' },
-          { name: '심판의 번개 격자', type: 'attack', mult: 1.5, pattern: 'sb_ult', desc: '십자·X자 교차 번개 블래스터와 뼈다귀 폭풍' },
+          { name: '심판의 번개 격자', type: 'attack', mult: 1.65, pattern: 'sb_ult', desc: '십자·X자 교차 번개 블래스터와 뼈다귀 폭풍' },
           { name: '시공의 케첩 충전', type: 'heal', heal: 12, desc: '체력을 12 회복합니다' }
         ]
       }
@@ -2338,7 +2335,7 @@
         name: '왕국 수호기사',
         charId: 'human_high',
         weaponId: 'knight_greatsword',
-        badgeColor: 'text-purple-300 border-purple-500/70 bg-purple-950/60',
+        badgeColor: 'text-purple-300 border-purple-500/60 bg-purple-950/60',
         bonusHp: 8,
         bonusDmg: 1,
         bonusSpeed: 0.2,
@@ -2358,6 +2355,17 @@
         effectText: '최대 HP +5, 탄막 1발당 피해 +1, 받는 피해 10% 감소'
       }
     ];
+
+    const PVP_EQUAL_BASE_DAMAGE = 6;
+
+    function computeSkillDamage(sk) {
+      if (sk.type === 'heal') return 0;
+      // 친구와의 1:1 대전(PvP)에서는 모든 무기 공격력을 동일하게 균등 적용
+      if (battle.mode === 'pvp') {
+        return sk.isSynergySkill ? PVP_EQUAL_BASE_DAMAGE + 2 : PVP_EQUAL_BASE_DAMAGE;
+      }
+      return Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
+    }
 
     const BOT_DECK_PRESETS = [
       { charId: 'human_low', weaponId: 'rusty_dagger' },
@@ -2431,7 +2439,9 @@
       const synergy = getActiveSynergy();
 
       const baseHp = BASE_HP;
-      const gradeHp = char.gradeHpBonus + (charLv - 1) * 2;
+      const charBaseHp = char.gradeHpBonus;
+      const levelHp = (charLv - 1) * 2;
+      const gradeHp = charBaseHp + levelHp;
       const synergyHp = synergy ? synergy.bonusHp : 0;
       const maxHp = baseHp + gradeHp + synergyHp;
 
@@ -2448,6 +2458,8 @@
         weapon,
         synergy,
         baseHp,
+        charBaseHp,
+        levelHp,
         gradeHp,
         synergyHp,
         maxHp,
@@ -2799,7 +2811,7 @@
       document.getElementById('lobby-equipped-text').textContent =
         `${char ? char.name : '사람 미선택'} + ${weapon ? weapon.name : '무기 미장착'}`;
       document.getElementById('lobby-hp-formula-text').textContent =
-        `체력: ${stats.maxHp} HP (기본 ${stats.baseHp} + 체급 ${stats.gradeHp}${stats.synergyHp ? ` + 시너지 ${stats.synergyHp}` : ''})`;
+        `체력: ${stats.maxHp} HP (${char ? char.name : '기본'} ${stats.charBaseHp}${stats.levelHp ? ` + 레벨 ${stats.levelHp}` : ''}${stats.synergyHp ? ` + 시너지 ${stats.synergyHp}` : ''})`;
 
       const lobbySyn = document.getElementById('lobby-synergy-text');
       if (stats.synergy) {
@@ -2860,21 +2872,13 @@
         const r = Math.random() * 100;
         let pickedId = 'rusty_dagger';
 
-        if (bannerType === 'limited_sans') {
-          if (r < 4.0) pickedId = 'strange_bone';
-          else if (r < 4.75) pickedId = 'lightning_daggers';
-          else if (r < 12.0) pickedId = 'knight_greatsword';
-          else if (r < 27.0) pickedId = 'steel_spear';
-          else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
-        } else if (bannerType === 'limited_thunder') {
+        if (bannerType === 'limited_thunder') {
           if (r < 4.0) pickedId = 'lightning_daggers';
-          else if (r < 4.75) pickedId = 'strange_bone';
           else if (r < 12.0) pickedId = 'knight_greatsword';
           else if (r < 27.0) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else {
-          if (r < 0.75) pickedId = 'strange_bone';
-          else if (r < 1.5) pickedId = 'lightning_daggers';
+          if (r < 1.5) pickedId = 'lightning_daggers';
           else if (r < 8.5) pickedId = 'knight_greatsword';
           else if (r < 24.5) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
@@ -3072,7 +3076,7 @@
           </div>
           <div class="w-16 h-16 my-1 ${owned ? '' : 'grayscale'}">${c.art}</div>
           <div class="text-xs font-black text-white mt-1">${c.name}</div>
-          <div class="text-[10px] text-emerald-400 font-bold mt-0.5">HP ${totalHp} (20+${c.gradeHpBonus})</div>
+          <div class="text-[10px] text-emerald-400 font-bold mt-0.5">HP ${totalHp}</div>
           <div class="text-[10px] text-zinc-400 mt-0.5">기본 위력 +${c.atk}</div>
         `;
         charGrid.appendChild(card);
@@ -3246,8 +3250,8 @@
       }
 
       document.getElementById('formation-hp-breakdown').textContent = char
-        ? `기본 ${stats.baseHp} + 체급 ${stats.gradeHp}${stats.synergyHp ? ` + 시너지 ${stats.synergyHp}` : ''} = ${stats.maxHp} HP`
-        : '기본 20 HP (사람 미선택)';
+        ? `${char.name} ${stats.charBaseHp}${stats.levelHp ? ` + 레벨 ${stats.levelHp}` : ''}${stats.synergyHp ? ` + 시너지 ${stats.synergyHp}` : ''} = ${stats.maxHp} HP`
+        : '사람 미선택 (체력 0 HP)';
 
       document.getElementById('formation-total-stats').textContent = char
         ? `최대 HP ${stats.maxHp} / 탄막 1발 피해 ${stats.hitDamage}`
@@ -3670,7 +3674,7 @@
         weaponName: stats.weapon ? stats.weapon.name : '맨손',
         maxHp: stats.maxHp,
         hp: stats.maxHp,
-        hitDamage: stats.hitDamage,
+        hitDamage: PVP_EQUAL_BASE_DAMAGE,
         speed: stats.speed,
         dmgReduce: stats.dmgReduce,
         synergyName: stats.synergy ? stats.synergy.name : ''
@@ -3968,7 +3972,7 @@
       skills.forEach((sk, idx) => {
         const isHeal = sk.type === 'heal';
         const isSynSkill = !!sk.isSynergySkill;
-        const dmg = isHeal ? 0 : Math.max(2, Math.round(battle.stats.hitDamage * sk.mult));
+        const dmg = computeSkillDamage(sk);
 
         const pickOrder = dualMode ? pvpSession.selectedSkillIndices.indexOf(idx) : -1;
         const isPicked = pickOrder !== -1;
@@ -3990,7 +3994,7 @@
               ${isPicked ? `<span class="inline-block px-1.5 py-0.5 mr-1 rounded bg-orange-400 text-black text-[10px] font-black">선택 ${pickOrder + 1}</span>` : ''}${sk.name}
             </span>
             <span class="px-2 py-0.5 rounded bg-black border ${isSynSkill ? 'border-sky-400/70 text-sky-300' : 'border-zinc-700'} font-orbitron text-[11px] font-bold ${isHeal ? 'text-emerald-400' : isSynSkill ? 'text-sky-300' : 'text-amber-300'}">
-              ${isHeal ? `+${sk.heal} HP` : `위력 ${dmg}`}
+              ${isHeal ? `+${sk.heal} HP` : `${battle.mode === 'pvp' ? '균등 위력' : '위력'} ${dmg}`}
             </span>
           </div>
           <div class="text-[11px] ${isSynSkill ? 'text-sky-100/90' : 'text-zinc-400'} mt-1">${sk.desc}</div>
@@ -4291,8 +4295,8 @@
       }
 
       SoundFX.slash();
-      const dmg1 = Math.max(2, Math.round(battle.stats.hitDamage * atkSkills[0].mult));
-      const dmg2 = atkSkills[1] ? Math.max(2, Math.round(battle.stats.hitDamage * atkSkills[1].mult)) : dmg1;
+      const dmg1 = computeSkillDamage(atkSkills[0]);
+      const dmg2 = atkSkills[1] ? computeSkillDamage(atkSkills[1]) : dmg1;
       const combinedHitDmg = atkSkills.length === 2 ? Math.round((dmg1 + dmg2) / 2) : dmg1;
 
       await RoomStore.update('pvp', pvpSession.roomCode, {
@@ -4330,7 +4334,7 @@
         return;
       }
 
-      const dmgPerHit = sk.type === 'attack' ? Math.max(2, Math.round(battle.stats.hitDamage * sk.mult)) : 0;
+      const dmgPerHit = computeSkillDamage(sk);
 
       if (sk.type === 'heal') {
         SoundFX.heal();
@@ -4397,11 +4401,14 @@
       }
 
       if (battle.mode === 'solo_raid') {
-        battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
+        const isSansMetal = raidSession.bossType === 'sans';
+        const actualDmg = isSansMetal ? 1 : dmgPerHit;
+        battle.enemyHp = Math.max(0, battle.enemyHp - actualDmg);
         updateBattleBars();
-        spawnDamagePopup(`-${dmgPerHit}`, 'text-amber-300');
-        document.getElementById('battle-dialogue-text').textContent =
-          `[${sk.name}] 명중! 심연의 군주에게 ${dmgPerHit}의 피해를 입혔습니다!`;
+        spawnDamagePopup(isSansMetal ? `-1 (메탈)` : `-${actualDmg}`, isSansMetal ? 'text-sky-300' : 'text-amber-300');
+        document.getElementById('battle-dialogue-text').textContent = isSansMetal
+          ? `[${sk.name}] 명중! 샌즈의 메탈 방어로 1의 고정 피해를 입혔습니다!`
+          : `[${sk.name}] 명중! 심연의 군주에게 ${actualDmg}의 피해를 입혔습니다!`;
 
         const sprite = document.getElementById('enemy-sprite-container');
         sprite.classList.remove('animate-shake');
@@ -4410,14 +4417,35 @@
 
         showBattlePanel('pvp_wait');
         document.getElementById('battle-pvp-wait-panel').innerHTML = `
-          <div class="text-sm font-black text-purple-300">⚔️ [${sk.name}] 명중! (-${dmgPerHit} HP)</div>
-          <div class="text-xs text-zinc-400 mt-1">보스가 2가지 패턴을 동시에 준비하고 있습니다...</div>
+          <div class="text-sm font-black text-purple-300">⚔️ [${sk.name}] 명중! (-${actualDmg} HP)</div>
+          <div class="text-xs text-zinc-400 mt-1">보스가 다음 공격을 준비하고 있습니다...</div>
         `;
 
         setTimeout(() => {
           if (!battle.active) return;
           if (battle.enemyHp <= 0) {
-            handleRaidVictory(false);
+            if (isSansMetal && raidSession.bossPhase === 1) {
+              raidSession.bossPhase = 2;
+              battle.enemyHp = 3;
+              battle.enemyMaxHp = 3;
+              SoundFX.synergy();
+              updateBattleBars();
+              spawnDamagePopup('⚡ 2페이즈 각성! HP 3', 'text-sky-300');
+              document.getElementById('battle-stage-badge').textContent = 'SANS PHASE 2';
+              document.getElementById('enemy-name-display').textContent = '레이드 보스 · 샌즈 2페이즈 (HP 3 · 🛡️ 메탈)';
+              document.getElementById('enemy-synergy-badge').textContent = '⚡ 2페이즈 · 시너지 [최후의 심판] 해금';
+              document.getElementById('battle-dialogue-text').textContent =
+                '💀 "아직 안 끝났어..." 샌즈가 2페이즈로 각성해 체력이 3으로 회복되고 [최후의 심판]을 사용합니다!';
+              document.getElementById('battle-pvp-wait-panel').innerHTML = `
+                <div class="text-sm font-black text-sky-300 animate-pulse">💀 샌즈 2페이즈 각성! (HP 3 회복)</div>
+                <div class="text-xs text-amber-300 mt-1">시너지 필살기 [✨ 최후의 심판] 패턴이 발동됩니다!</div>
+              `;
+              setTimeout(() => {
+                if (battle.active) startRaidBossAttackTurn();
+              }, 1100);
+            } else {
+              handleRaidVictory(false);
+            }
           } else {
             startRaidBossAttackTurn();
           }
@@ -4558,7 +4586,7 @@
     }
 
     /* ============================================================================
-       11-B. 레이드 시스템 (HP 100 · 보스 3스킬 동시 발동 · 아비스 로드 / 심판의 해골 샌즈)
+       11-B. 레이드 시스템 (아비스 로드 HP 100 · 심판의 해골 샌즈 HP 3 메탈)
     ============================================================================ */
     const RAID_BOSS_MAX_HP = 100;
     const RAID_BOSS_HIT_DAMAGE = 6;
@@ -4567,6 +4595,8 @@
     const RAID_BOSS_CONFIGS = {
       abyss: {
         id: 'abyss',
+        maxHp: 100,
+        metalArmor: false,
         title: '심연의 군주 · 아비스 로드',
         displayName: '레이드 보스 · 아비스 로드 (HP 100)',
         coopDisplayName: '협동 레이드 · 아비스 로드 (HP 100)',
@@ -4576,11 +4606,13 @@
       },
       sans: {
         id: 'sans',
+        maxHp: 3,
+        metalArmor: true,
         title: '심판의 해골 · 샌즈',
-        displayName: '레이드 보스 · 샌즈 (HP 100)',
-        coopDisplayName: '협동 레이드 · 샌즈 (HP 100)',
-        badgeTag: '💀 심판 3스킬 동시 발동',
-        introText: '심판의 해골 · 샌즈가 가로막습니다! 가스터 블래스터와 뼈다귀 3중 공격이 동시에 쏟아집니다!',
+        displayName: '레이드 보스 · 샌즈 (HP 3 · 🛡️ 메탈)',
+        coopDisplayName: '협동 레이드 · 샌즈 (HP 3 · 🛡️ 메탈)',
+        badgeTag: '🛡️ 메탈 (모든 피해 1) · 2스킬 동시 발동',
+        introText: '심판의 해골 · 샌즈가 등장했습니다! 메탈 방어(피해 1 고정)와 함께 2가지 심판 스킬을 동시에 사용합니다!',
         art: SVG_ART.sans
       }
     };
@@ -4599,8 +4631,8 @@
         summaryBox.className = 'mb-4 p-3 rounded-2xl bg-sky-950/30 border border-sky-400/50 text-xs text-sky-200 space-y-1';
         summaryBox.innerHTML = `
           <div class="font-black text-sky-300">💀 심판의 해골 · 샌즈 (레이드 보스)</div>
-          <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
-          <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 가스터 블래스터·뼈다귀 스킬 동시 발사!</span></div>
+          <div>• 보스 체력: <span class="text-white font-bold">3 HP</span> <span class="text-sky-300 font-bold">(🛡️ 메탈: 모든 공격 피해 1 고정 · 2스킬 동시 발동)</span></div>
+          <div>• 토벌 보상: <span class="text-amber-300 font-bold">전설 무기 [이상한 뼈다귀] 확정 지급 + 3 W!</span></div>
         `;
       } else {
         abyssBtn.className = 'p-3 rounded-2xl bg-purple-950/40 border-2 border-purple-400 text-left transition cursor-pointer shadow-[0_0_20px_rgba(168,85,247,0.2)]';
@@ -4618,6 +4650,7 @@
       roomCode: null,
       role: null,
       bossType: 'abyss',
+      bossPhase: 1,
       unsub: null,
       lastTurnSeq: -1,
       lastPosSync: 0,
@@ -4636,6 +4669,7 @@
       }
       raidSession.roomCode = null;
       raidSession.role = null;
+      raidSession.bossPhase = 1;
       raidSession.lastTurnSeq = -1;
     }
 
@@ -4689,16 +4723,20 @@
       inp.focus();
     }
 
-    function pickThreeBossSkills(bossType = 'abyss') {
+    function pickBossSkills(bossType = 'abyss', bossPhase = 1) {
       if (bossType === 'sans') {
-        const sansSkillPool = [
+        const baseSansSkills = [
           { weaponName: '이상한 뼈다귀', name: '뼈다귀 파도', pattern: 'sb_1' },
           { weaponName: '이상한 뼈다귀', name: '가스터 블래스터', pattern: 'sb_2' },
-          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' },
-          { weaponName: '심판의 시간', name: '최후의 심판', pattern: 'sb_ult' }
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' }
         ];
-        const shuffled = [...sansSkillPool].sort(() => Math.random() - 0.5);
-        return [shuffled[0], shuffled[1], shuffled[2]];
+        if (bossPhase >= 2) {
+          const synergyUlt = { weaponName: '심판의 시간', name: '✨ 최후의 심판', pattern: 'sb_ult' };
+          const subSkill = baseSansSkills[Math.floor(Math.random() * baseSansSkills.length)];
+          return [synergyUlt, subSkill];
+        }
+        const shuffledSans = [...baseSansSkills].sort(() => Math.random() - 0.5);
+        return [shuffledSans[0], shuffledSans[1]];
       }
 
       const allAttackSkills = [];
@@ -4719,6 +4757,7 @@
       cleanupRaidSubscription();
       cleanupPvpSubscription();
       raidSession.bossType = selectedRaidBossType;
+      raidSession.bossPhase = 1;
       navigateTo('battle');
       initSoloRaidBattle(selectedRaidBossType);
     }
@@ -4727,15 +4766,17 @@
       stopArenaLoop();
       const stats = calculateCombatStats();
       const bossCfg = RAID_BOSS_CONFIGS[bossType] || RAID_BOSS_CONFIGS.abyss;
+      const bossMaxHp = bossCfg.maxHp || RAID_BOSS_MAX_HP;
       raidSession.bossType = bossCfg.id;
+      raidSession.bossPhase = 1;
 
       battle = {
         active: true,
         mode: 'solo_raid',
         turn: 'player',
         enemyDeck: null,
-        enemyHp: RAID_BOSS_MAX_HP,
-        enemyMaxHp: RAID_BOSS_MAX_HP,
+        enemyHp: bossMaxHp,
+        enemyMaxHp: bossMaxHp,
         enemyHitDamage: RAID_BOSS_HIT_DAMAGE,
         playerHp: stats.maxHp,
         playerMaxHp: stats.maxHp,
@@ -4775,20 +4816,26 @@
     function startRaidBossAttackTurn() {
       if (!battle.active) return;
       const bossCfg = RAID_BOSS_CONFIGS[raidSession.bossType] || RAID_BOSS_CONFIGS.abyss;
-      const [sk1, sk2, sk3] = pickThreeBossSkills(bossCfg.id);
+      const [sk1, sk2, sk3] = pickBossSkills(bossCfg.id, raidSession.bossPhase || 1);
 
       showBattlePanel('arena');
       document.getElementById('mobile-touch-pad').classList.remove('hidden');
-      document.getElementById('dodge-pattern-label').textContent =
-        `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`;
-      document.getElementById('battle-dialogue-text').textContent =
-        `${bossCfg.title}가 [${sk1.name}], [${sk2.name}], [${sk3.name}]을(를) 동시에 시전합니다!`;
+      document.getElementById('dodge-pattern-label').textContent = sk3
+        ? `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`
+        : sk2
+          ? `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]!`
+          : `💀 샌즈 심판 스킬: [${sk1.name}]!`;
+      document.getElementById('battle-dialogue-text').textContent = sk3
+        ? `${bossCfg.title}가 [${sk1.name}], [${sk2.name}], [${sk3.name}]을(를) 동시에 시전합니다!`
+        : sk2
+          ? `${bossCfg.title}가 [${sk1.name}]와 [${sk2.name}]을(를) 동시에 시전합니다!`
+          : `${bossCfg.title}가 [${sk1.name}]을(를) 시전합니다!`;
 
       startArenaPhase({
         controller: 'human_defend',
         pattern: sk1.pattern,
-        pattern2: sk2.pattern,
-        pattern3: sk3.pattern,
+        pattern2: sk2 ? sk2.pattern : null,
+        pattern3: sk3 ? sk3.pattern : null,
         hitDamage: RAID_BOSS_HIT_DAMAGE,
         defenderSpeed: battle.stats.speed,
         defenderReduce: battle.stats.dmgReduce,
@@ -4814,13 +4861,16 @@
       hostLoadout.heartX = 160;
       hostLoadout.heartY = 110;
       const bossType = selectedRaidBossType;
+      const bossCfg = RAID_BOSS_CONFIGS[bossType] || RAID_BOSS_CONFIGS.abyss;
+      const bossMaxHp = bossCfg.maxHp || RAID_BOSS_MAX_HP;
 
       const roomMode = await RoomStore.create('raid', code, {
         code,
         bossType,
+        bossPhase: 1,
         status: 'waiting',
-        bossHp: RAID_BOSS_MAX_HP,
-        bossMaxHp: RAID_BOSS_MAX_HP,
+        bossHp: bossMaxHp,
+        bossMaxHp: bossMaxHp,
         host: hostLoadout,
         guest: null,
         phase: 'host_attack',
@@ -4834,8 +4884,7 @@
       raidSession.roomCode = code;
       raidSession.role = 'host';
       raidSession.bossType = bossType;
-
-      document.getElementById('raid-join-input-box').classList.add('hidden');
+      raidSession.bossPhase = 1;
       document.getElementById('raid-host-wait-box').classList.remove('hidden');
       document.getElementById('raid-generated-code').textContent = code;
       const syncBadge = document.getElementById('raid-room-sync-badge');
@@ -4945,6 +4994,7 @@
       const myStats = calculateCombatStats();
       const bossCfg = RAID_BOSS_CONFIGS[data.bossType] || RAID_BOSS_CONFIGS.abyss;
       raidSession.bossType = bossCfg.id;
+      raidSession.bossPhase = data.bossPhase || 1;
 
       battle = {
         active: true,
@@ -5003,13 +5053,46 @@
       const meKey = raidSession.role;
       const myName = loggedInUser?.nickname || (meKey === 'host' ? '방장' : '동료');
       const bossType = raidSession.bossType || 'abyss';
+      const curPhase = raidSession.bossPhase || 1;
+      const isSansMetal = bossType === 'sans';
+      const actualDmg = (!isHeal && damageDealt > 0) ? (isSansMetal ? 1 : damageDealt) : 0;
 
-      const newBossHp = Math.max(0, battle.enemyHp - damageDealt);
+      const newBossHp = Math.max(0, battle.enemyHp - actualDmg);
       const logMsg = isHeal
         ? `[${myName}]님이 [${skillName}]으로 체력을 회복했습니다!`
-        : `[${myName}]님의 [${skillName}] 명중! 보스에게 -${damageDealt} 피해!`;
+        : isSansMetal
+          ? `[${myName}]님의 [${skillName}] 명중! 메탈 방어로 보스에게 -1 피해!`
+          : `[${myName}]님의 [${skillName}] 명중! 보스에게 -${actualDmg} 피해!`;
 
       if (newBossHp <= 0) {
+        if (isSansMetal && curPhase === 1) {
+          const phase2Log = '💀 [2페이즈 각성] 샌즈의 눈이 푸르게 불타오릅니다! 체력 3 회복 & 시너지 [✨ 최후의 심판] 해금!';
+          if (meKey === 'host' && battle.allyHp > 0) {
+            await RoomStore.update('raid', raidSession.roomCode, {
+              bossHp: 3,
+              bossMaxHp: 3,
+              bossPhase: 2,
+              [`${meKey}.hp`]: battle.playerHp,
+              phase: 'guest_attack',
+              lastActionLog: phase2Log,
+              turnSeq: raidSession.lastTurnSeq + 1
+            });
+          } else {
+            const bossSkills = pickBossSkills('sans', 2);
+            await RoomStore.update('raid', raidSession.roomCode, {
+              bossHp: 3,
+              bossMaxHp: 3,
+              bossPhase: 2,
+              [`${meKey}.hp`]: battle.playerHp,
+              phase: 'boss_dodge',
+              bossSkills,
+              lastActionLog: phase2Log,
+              turnSeq: raidSession.lastTurnSeq + 1
+            });
+          }
+          return;
+        }
+
         await RoomStore.update('raid', raidSession.roomCode, {
           bossHp: 0,
           [`${meKey}.hp`]: battle.playerHp,
@@ -5031,23 +5114,23 @@
             turnSeq: raidSession.lastTurnSeq + 1
           });
         } else {
-          const [sk1, sk2, sk3] = pickThreeBossSkills(bossType);
+          const bossSkills = pickBossSkills(bossType, curPhase);
           await RoomStore.update('raid', raidSession.roomCode, {
             bossHp: newBossHp,
             [`${meKey}.hp`]: battle.playerHp,
             phase: 'boss_dodge',
-            bossSkills: [sk1, sk2, sk3],
+            bossSkills,
             lastActionLog: logMsg,
             turnSeq: raidSession.lastTurnSeq + 1
           });
         }
       } else {
-        const [sk1, sk2, sk3] = pickThreeBossSkills(bossType);
+        const bossSkills = pickBossSkills(bossType, curPhase);
         await RoomStore.update('raid', raidSession.roomCode, {
           bossHp: newBossHp,
           [`${meKey}.hp`]: battle.playerHp,
           phase: 'boss_dodge',
-          bossSkills: [sk1, sk2, sk3],
+          bossSkills,
           lastActionLog: logMsg,
           turnSeq: raidSession.lastTurnSeq + 1
         });
@@ -5077,6 +5160,19 @@
       if (typeof allyData.heartX === 'number' && typeof allyData.heartY === 'number') {
         raidSession.allyHeartPos.x = allyData.heartX;
         raidSession.allyHeartPos.y = allyData.heartY;
+      }
+
+      const prevPhase = raidSession.bossPhase || 1;
+      const nextPhase = data.bossPhase || 1;
+      if (nextPhase === 2 && prevPhase === 1 && (data.bossType || raidSession.bossType) === 'sans') {
+        raidSession.bossPhase = 2;
+        SoundFX.synergy();
+        spawnDamagePopup('⚡ 2페이즈 각성! HP 3', 'text-sky-300');
+        document.getElementById('battle-stage-badge').textContent = `CO-OP SANS P2 #${data.code}`;
+        document.getElementById('enemy-name-display').textContent = '협동 레이드 · 샌즈 2페이즈 (HP 3 · 🛡️ 메탈)';
+        document.getElementById('enemy-synergy-badge').textContent = '⚡ 2페이즈 · 시너지 [최후의 심판] 해금';
+      } else {
+        raidSession.bossPhase = nextPhase;
       }
 
       if (battle.enemyHp > data.bossHp) {
@@ -5139,26 +5235,30 @@
           showBattlePanel('pvp_wait');
           document.getElementById('battle-pvp-wait-panel').innerHTML = `
             <div class="text-sm font-black text-sky-300 animate-pulse">⚔️ [${allyData.nickname}]님이 연계 공격 스킬을 고르고 있습니다...</div>
-            <div class="text-xs text-zinc-400 mt-1">친구의 공격이 끝나면 보스의 2중 공격을 함께 회피합니다!</div>
+            <div class="text-xs text-zinc-400 mt-1">친구의 공격이 끝나면 보스의 공격을 함께 회피합니다!</div>
           `;
         }
-      } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 2) {
+      } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 1) {
         const [sk1, sk2, sk3] = data.bossSkills;
         const bossCfg = RAID_BOSS_CONFIGS[data.bossType || raidSession.bossType] || RAID_BOSS_CONFIGS.abyss;
         showBattlePanel('arena');
         document.getElementById('mobile-touch-pad').classList.remove('hidden');
         document.getElementById('dodge-pattern-label').textContent = sk3
           ? `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`
-          : `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]!`;
+          : sk2
+            ? `👹 보스 2중 스킬: [${sk1.name}] + [${sk2.name}]!`
+            : `💀 샌즈 심판 스킬: [${sk1.name}]!`;
         document.getElementById('battle-dialogue-text').textContent = sk3
           ? `${bossCfg.title}가 [${sk1.name}] + [${sk2.name}] + [${sk3.name}]을(를) 동시 발사! 친구와 함께 피하세요!`
-          : `${bossCfg.title}가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
+          : sk2
+            ? `${bossCfg.title}가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`
+            : `${bossCfg.title}가 [${sk1.name}]을(를) 발사! 친구와 함께 피하세요!`;
 
         startArenaPhase({
           controller: meData.hp > 0 ? 'human_defend' : 'pvp_spectate',
           coopAllyHeart: true,
           pattern: sk1.pattern,
-          pattern2: sk2.pattern,
+          pattern2: sk2 ? sk2.pattern : null,
           pattern3: sk3 ? sk3.pattern : null,
           hitDamage: RAID_BOSS_HIT_DAMAGE,
           defenderSpeed: battle.stats.speed,
@@ -5206,19 +5306,40 @@
     function handleRaidVictory(isCoop) {
       battle.active = false;
       stopArenaLoop();
+      const clearedBossType = raidSession.bossType || 'abyss';
+      const bossCfg = RAID_BOSS_CONFIGS[clearedBossType] || RAID_BOSS_CONFIGS.abyss;
       cleanupRaidSubscription();
       SoundFX.victory();
 
       const reward = 3;
       state.wins += reward;
+
+      let boneRewardText = '';
+      if (clearedBossType === 'sans') {
+        if (!state.ownedWeapons['strange_bone']) {
+          state.ownedWeapons['strange_bone'] = { level: 1 };
+          boneRewardText = '\n🎁 특별 보상: 전설 무기 [이상한 뼈다귀] 획득!';
+        } else {
+          state.ownedWeapons['strange_bone'].level += 1;
+          boneRewardText = `\n🎁 특별 보상: [이상한 뼈다귀] 강화! (Lv.${state.ownedWeapons['strange_bone'].level})`;
+        }
+      }
+
       updateGlobalUI();
       saveAccountProgress();
 
       showCustomModal({
         icon: '👑',
         title: isCoop ? '2인 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
-        desc: `${(RAID_BOSS_CONFIGS[raidSession.bossType] || RAID_BOSS_CONFIGS.abyss).title}(100 HP)를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)`,
+        desc: `${bossCfg.title}(${bossCfg.maxHp} HP)를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)${boneRewardText}`,
         buttons: [
+          ...(clearedBossType === 'sans'
+            ? [{
+                label: '🛡️ 이상한 뼈다귀 편성하기',
+                className: 'px-4 py-2.5 rounded-xl bg-sky-400 text-black font-black text-xs cursor-pointer',
+                onClick: () => navigateTo('formation')
+              }]
+            : []),
           {
             label: `뽑기 (보유 ${state.wins} W)`,
             className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
@@ -5724,52 +5845,70 @@
           addDagger(cx, cy, baseAng + 0.14, 265, '#fef08a', 0.34);
         }
       } else if (pattern === 'sb_1') {
-        if (tState.waveTimer >= 0.85) {
+        if (tState.waveTimer >= 0.88) {
           tState.waveTimer = 0;
-          const gapY = h * 0.5 + Math.sin(tState.patternPhase * 2.6) * (h * 0.24);
-          addBarGap(true, 185, gapY, 58, '#f8fafc', 18);
+          tState.toggleSide = !tState.toggleSide;
+          const gapY = h * 0.5 + Math.sin(tState.patternPhase * 2.8) * (h * 0.22);
+          addBarGap(tState.toggleSide, 175, gapY, 62, '#f8fafc', 16);
+        }
+        if (tState.spawnTimer >= 1.15) {
+          tState.spawnTimer = 0;
+          const sx = 28 + Math.random() * (w - 56);
+          addSpike(sx, Math.random() < 0.5, 0.72, 0.25, h * 0.34, '#38bdf8');
         }
       } else if (pattern === 'sb_2') {
-        if (tState.spawnTimer >= 0.82) {
+        if (tState.spawnTimer >= 0.88) {
           tState.spawnTimer = 0;
           const side = Math.floor(Math.random() * 4);
           let bx = 14, by = 14;
-          if (side === 0) { bx = 20 + Math.random() * (w - 40); by = 10; }
-          else if (side === 1) { bx = w - 10; by = 20 + Math.random() * (h - 40); }
-          else if (side === 2) { bx = 20 + Math.random() * (w - 40); by = h - 10; }
-          else { bx = 10; by = 20 + Math.random() * (h - 40); }
+          if (side === 0) { bx = 24 + Math.random() * (w - 48); by = 10; }
+          else if (side === 1) { bx = w - 10; by = 24 + Math.random() * (h - 48); }
+          else if (side === 2) { bx = 24 + Math.random() * (w - 48); by = h - 10; }
+          else { bx = 10; by = 24 + Math.random() * (h - 48); }
           const ang = Math.atan2(heart.y - by, heart.x - bx);
-          addBeam(bx, by, bx + Math.cos(ang) * 520, by + Math.sin(ang) * 520, 0.65, 0.28, 12, '#38bdf8', true);
+          addBeam(bx, by, bx + Math.cos(ang) * 520, by + Math.sin(ang) * 520, 0.72, 0.24, 10, '#38bdf8', true);
         }
       } else if (pattern === 'sb_3') {
-        if (tState.waveTimer >= 0.98) {
+        if (tState.waveTimer >= 1.05) {
           tState.waveTimer = 0;
-          const gapY = 50 + Math.random() * (h - 100);
-          addBarGap(false, 195, gapY, 50, '#e0f2fe', 0);
+          tState.toggleAxe = !tState.toggleAxe;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(tState.toggleAxe, 175, gapY, 60, '#e0f2fe', 10);
         }
-        if (tState.spawnTimer >= 0.68) {
+        if (tState.spawnTimer >= 0.58) {
           tState.spawnTimer = 0;
-          const rx = 20 + Math.random() * (w - 40);
-          addDagger(rx, 10, Math.PI / 2, 225, '#38bdf8', 0.38, 5);
-        }
-      } else if (pattern === 'sb_ult') {
-        if (tState.spawnTimer >= 0.72) {
-          tState.spawnTimer = 0;
-          const isDiag = Math.floor(tState.patternPhase * 1.4) % 2 === 0;
-          if (isDiag) {
-            addBeam(12, 12, w - 12, h - 12, 0.58, 0.28, 11, '#38bdf8', true);
-            addBeam(w - 12, 12, 12, h - 12, 0.58, 0.28, 11, '#facc15', true);
-          } else {
-            const tx = Math.max(28, Math.min(w - 28, heart.x));
-            const ty = Math.max(28, Math.min(h - 28, heart.y));
-            addBeam(tx, 8, tx, h - 8, 0.58, 0.28, 11, '#38bdf8', true);
-            addBeam(8, ty, w - 8, ty, 0.58, 0.28, 11, '#38bdf8', true);
+          const rx = 22 + Math.random() * (w - 44);
+          addDagger(rx, 10, Math.PI / 2, 185, '#38bdf8', 0.44, 5);
+          if (Math.random() < 0.22) {
+            addSpike(26 + Math.random() * (w - 52), false, 0.74, 0.24, h * 0.34, '#f8fafc');
           }
         }
-        if (tState.waveTimer >= 0.45) {
+      } else if (pattern === 'sb_ult') {
+        if (tState.spawnTimer >= 0.82) {
+          tState.spawnTimer = 0;
+          const step = Math.floor(tState.patternPhase * 1.6) % 3;
+          if (step === 0) {
+            addBeam(12, 12, w - 12, h - 12, 0.70, 0.24, 10, '#38bdf8', true);
+            addBeam(w - 12, 12, 12, h - 12, 0.70, 0.24, 10, '#facc15', true);
+          } else if (step === 1) {
+            const tx = Math.max(28, Math.min(w - 28, heart.x));
+            const ty = Math.max(28, Math.min(h - 28, heart.y));
+            addBeam(tx, 10, tx, h - 10, 0.70, 0.24, 10, '#38bdf8', true);
+            addBeam(10, ty, w - 10, ty, 0.70, 0.24, 10, '#38bdf8', true);
+          } else {
+            addBeam(10, 26, w - 10, 26, 0.70, 0.24, 9, '#facc15', true);
+            addBeam(10, h - 26, w - 10, h - 26, 0.70, 0.24, 9, '#facc15', true);
+            const tx = Math.max(32, Math.min(w - 32, heart.x));
+            addBeam(tx, 10, tx, h - 10, 0.70, 0.24, 9, '#38bdf8', true);
+          }
+        }
+        if (tState.waveTimer >= 0.48) {
           tState.waveTimer = 0;
           const fromLeft = Math.random() < 0.5;
-          addDagger(fromLeft ? 10 : w - 10, 18 + Math.random() * (h - 36), fromLeft ? 0 : Math.PI, 235, '#e0f2fe', 0.28, 5);
+          addDagger(fromLeft ? 10 : w - 10, 20 + Math.random() * (h - 40), fromLeft ? 0 : Math.PI, 195, '#e0f2fe', 0.38, 4.5);
+          if (Math.random() < 0.35) {
+            addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 185, '#38bdf8', 0.40, 4.5);
+          }
         }
       }
     }
