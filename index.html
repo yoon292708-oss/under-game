@@ -301,7 +301,7 @@
             <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-2xl group-hover:scale-105 transition">🎰</div>
             <div>
               <h3 class="text-lg font-black text-white group-hover:text-amber-300 transition">뽑기</h3>
-              <p class="text-xs text-zinc-400 mt-0.5">무기 뽑기 (일반 · 천둥의 쌍단검) & 사람 뽑기 (하·중·상급 · 샌즈 · 세라)</p>
+              <p class="text-xs text-zinc-400 mt-0.5">무기 뽑기 (일반 · 블러드문 · 천둥의 쌍단검) & 사람 뽑기 (카이 · 샌즈 · 세라)</p>
             </div>
           </div>
           <span class="text-amber-400 font-bold text-sm">입장 ›</span>
@@ -357,7 +357,7 @@
         </div>
       </div>
 
-      <!-- 무기 뽑기 3칸 -->
+      <!-- 무기 뽑기 -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-base sm:text-lg font-black text-amber-300 flex items-center gap-2">
@@ -365,7 +365,7 @@
           </h3>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <!-- 1번째 칸: 일반 무기 뽑기 -->
           <div class="card-black rounded-2xl p-4 flex flex-col justify-between min-h-[240px]">
             <div>
@@ -432,7 +432,38 @@
             </div>
           </div>
 
-          <!-- 3번째 칸: 샌즈 레이드 클리어 전용 보상 (이상한 뼈다귀) -->
+          <!-- 3번째 칸: 기간 한정 무기 뽑기 (블러드문) -->
+          <div class="banner-crimson rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
+            <div class="flex items-center justify-between z-10">
+              <span class="px-2 py-0.5 rounded bg-red-950 border border-red-400/70 text-[11px] font-black text-red-200">🩸 기간 한정 픽업</span>
+              <span class="text-[11px] font-bold text-red-300">픽업 4.0% UP!</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
+              <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
+                <svg viewBox="0 0 160 160" class="w-full h-full drop-shadow-[0_0_20px_rgba(239,68,68,0.85)]">
+                  <circle cx="80" cy="80" r="52" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.55"/>
+                  <path d="M 96 34 A 42 42 0 1 0 118 106 A 32 32 0 1 1 96 34 Z" fill="#dc2626" opacity="0.45"/>
+                  <polygon points="44,116 114,32 124,42 54,126" fill="#fecaca" stroke="#ef4444" stroke-width="2"/>
+                  <line x1="36" y1="104" x2="64" y2="132" stroke="#facc15" stroke-width="6" stroke-linecap="round"/>
+                  <line x1="50" y1="118" x2="32" y2="138" stroke="#7f1d1d" stroke-width="7" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="text-center mt-1">
+                <div class="text-sm font-black text-red-200">블러드문 · 진홍의 대검</div>
+                <div class="text-[10px] text-red-300/80">카이 전용 시너지 [✨ 붉은 달의 계약]</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 z-10">
+              <button onclick="rollWeaponGacha('limited_bloodmoon', 1)" class="py-2.5 px-3 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-400/60 text-red-100 font-bold text-xs cursor-pointer transition">
+                한정 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollWeaponGacha('limited_bloodmoon', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-400 hover:from-red-400 hover:to-rose-300 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                한정 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4번째 칸: 샌즈 레이드 클리어 전용 보상 (이상한 뼈다귀) -->
           <div class="banner-sans rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
               <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 레이드 클리어 전용</span>
@@ -466,7 +497,7 @@
         </div>
       </div>
 
-      <!-- 사람 뽑기 3칸 -->
+      <!-- 사람 뽑기 -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-base sm:text-lg font-black text-purple-300 flex items-center gap-2">
@@ -474,7 +505,7 @@
           </h3>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <!-- 1번째 칸: 하급/중급/상급 인간 -->
           <div class="card-black rounded-2xl p-4 flex flex-col justify-between min-h-[240px]">
             <div>
@@ -502,7 +533,39 @@
             </div>
           </div>
 
-          <!-- 2번째 칸: 기간 한정 영웅 1 (심판의 해골 · 샌즈) -->
+          <!-- 2번째 칸: 기간 한정 영웅 1 (불꽃의 검사 · 카이) -->
+          <div class="banner-crimson rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
+            <div class="flex items-center justify-between z-10">
+              <span class="px-2 py-0.5 rounded bg-red-950 border border-red-400/70 text-[11px] font-black text-red-200">🔥 한정 영웅 픽업</span>
+              <span class="text-[11px] font-bold text-red-300">픽업 4.0% UP!</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center my-2 z-10">
+              <div class="w-32 h-32 sm:w-36 sm:h-36 animate-float">
+                <svg viewBox="0 0 160 160" class="w-full h-full drop-shadow-[0_0_20px_rgba(239,68,68,0.85)]">
+                  <path d="M 38 142 C 42 96, 56 78, 80 76 C 104 78, 118 96, 122 142 Z" fill="#991b1b" stroke="#f87171" stroke-width="2"/>
+                  <polygon points="80,78 66,118 80,140 94,118" fill="#18181b"/>
+                  <circle cx="80" cy="54" r="17" fill="#ffedd5"/>
+                  <path d="M 60 52 C 58 28, 102 28, 100 52 L 94 38 L 80 44 L 66 38 Z" fill="#dc2626"/>
+                  <circle cx="74" cy="54" r="2.5" fill="#ef4444"/>
+                  <circle cx="86" cy="54" r="2.5" fill="#ef4444"/>
+                </svg>
+              </div>
+              <div class="text-center mt-1">
+                <div class="text-sm font-black text-red-200">불꽃의 검사 · 카이</div>
+                <div class="text-[10px] text-red-300/80">50 HP · [블러드문] 장착 시 ✨ 붉은 달의 계약</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 z-10">
+              <button onclick="rollCharGacha('limited_kai', 1)" class="py-2.5 px-3 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-400/60 text-red-100 font-bold text-xs cursor-pointer transition">
+                영웅 1회<br><span class="text-[11px] text-amber-300 font-orbitron">1 W</span>
+              </button>
+              <button onclick="rollCharGacha('limited_kai', 5)" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-400 hover:from-red-400 hover:to-rose-300 text-black font-black text-xs shadow-lg cursor-pointer transition">
+                영웅 5연속<br><span class="text-[11px] text-zinc-900 font-orbitron">5 W</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3번째 칸: 기간 한정 영웅 2 (심판의 해골 · 샌즈) -->
           <div class="banner-sans rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
               <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/70 text-[11px] font-black text-sky-200">💀 한정 영웅 픽업</span>
@@ -537,7 +600,7 @@
             </div>
           </div>
 
-          <!-- 3번째 칸: 기간 한정 영웅 2 (세라) -->
+          <!-- 4번째 칸: 기간 한정 영웅 3 (세라) -->
           <div class="banner-gold rounded-2xl p-4 flex flex-col justify-between min-h-[240px] relative overflow-hidden">
             <div class="flex items-center justify-between z-10">
               <span class="px-2 py-0.5 rounded bg-yellow-950 border border-yellow-400/70 text-[11px] font-black text-yellow-200">⚡ 한정 영웅 픽업</span>
@@ -656,7 +719,7 @@
         <h3 class="text-sm font-black text-purple-300 mb-3 flex items-center gap-1.5">
           <span>👤</span> 인간 고유 체력 도감
         </h3>
-        <div id="codex-char-list" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+        <div id="codex-char-list" class="grid grid-cols-2 sm:grid-cols-6 gap-3"></div>
       </div>
 
       <div>
@@ -909,6 +972,7 @@
                 <option value="wins:100">+100 W 지급</option>
               </optgroup>
               <optgroup label="🗡️ 무기 지급">
+                <option value="weapon:bloodmoon">무기: 블러드문 (전설)</option>
                 <option value="weapon:strange_bone">무기: 이상한 뼈다귀 (전설)</option>
                 <option value="weapon:lightning_daggers">무기: 천둥의 쌍단검 (전설)</option>
                 <option value="weapon:thunder_bone">무기: 뇌전의 뼈다귀 (신화)</option>
@@ -917,6 +981,7 @@
                 <option value="weapon:dagger_bow">무기: 단검활 (희귀)</option>
               </optgroup>
               <optgroup label="👤 사람(영웅) 지급">
+                <option value="char:kai">사람: 불꽃의 검사 · 카이 (전설)</option>
                 <option value="char:sans">사람: 심판의 해골 · 샌즈 (전설)</option>
                 <option value="char:sera">사람: 뇌전의 검희 · 세라 (전설)</option>
                 <option value="char:human_high">사람: 상급인간 (영웅)</option>
@@ -2020,6 +2085,7 @@
       human_low: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="34" r="14" fill="#d6d3d1"/><path d="M 28 84 C 30 58, 70 58, 72 84 Z" fill="#78716c"/><circle cx="45" cy="33" r="2" fill="#1c1917"/><circle cx="55" cy="33" r="2" fill="#1c1917"/></svg>`,
       human_mid: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="32" r="14" fill="#fed7aa"/><path d="M 25 85 C 28 55, 72 55, 75 85 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/><path d="M 38 24 Q 50 14 62 24" fill="none" stroke="#92400e" stroke-width="5" stroke-linecap="round"/><circle cx="45" cy="32" r="2" fill="#0f172a"/><circle cx="55" cy="32" r="2" fill="#0f172a"/></svg>`,
       human_high: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="31" r="14" fill="#ffedd5"/><path d="M 22 86 C 26 52, 74 52, 78 86 Z" fill="#6d28d9" stroke="#facc15" stroke-width="2.5"/><polygon points="38,20 44,12 50,19 56,12 62,20" fill="#facc15"/><circle cx="45" cy="31" r="2" fill="#1e1b4b"/><circle cx="55" cy="31" r="2" fill="#1e1b4b"/></svg>`,
+      kai: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 24 88 C 28 56, 72 56, 76 88 Z" fill="#991b1b" stroke="#f87171" stroke-width="2"/><polygon points="50,58 41,86 59,86" fill="#18181b"/><circle cx="50" cy="35" r="12" fill="#ffedd5"/><path d="M 36 33 C 34 16, 66 16, 64 33 L 58 23 L 50 28 L 42 23 Z" fill="#dc2626"/><circle cx="46" cy="35" r="2" fill="#ef4444"/><circle cx="54" cy="35" r="2" fill="#ef4444"/></svg>`,
       sans: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 24 88 C 28 56, 72 56, 76 88 Z" fill="#1d4ed8" stroke="#38bdf8" stroke-width="2"/><path d="M 43 58 L 50 88 L 57 58 Z" fill="#f8fafc"/><ellipse cx="50" cy="34" rx="16" ry="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><rect x="40" y="42" width="20" height="9" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><circle cx="43" cy="33" r="4.5" fill="#09090b"/><circle cx="57" cy="33" r="4.5" fill="#09090b"/><circle cx="57" cy="33" r="3" fill="#38bdf8"/><polygon points="50,37 48,41 52,41" fill="#09090b"/><path d="M 41 46 Q 50 50 59 46" fill="none" stroke="#09090b" stroke-width="1.8"/></svg>`,
       sera: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 30 38 C 28 20, 72 20, 70 38 L 76 70 L 24 70 Z" fill="#facc15"/><path d="M 26 88 L 34 52 L 66 52 L 74 88 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="50" cy="36" r="11" fill="#ffedd5"/><circle cx="46" cy="36" r="2" fill="#0284c7"/><circle cx="54" cy="36" r="2" fill="#0284c7"/><path d="M 38 27 L 50 20 L 62 27" fill="none" stroke="#eab308" stroke-width="2.5"/></svg>`,
 
@@ -2033,6 +2099,7 @@
       steel_spear: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="18" y1="84" x2="72" y2="30" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/><polygon points="66,24 86,16 78,36" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.5"/></svg>`,
       knight_greatsword: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="24,74 78,16 86,24 32,82" fill="#f3e8ff" stroke="#c084fc" stroke-width="2"/><line x1="18" y1="64" x2="40" y2="86" stroke="#facc15" stroke-width="5.5" stroke-linecap="round"/><line x1="29" y1="75" x2="14" y2="90" stroke="#4c1d95" stroke-width="6" stroke-linecap="round"/></svg>`,
       lightning_daggers: `<svg viewBox="0 0 100 100" class="w-full h-full"><g transform="rotate(-22 50 50)"><polygon points="38,16 45,62 31,62" fill="#22d3ee" stroke="#cffafe" stroke-width="1.2"/><rect x="28" y="62" width="20" height="5" fill="#facc15"/><rect x="35" y="67" width="6" height="15" fill="#0f172a"/></g><g transform="rotate(22 50 50)"><polygon points="62,16 69,62 55,62" fill="#38bdf8" stroke="#cffafe" stroke-width="1.2"/><rect x="52" y="62" width="20" height="5" fill="#facc15"/><rect x="59" y="67" width="6" height="15" fill="#0f172a"/></g></svg>`,
+      bloodmoon: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 62 20 A 30 30 0 1 0 78 72 A 22 22 0 1 1 62 20 Z" fill="#dc2626" opacity="0.45"/><polygon points="24,74 76,16 84,24 32,82" fill="#fecaca" stroke="#ef4444" stroke-width="2"/><line x1="18" y1="64" x2="40" y2="86" stroke="#facc15" stroke-width="5" stroke-linecap="round"/><line x1="29" y1="75" x2="14" y2="90" stroke="#7f1d1d" stroke-width="6" stroke-linecap="round"/></svg>`,
       strange_bone: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="34" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/><g transform="rotate(-38 50 50)"><rect x="42" y="22" width="16" height="56" rx="4" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="41" cy="22" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="59" cy="22" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="41" cy="78" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="59" cy="78" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><rect x="44" y="21" width="12" height="58" fill="#f8fafc"/></g></svg>`,
 
       dagger_bow: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 28 18 Q 82 50 28 82" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round"/><line x1="28" y1="18" x2="28" y2="82" stroke="#e5e7eb" stroke-width="1.5"/><polygon points="24,50 76,45 86,50 76,55" fill="#f8fafc" stroke="#facc15" stroke-width="1.5"/></svg>`,
@@ -2074,6 +2141,15 @@
         baseHp: 40,
         speed: 3.8,
         art: SVG_ART.human_high
+      },
+      {
+        id: 'kai',
+        name: '불꽃의 검사 · 카이',
+        rarity: '전설',
+        rarityColor: 'text-red-300 border-red-400/70 bg-red-950/70',
+        baseHp: 50,
+        speed: 4.1,
+        art: SVG_ART.kai
       },
       {
         id: 'sans',
@@ -2247,6 +2323,21 @@
         ]
       },
       {
+        id: 'bloodmoon',
+        name: '블러드문',
+        rarity: '전설',
+        rarityColor: 'text-red-300 border-red-400/70 bg-red-950/70',
+        atk: 10,
+        desc: '[기간 한정] 붉은 달의 저주와 핏빛 초승달 검기를 날리는 전설의 대검!',
+        art: SVG_ART.bloodmoon,
+        skills: [
+          { name: '혈월 참격', type: 'attack', mult: 1.15, pattern: 'bm_1', desc: '붉은 초승달 검기가 사방에서 쇄도' },
+          { name: '진홍의 핏방울', type: 'attack', mult: 1.35, pattern: 'bm_2', desc: '하트를 조준하는 핏빛 탄환 연사' },
+          { name: '만월의 구속', type: 'attack', mult: 1.5, pattern: 'bm_3', desc: '가로·세로 붉은 달 참격 레이저 작렬' },
+          { name: '혈월 흡수', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
+        ]
+      },
+      {
         id: 'strange_bone',
         name: '이상한 뼈다귀',
         rarity: '전설',
@@ -2379,6 +2470,26 @@
 
     const SYNERGIES = [
       {
+        id: 'syn_kai_bloodmoon',
+        name: '붉은 달의 계약',
+        charId: 'kai',
+        weaponId: 'bloodmoon',
+        badgeColor: 'text-red-300 border-red-400/70 bg-red-950/60',
+        bonusHp: 10,
+        bonusDmg: 2,
+        bonusSpeed: 0.45,
+        dmgReduce: 0.15,
+        specialSkill: {
+          name: '🩸 혈월 개화 · 진홍의 심판 (시너지 필살기)',
+          type: 'attack',
+          mult: 1.8,
+          pattern: 'bm_ult',
+          isSynergySkill: true,
+          desc: '[시너지 전용] 대각선 진홍 참격 레이저 + 핏빛 초승달 검기 폭풍'
+        },
+        effectText: '최대 HP +10, 무기 위력 +2, 이동속도 증가, 받는 피해 15% 감소 + 전용 필살기 [🩸 혈월 개화 · 진홍의 심판] 해금'
+      },
+      {
         id: 'syn_sans_bone',
         name: '심판의 시간',
         charId: 'sans',
@@ -2408,7 +2519,15 @@
         bonusDmg: 2,
         bonusSpeed: 0.5,
         dmgReduce: 0.15,
-        effectText: '최대 HP +10, 무기 위력 +2, 이동속도 대폭 증가, 받는 피해 15% 감소'
+        specialSkill: {
+          name: '⚡ 천뇌 강림 · 심판의 섬광 (시너지 필살기)',
+          type: 'attack',
+          mult: 1.8,
+          pattern: 'ld_ult',
+          isSynergySkill: true,
+          desc: '[시너지 전용] 십자 뇌전 레이저 + 쌍빛 나선 번개 폭풍'
+        },
+        effectText: '최대 HP +10, 무기 위력 +2, 이동속도 대폭 증가, 받는 피해 15% 감소 + 전용 필살기 [⚡ 천뇌 강림 · 심판의 섬광] 해금'
       },
       {
         id: 'syn_high_knight',
@@ -2420,7 +2539,15 @@
         bonusDmg: 1,
         bonusSpeed: 0.2,
         dmgReduce: 0.12,
-        effectText: '최대 HP +8, 무기 위력 +1, 받는 피해 12% 감소'
+        specialSkill: {
+          name: '👑 성검 해방 · 왕국의 맹세 (시너지 필살기)',
+          type: 'attack',
+          mult: 1.75,
+          pattern: 'kg_ult',
+          isSynergySkill: true,
+          desc: '[시너지 전용] 성광 십자 절단선 + 거대 파도 대검기 연쇄 발사'
+        },
+        effectText: '최대 HP +8, 무기 위력 +1, 받는 피해 12% 감소 + 전용 필살기 [👑 성검 해방 · 왕국의 맹세] 해금'
       },
       {
         id: 'syn_low_iron',
@@ -2432,7 +2559,15 @@
         bonusDmg: 1,
         bonusSpeed: 0.2,
         dmgReduce: 0.10,
-        effectText: '최대 HP +5, 무기 위력 +1, 받는 피해 10% 감소'
+        specialSkill: {
+          name: '🔥 불굴의 일격 · 투지의 검기 (시너지 필살기)',
+          type: 'attack',
+          mult: 1.7,
+          pattern: 'is_ult',
+          isSynergySkill: true,
+          desc: '[시너지 전용] 양방향 초승달 검기 폭풍 + 틈새 검벽 돌파'
+        },
+        effectText: '최대 HP +5, 무기 위력 +1, 받는 피해 10% 감소 + 전용 필살기 [🔥 불굴의 일격 · 투지의 검기] 해금'
       }
     ];
 
@@ -2463,6 +2598,7 @@
       { charId: 'human_high', weaponId: 'steel_spear' },
       { charId: 'human_high', weaponId: 'knight_greatsword' },
       { charId: 'human_high', weaponId: 'sacred_halberd' },
+      { charId: 'kai', weaponId: 'bloodmoon' },
       { charId: 'sans', weaponId: 'strange_bone' },
       { charId: 'sera', weaponId: 'lightning_daggers' }
     ];
@@ -3376,11 +3512,19 @@
 
         if (bannerType === 'limited_thunder') {
           if (r < 4.0) pickedId = 'lightning_daggers';
+          else if (r < 4.5) pickedId = 'bloodmoon';
+          else if (r < 12.0) pickedId = 'knight_greatsword';
+          else if (r < 27.0) pickedId = 'steel_spear';
+          else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
+        } else if (bannerType === 'limited_bloodmoon') {
+          if (r < 4.0) pickedId = 'bloodmoon';
+          else if (r < 4.5) pickedId = 'lightning_daggers';
           else if (r < 12.0) pickedId = 'knight_greatsword';
           else if (r < 27.0) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else {
-          if (r < 1.5) pickedId = 'lightning_daggers';
+          if (r < 0.75) pickedId = 'lightning_daggers';
+          else if (r < 1.5) pickedId = 'bloodmoon';
           else if (r < 8.5) pickedId = 'knight_greatsword';
           else if (r < 24.5) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
@@ -3423,15 +3567,21 @@
         const r = Math.random() * 100;
         let pickedId = 'human_low';
 
-        if (bannerType === 'limited_sans') {
+        if (bannerType === 'limited_kai') {
+          if (r < 4.0) pickedId = 'kai';
+          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'sans' : 'sera';
+          else if (r < 12.0) pickedId = 'human_high';
+          else if (r < 34.0) pickedId = 'human_mid';
+          else pickedId = 'human_low';
+        } else if (bannerType === 'limited_sans') {
           if (r < 4.0) pickedId = 'sans';
-          else if (r < 4.75) pickedId = 'sera';
+          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'sera' : 'kai';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
         } else if (bannerType === 'limited_sera') {
           if (r < 4.0) pickedId = 'sera';
-          else if (r < 4.75) pickedId = 'sans';
+          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'sans' : 'kai';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
@@ -6048,6 +6198,17 @@
           addWave(fromLeft, heart.y, 175, 22, '#93c5fd');
           addDagger(24 + Math.random() * (w - 48), 10, Math.PI / 2, 175, '#e5e7eb', 0.45);
         }
+      } else if (pattern === 'is_ult') {
+        if (tState.waveTimer >= 0.55) {
+          tState.waveTimer = 0;
+          addWave(true, 26 + Math.random() * (h - 52), 195, 26, '#facc15', 18, 4);
+          addWave(false, 26 + Math.random() * (h - 52), 195, 26, '#e5e7eb', 18, 4);
+        }
+        if (tState.spawnTimer >= 1.25) {
+          tState.spawnTimer = 0;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(Math.random() < 0.5, 165, gapY, 62, '#fde047', 10);
+        }
       } else if (pattern === 'wc_1') {
         if (tState.waveTimer >= 0.78) {
           tState.waveTimer = 0;
@@ -6210,6 +6371,54 @@
             addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 210, '#e879f9', 0.58);
           }
         }
+      } else if (pattern === 'kg_ult') {
+        if (tState.spawnTimer >= 0.85) {
+          tState.spawnTimer = 0;
+          const gx = 32 + Math.random() * (w - 64);
+          const gy = 28 + Math.random() * (h - 56);
+          addBeam(gx, 0, gx, h, 0.65, 0.25, 10, '#c084fc', false);
+          addBeam(0, gy, w, gy, 0.65, 0.25, 10, '#facc15', false);
+        }
+        if (tState.waveTimer >= 0.65) {
+          tState.waveTimer = 0;
+          addWave(Math.random() < 0.5, h * 0.5, 210, 32, '#e879f9', 36, 4.5);
+        }
+      } else if (pattern === 'bm_1') {
+        if (tState.waveTimer >= 0.58) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, 26 + Math.random() * (h - 52), 205, 30, '#f43f5e', 28, 4.2);
+        }
+      } else if (pattern === 'bm_2') {
+        if (tState.spawnTimer >= 0.46) {
+          tState.spawnTimer = 0;
+          const side = Math.floor(Math.random() * 4);
+          let x = 12, y = 12;
+          if (side === 0) { x = Math.random() * w; y = 10; }
+          else if (side === 1) { x = w - 10; y = Math.random() * h; }
+          else if (side === 2) { x = Math.random() * w; y = h - 10; }
+          else { x = 10; y = Math.random() * h; }
+          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 215, '#ef4444', 0.42, 5.2);
+        }
+      } else if (pattern === 'bm_3') {
+        if (tState.spawnTimer >= 0.86) {
+          tState.spawnTimer = 0;
+          const gx = 32 + Math.random() * (w - 64);
+          const gy = 28 + Math.random() * (h - 56);
+          addBeam(gx, 0, gx, h, 0.66, 0.25, 9.5, '#f43f5e', false);
+          addBeam(0, gy, w, gy, 0.66, 0.25, 9.5, '#fb7185', false);
+        }
+      } else if (pattern === 'bm_ult') {
+        if (tState.spawnTimer >= 0.95) {
+          tState.spawnTimer = 0;
+          addBeam(10, 10, w - 10, h - 10, 0.68, 0.25, 10, '#f43f5e', false);
+          addBeam(w - 10, 10, 10, h - 10, 0.68, 0.25, 10, '#ef4444', false);
+        }
+        if (tState.waveTimer >= 0.45) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          addWave(tState.toggleSide, 28 + Math.random() * (h - 56), 215, 28, '#fda4af', 24, 4.5);
+        }
       } else if (pattern === 'sb_1') {
         if (tState.waveTimer >= 0.92) {
           tState.waveTimer = 0;
@@ -6292,6 +6501,20 @@
           const baseAng = Math.atan2(heart.y - cy, heart.x - cx);
           addDagger(cx, cy, baseAng - 0.14, 265, '#22d3ee', 0.34);
           addDagger(cx, cy, baseAng + 0.14, 265, '#fef08a', 0.34);
+        }
+      } else if (pattern === 'ld_ult') {
+        if (tState.spawnTimer >= 0.18) {
+          tState.spawnTimer = 0;
+          const spiralAng = tState.patternPhase * 5.4;
+          addDagger(w / 2, h / 2, spiralAng, 200, '#22d3ee', 0.15, 4.5);
+          addDagger(w / 2, h / 2, spiralAng + Math.PI, 200, '#facc15', 0.15, 4.5);
+        }
+        if (tState.waveTimer >= 1.05) {
+          tState.waveTimer = 0;
+          const gx = 32 + Math.random() * (w - 64);
+          const gy = 28 + Math.random() * (h - 56);
+          addBeam(gx, 0, gx, h, 0.66, 0.24, 9, '#22d3ee', false);
+          addBeam(0, gy, w, gy, 0.66, 0.24, 9, '#facc15', false);
         }
       }
     }
