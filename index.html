@@ -1214,20 +1214,19 @@
             useFetchStreams: false
           });
 
-          (async () => {
-            try {
-              if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                const cred = await withTimeout(signInWithCustomToken(auth, __initial_auth_token), 3000);
-                currentUser = cred.user;
-              } else {
-                const cred = await withTimeout(signInAnonymously(auth), 3000);
-                currentUser = cred.user;
-              }
-            } catch (authErr) {
-              console.warn('Background anonymous auth skipped:', authErr?.code || authErr?.message || authErr);
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              const cred = await withTimeout(signInWithCustomToken(auth, __initial_auth_token), 3500);
+              currentUser = cred.user;
+            } else {
+              const cred = await withTimeout(signInAnonymously(auth), 3500);
+              currentUser = cred.user;
             }
-          })();
+          } catch (authErr) {
+            console.warn('Anonymous auth skipped:', authErr?.code || authErr?.message || authErr);
+          }
 
+          // 실제 Firestore 읽기 테스트로 서버 연결 상태 확인 (4초 타임아웃)
           await withTimeout(getDoc(getAccountDocRef('__health_check__')), 4000);
           cloudAvailable = true;
           lastCloudError = '';
@@ -2508,8 +2507,9 @@
       }
     })();
     let promoCodesUpdatedAt = Number(localStorage.getItem(LOCAL_CODES_KEY + '_ts') || 0);
-    let promoRelayClient = null;
-    const PROMO_RELAY_TOPIC = `${RELAY_PREFIX}global/promo_codes_v1`;
+    let promoRelayClients = [];
+    const PROMO_RELAY_TOPIC = `${RELAY_PREFIX}global/promo_codes_v2`;
+    const PROMO_REQ_TOPIC = `${RELAY_PREFIX}global/promo_codes_req_v2`;
 
     function persistLocalAccounts() {
       try {
@@ -2524,112 +2524,195 @@
       } catch (e) {}
     }
 
-    async function ensurePromoRelayClient() {
-      if (promoRelayClient && promoRelayClient.connected) return promoRelayClient;
-      try {
-        if (promoRelayClient) {
-          try { promoRelayClient.end(true); } catch (e) {}
+    function applyIncomingPromoPayload(parsed) {
+      if (!parsed || typeof parsed.codes !== 'object') return false;
+      const remoteTs = Number(parsed.updatedAt || 0);
+      if (remoteTs >= promoCodesUpdatedAt) {
+        activePromoCodes = parsed.codes;
+        promoCodesUpdatedAt = remoteTs;
+        persistLocalPromoCodes();
+        if (typeof renderAdminActiveCodesList === 'function') {
+          renderAdminActiveCodesList();
         }
-        promoRelayClient = await connectRelayClient();
-        promoRelayClient.subscribe(PROMO_RELAY_TOPIC, { qos: 1 });
-        promoRelayClient.on('message', (topic, rawBuf) => {
-          if (topic !== PROMO_RELAY_TOPIC) return;
-          try {
-            const parsed = JSON.parse(rawBuf.toString());
-            if (parsed && typeof parsed.codes === 'object') {
-              const remoteTs = Number(parsed.updatedAt || 0);
-              if (remoteTs >= promoCodesUpdatedAt) {
-                activePromoCodes = parsed.codes;
-                promoCodesUpdatedAt = remoteTs;
-                persistLocalPromoCodes();
-                if (typeof renderAdminActiveCodesList === 'function') {
-                  renderAdminActiveCodesList();
-                }
-              }
-            }
-          } catch (e) {}
-        });
-        return promoRelayClient;
-      } catch (e) {
-        return null;
+        return true;
       }
+      return false;
     }
 
-    function fetchPromoCodesFromRelay(timeoutMs = 2200) {
-      return new Promise(async (resolve) => {
-        const client = await ensurePromoRelayClient();
-        if (!client) {
-          resolve(false);
+    function connectSingleBroker(url) {
+      return new Promise((resolve) => {
+        if (typeof mqtt === 'undefined') {
+          resolve(null);
           return;
         }
-        let done = false;
-        const onMsg = (topic, rawBuf) => {
-          if (topic !== PROMO_RELAY_TOPIC || done) return;
-          try {
-            const parsed = JSON.parse(rawBuf.toString());
-            if (parsed && typeof parsed.codes === 'object') {
-              const remoteTs = Number(parsed.updatedAt || 0);
-              if (remoteTs >= promoCodesUpdatedAt) {
-                activePromoCodes = parsed.codes;
-                promoCodesUpdatedAt = remoteTs;
-                persistLocalPromoCodes();
-              }
-              done = true;
-              clearTimeout(timer);
-              client.removeListener('message', onMsg);
-              resolve(true);
-            }
-          } catch (e) {}
-        };
+        let settled = false;
+        const client = mqtt.connect(url, {
+          clientId: 'ddal_promo_' + Math.random().toString(16).slice(2, 10) + '_' + Date.now().toString(36),
+          clean: true,
+          connectTimeout: 4500,
+          reconnectPeriod: 3000
+        });
+
         const timer = setTimeout(() => {
-          if (!done) {
-            done = true;
-            client.removeListener('message', onMsg);
-            resolve(false);
+          if (!settled && !client.connected) {
+            settled = true;
+            try { client.end(true); } catch (e) {}
+            resolve(null);
           }
-        }, timeoutMs);
-        client.on('message', onMsg);
-        client.subscribe(PROMO_RELAY_TOPIC, { qos: 1 });
+        }, 4800);
+
+        client.on('connect', () => {
+          if (settled) {
+            try { client.end(true); } catch (e) {}
+            return;
+          }
+          settled = true;
+          clearTimeout(timer);
+          client.subscribe([PROMO_RELAY_TOPIC, PROMO_REQ_TOPIC], { qos: 1 });
+          client.on('message', (topic, rawBuf) => {
+            if (topic === PROMO_RELAY_TOPIC) {
+              try {
+                const str = rawBuf.toString();
+                if (!str) return;
+                applyIncomingPromoPayload(JSON.parse(str));
+              } catch (e) {}
+            } else if (topic === PROMO_REQ_TOPIC) {
+              if (promoCodesUpdatedAt > 0 && Object.keys(activePromoCodes).length > 0) {
+                try {
+                  client.publish(
+                    PROMO_RELAY_TOPIC,
+                    JSON.stringify({ codes: activePromoCodes, updatedAt: promoCodesUpdatedAt }),
+                    { retain: true, qos: 1 }
+                  );
+                } catch (e) {}
+              }
+            }
+          });
+          resolve(client);
+        });
+
+        client.on('error', () => {
+          if (!settled && !client.connected) {
+            settled = true;
+            clearTimeout(timer);
+            try { client.end(true); } catch (e) {}
+            resolve(null);
+          }
+        });
       });
     }
 
-    async function syncPromoCodesFromCloud() {
-      const tasks = [fetchPromoCodesFromRelay(2200)];
+    async function ensureAllPromoRelayClients() {
+      promoRelayClients = promoRelayClients.filter(c => c && c.connected);
+      if (promoRelayClients.length > 0) return promoRelayClients;
+      const results = await Promise.all(RELAY_BROKERS.map(url => connectSingleBroker(url)));
+      promoRelayClients = results.filter(Boolean);
+      return promoRelayClients;
+    }
+
+    async function fetchPromoCodesFromRelay(waitMs = 2500) {
+      const clients = await ensureAllPromoRelayClients();
+      if (clients.length === 0) return false;
+
+      return new Promise((resolve) => {
+        let done = false;
+        const handlers = [];
+
+        const finish = (ok) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          handlers.forEach(({ c, fn }) => {
+            try { c.removeListener('message', fn); } catch (e) {}
+          });
+          resolve(ok);
+        };
+
+        clients.forEach((c) => {
+          const fn = (topic, rawBuf) => {
+            if (topic !== PROMO_RELAY_TOPIC || done) return;
+            try {
+              const str = rawBuf.toString();
+              if (!str) return;
+              const parsed = JSON.parse(str);
+              if (parsed && typeof parsed.codes === 'object') {
+                applyIncomingPromoPayload(parsed);
+                finish(true);
+              }
+            } catch (e) {}
+          };
+          handlers.push({ c, fn });
+          c.on('message', fn);
+          try {
+            c.subscribe(PROMO_RELAY_TOPIC, { qos: 1 });
+            c.publish(PROMO_REQ_TOPIC, JSON.stringify({ reqAt: Date.now() }), { qos: 0 });
+          } catch (e) {}
+        });
+
+        const timer = setTimeout(() => finish(false), waitMs);
+      });
+    }
+
+    async function syncPromoCodesFromCloud(specificCode = '') {
+      const tasks = [fetchPromoCodesFromRelay(2500)];
+
       tasks.push((async () => {
         try {
-          await withTimeout(initFirebase(), 3000);
+          await withTimeout(initFirebase(), 4000);
           if (!db) return;
-          const snap = await withTimeout(getDoc(getPromoCodesDocRef()), 3500);
+          const snap = await withTimeout(getDoc(getPromoCodesDocRef()), 4000);
           if (snap.exists() && snap.data()?.codes) {
-            const remoteTs = Number(snap.data().updatedAt || 0);
-            if (remoteTs >= promoCodesUpdatedAt) {
-              activePromoCodes = snap.data().codes;
-              promoCodesUpdatedAt = remoteTs;
-              persistLocalPromoCodes();
+            applyIncomingPromoPayload(snap.data());
+          }
+          if (specificCode) {
+            const singleRef = doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'promo_codes', `code_${specificCode}`);
+            const singleSnap = await withTimeout(getDoc(singleRef), 3500);
+            if (singleSnap.exists()) {
+              const item = singleSnap.data();
+              if (item && !item.expired && item.reward) {
+                activePromoCodes[specificCode] = item;
+                persistLocalPromoCodes();
+              } else if (item && item.expired && activePromoCodes[specificCode]) {
+                delete activePromoCodes[specificCode];
+                persistLocalPromoCodes();
+              }
             }
           }
         } catch (e) {}
       })());
+
       await Promise.allSettled(tasks);
     }
 
-    async function savePromoCodesToCloud() {
+    async function savePromoCodesToCloud(changedCode = '', isExpired = false) {
       promoCodesUpdatedAt = Date.now();
       persistLocalPromoCodes();
       const payload = { codes: activePromoCodes, updatedAt: promoCodesUpdatedAt };
 
       const relayTask = (async () => {
-        const client = await ensurePromoRelayClient();
-        if (client && client.connected) {
-          client.publish(PROMO_RELAY_TOPIC, JSON.stringify(payload), { retain: true, qos: 1 });
-        }
+        const clients = await ensureAllPromoRelayClients();
+        clients.forEach((client) => {
+          if (client && client.connected) {
+            try {
+              client.publish(PROMO_RELAY_TOPIC, JSON.stringify(payload), { retain: true, qos: 1 });
+            } catch (e) {}
+          }
+        });
       })();
 
       const firestoreTask = (async () => {
         try {
-          await withTimeout(initFirebase(), 3000);
+          await withTimeout(initFirebase(), 4000);
           if (!db) return;
           await withTimeout(setDoc(getPromoCodesDocRef(), payload), 4000);
+          if (changedCode) {
+            const singleRef = doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'promo_codes', `code_${changedCode}`);
+            if (isExpired) {
+              await withTimeout(setDoc(singleRef, { code: changedCode, expired: true, updatedAt: promoCodesUpdatedAt }), 3500);
+            } else if (activePromoCodes[changedCode]) {
+              await withTimeout(setDoc(singleRef, { ...activePromoCodes[changedCode], expired: false, updatedAt: promoCodesUpdatedAt }), 3500);
+            }
+          }
         } catch (e) {}
       })();
 
@@ -2990,12 +3073,11 @@
         label: rewardLabel,
         createdAt: Date.now()
       };
-
-      await savePromoCodesToCloud();
+      await savePromoCodesToCloud(rawCode, false);
       SoundFX.synergy();
       document.getElementById('admin-new-code-input').value = '';
       renderAdminActiveCodesList();
-      showToast(`✨ 코드 [${rawCode}] 생성 완료! (${rewardLabel})`, 'border-amber-400 text-amber-200');
+      showToast(`✨ 코드 [${rawCode}] 생성 및 전체 서버 동기화 완료! (${rewardLabel})`, 'border-amber-400 text-amber-200');
     }
 
     async function adminExpireCode() {
@@ -3012,7 +3094,7 @@
       }
 
       delete activePromoCodes[rawCode];
-      await savePromoCodesToCloud();
+      await savePromoCodesToCloud(rawCode, true);
       SoundFX.hurt();
       document.getElementById('admin-expire-code-input').value = '';
       renderAdminActiveCodesList();
@@ -3021,7 +3103,6 @@
 
     async function redeemPromoCode() {
       SoundFX.click();
-      await syncPromoCodesFromCloud();
       const rawCode = document.getElementById('redeem-code-input').value.trim().toUpperCase();
       const statusBox = document.getElementById('redeem-code-status');
       statusBox.classList.remove('hidden');
@@ -3031,6 +3112,11 @@
         statusBox.textContent = '⚠️ 코드를 입력해주세요.';
         return;
       }
+
+      statusBox.className = 'p-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-amber-300 font-bold text-center animate-pulse';
+      statusBox.textContent = '⏳ 서버에서 코드를 확인하는 중...';
+
+      await syncPromoCodesFromCloud(rawCode);
 
       const codeObj = activePromoCodes[rawCode];
       if (!codeObj) {
