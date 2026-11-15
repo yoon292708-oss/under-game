@@ -282,6 +282,20 @@
           <span class="text-red-300 font-black text-lg group-hover:translate-x-1 transition">출전 ›</span>
         </button>
 
+        <button onclick="startRankedBattle()" class="group relative w-full rounded-2xl p-4 bg-gradient-to-r from-amber-950 via-yellow-900/80 to-zinc-950 border-2 border-amber-400/80 hover:border-amber-300 shadow-[0_0_28px_rgba(250,204,21,0.22)] hover:shadow-[0_0_38px_rgba(250,204,21,0.4)] flex items-center justify-between text-left cursor-pointer transition">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-black/70 border border-amber-400/60 flex items-center justify-center text-2xl group-hover:scale-110 transition">👑</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-xl font-black text-white tracking-tight">랭크전</h3>
+                <span id="lobby-rank-badge" class="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-500 text-[10px] font-black text-zinc-200">⚙️ 아이언 (0 RP)</span>
+              </div>
+              <p id="lobby-rank-desc" class="text-xs text-amber-200/85 mt-0.5">티어가 오를수록 AI가 강력해집니다 · 챌린저(1400 RP) 극악 난이도</p>
+            </div>
+          </div>
+          <span class="text-amber-300 font-black text-base group-hover:translate-x-1 transition">승급전 ›</span>
+        </button>
+
         <button onclick="openRaidModeModal()" class="group relative w-full rounded-2xl p-4 bg-gradient-to-r from-purple-950 via-indigo-950/90 to-zinc-950 border-2 border-purple-500/80 hover:border-purple-400 shadow-[0_0_28px_rgba(168,85,247,0.25)] hover:shadow-[0_0_38px_rgba(168,85,247,0.42)] flex items-center justify-between text-left cursor-pointer transition">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl bg-black/70 border border-purple-400/60 flex items-center justify-center text-2xl group-hover:scale-110 transition">👹</div>
@@ -1100,23 +1114,32 @@
       <!-- 레이드 보스 선택 -->
       <div class="mb-4">
         <div class="text-xs font-bold text-zinc-400 mb-2">1. 토벌할 레이드 보스 선택</div>
-        <div class="grid grid-cols-2 gap-2.5">
-          <button id="btn-boss-abyss" onclick="selectRaidBoss('abyss')" class="p-3 rounded-2xl bg-purple-950/50 border-2 border-purple-400 text-left transition cursor-pointer">
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btn-boss-abyss" onclick="selectRaidBoss('abyss')" class="p-2.5 rounded-2xl bg-purple-950/50 border-2 border-purple-400 text-left transition cursor-pointer">
             <div class="flex items-center justify-between">
-              <span class="text-xl">👹</span>
+              <span class="text-lg">👹</span>
               <span class="text-[10px] font-orbitron font-bold text-purple-300">HP 100</span>
             </div>
             <div class="text-xs font-black text-white mt-1">심연의 군주</div>
-            <div class="text-[10px] text-purple-200/80 mt-0.5">3가지 스킬 동시 발동</div>
+            <div class="text-[10px] text-purple-200/80 mt-0.5">3스킬 동시 발동</div>
           </button>
 
-          <button id="btn-boss-sans" onclick="selectRaidBoss('sans')" class="p-3 rounded-2xl bg-black border-2 border-zinc-700 hover:border-sky-400 text-left transition cursor-pointer">
+          <button id="btn-boss-sans" onclick="selectRaidBoss('sans')" class="p-2.5 rounded-2xl bg-black border-2 border-zinc-700 hover:border-sky-400 text-left transition cursor-pointer">
             <div class="flex items-center justify-between">
-              <span class="text-xl">💀</span>
+              <span class="text-lg">💀</span>
               <span class="text-[10px] font-orbitron font-bold text-sky-300">메탈 3 HP</span>
             </div>
-            <div class="text-xs font-black text-white mt-1">심판의 해골 · 샌즈</div>
-            <div class="text-[10px] text-sky-200/80 mt-0.5">2스킬 · 2페이즈 각성 · 뼈다귀 획득</div>
+            <div class="text-xs font-black text-white mt-1">샌즈</div>
+            <div class="text-[10px] text-sky-200/80 mt-0.5">2스킬 · 2페이즈</div>
+          </button>
+
+          <button id="btn-boss-sans-enhanced" onclick="selectRaidBoss('sans_enhanced')" class="p-2.5 rounded-2xl bg-black border-2 border-zinc-700 hover:border-amber-400 text-left transition cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-lg">⚡</span>
+              <span class="text-[10px] font-orbitron font-bold text-amber-300">메탈 10 HP</span>
+            </div>
+            <div class="text-xs font-black text-white mt-1">샌즈 강화</div>
+            <div class="text-[10px] text-amber-200/80 mt-0.5">5가지 스킬 전부 발동</div>
           </button>
         </div>
       </div>
@@ -2608,6 +2631,7 @@
     ============================================================================ */
     const DEFAULT_STATE = () => ({
       wins: 0,
+      rankPoints: 0,
       ownedChars: {
         human_low: { level: 1 }
       },
@@ -3060,6 +3084,7 @@
             ...base,
             ...saved,
             wins: resolvedWins,
+            rankPoints: typeof saved.rankPoints === 'number' ? saved.rankPoints : 0,
             redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
             formationStep: 0
           };
@@ -3457,6 +3482,20 @@
         lobbySyn.classList.remove('hidden');
       } else {
         lobbySyn.classList.add('hidden');
+      }
+
+      const rankBadge = document.getElementById('lobby-rank-badge');
+      const rankDesc = document.getElementById('lobby-rank-desc');
+      if (rankBadge && typeof getRankTierInfo === 'function') {
+        const rp = state.rankPoints || 0;
+        const tier = getRankTierInfo(rp);
+        rankBadge.textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
+        rankBadge.className = `px-2 py-0.5 rounded-full border text-[10px] font-black ${tier.badgeClass}`;
+        if (rankDesc) {
+          rankDesc.textContent = tier.id === 'challenger'
+            ? '⚠️ 최고 티어 도달! 심판의 챌린저 AI (HP 250 · 5중 필살기) 도전 가능'
+            : `다음 티어 [${tier.nextName}]까지 ${tier.nextRp - rp} RP · 승리 시 +35 RP & +${tier.winReward} W`;
+        }
       }
     }
 
@@ -4945,7 +4984,7 @@
       const sk = skills[skillIndex];
       if (!sk) return;
 
-      const isSansMetalBoss = (battle.mode === 'solo_raid' || battle.mode === 'coop_raid') && battle.raidBossType === 'sans';
+      const isSansMetalBoss = (battle.mode === 'solo_raid' || battle.mode === 'coop_raid') && (battle.raidBossType === 'sans' || battle.raidBossType === 'sans_enhanced');
       const rawDmg = computeSkillDamage(battle.mode, battle.stats.hitDamage, sk);
       const dmgPerHit = sk.type === 'attack' ? (isSansMetalBoss ? 1 : rawDmg) : 0;
 
@@ -5018,10 +5057,12 @@
       if (battle.mode === 'solo_raid') {
         battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
         updateBattleBars();
-        const bossLabel = isSansMetalBoss ? '심판의 해골 · 샌즈' : '심연의 군주';
+        const bossLabel = battle.raidBossType === 'sans_enhanced'
+          ? '심판의 해골 · 샌즈 강화'
+          : (battle.raidBossType === 'sans' ? '심판의 해골 · 샌즈' : '심연의 군주');
         spawnDamagePopup(isSansMetalBoss ? `-1 (메탈)` : `-${dmgPerHit}`, 'text-amber-300');
         document.getElementById('battle-dialogue-text').textContent = isSansMetalBoss
-          ? `[${sk.name}] 명중! 샌즈의 메탈 장갑에 1의 피해를 입혔습니다!`
+          ? `[${sk.name}] 명중! ${bossLabel}의 메탈 장갑에 1의 피해를 입혔습니다!`
           : `[${sk.name}] 명중! ${bossLabel}에게 ${dmgPerHit}의 피해를 입혔습니다!`;
 
         const sprite = document.getElementById('enemy-sprite-container');
@@ -5032,13 +5073,13 @@
         showBattlePanel('pvp_wait');
         document.getElementById('battle-pvp-wait-panel').innerHTML = `
           <div class="text-sm font-black text-purple-300">⚔️ [${sk.name}] 명중! (-${dmgPerHit} HP)</div>
-          <div class="text-xs text-zinc-400 mt-1">${isSansMetalBoss ? '샌즈가 2가지 심판 스킬을 준비하고 있습니다...' : '보스가 3가지 스킬을 동시에 준비하고 있습니다...'}</div>
+          <div class="text-xs text-zinc-400 mt-1">${battle.raidBossType === 'sans_enhanced' ? '샌즈 강화가 5가지 모든 심판 스킬을 동시에 준비하고 있습니다...' : (battle.raidBossType === 'sans' ? '샌즈가 2가지 심판 스킬을 준비하고 있습니다...' : '보스가 3가지 스킬을 동시에 준비하고 있습니다...')}</div>
         `;
 
         setTimeout(() => {
           if (!battle.active) return;
           if (battle.enemyHp <= 0) {
-            if (isSansMetalBoss && (battle.bossPhase || 1) === 1) {
+            if (battle.raidBossType === 'sans' && (battle.bossPhase || 1) === 1) {
               battle.bossPhase = 2;
               battle.enemyHp = RAID_SANS_MAX_HP;
               battle.enemyMaxHp = RAID_SANS_MAX_HP;
@@ -5084,181 +5125,172 @@
       setTimeout(() => {
         if (!battle.active) return;
         if (battle.enemyHp <= 0) {
-          handleBotBattleVictory();
+          if (battle.mode === 'ranked') {
+            handleRankedVictory();
+          } else {
+            handleBotBattleVictory();
+          }
         } else {
-          startBotAttackTurn();
+          if (battle.mode === 'ranked') {
+            startRankedAiAttackTurn();
+          } else {
+            startBotAttackTurn();
+          }
         }
       }, 850);
     }
 
-    function startBotAttackTurn() {
-      if (!battle.active) return;
-      const botWeapon = battle.enemyDeck.weapon;
-      const botChar = battle.enemyDeck.char;
-      const attackSkills = botWeapon.skills.filter(s => s.type === 'attack');
-      const healSkill = botWeapon.skills.find(s => s.type === 'heal');
-
-      if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * 0.4 && Math.random() < 0.35) {
-        battle.enemyHealed = true;
-        SoundFX.heal();
-        battle.enemyHp = Math.min(battle.enemyMaxHp, battle.enemyHp + healSkill.heal);
-        updateBattleBars();
-        spawnDamagePopup(`+${healSkill.heal} HP`, 'text-emerald-400');
-        document.getElementById('battle-dialogue-text').textContent =
-          `[${botChar.name}]이(가) [${healSkill.name}]으로 체력을 ${healSkill.heal} 회복했습니다!`;
-
-        setTimeout(() => {
-          if (!battle.active) return;
-          showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
-        }, 900);
-        return;
-      }
-
-      const chosenSkill = attackSkills[Math.floor(Math.random() * attackSkills.length)];
-
-      showBattlePanel('arena');
-      document.getElementById('mobile-touch-pad').classList.remove('hidden');
-      document.getElementById('dodge-pattern-label').textContent = `⚠️ [${botChar.name}]의 [${chosenSkill.name}]! 빨간 하트로 회피하세요!`;
-      document.getElementById('battle-dialogue-text').textContent =
-        `${botChar.name}(${botWeapon.name})의 [${chosenSkill.name}] 공격! 방향키 / WASD / 드래그로 피하세요!`;
-
-      startArenaPhase({
-        controller: 'human_defend',
-        pattern: chosenSkill.pattern,
-        hitDamage: battle.enemyHitDamage,
-        defenderSpeed: battle.stats.speed,
-        defenderReduce: battle.stats.dmgReduce,
-        duration: 6.0,
-        onHumanDefendComplete: () => {
-          if (!battle.active) return;
-          if (battle.playerHp <= 0) {
-            handleBotBattleDefeat();
-          } else {
-            showBattlePanel('player_skills');
-            document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
-          }
-        }
-      });
-    }
-
-    function handleBotBattleVictory() {
-      battle.active = false;
-      stopArenaLoop();
-      SoundFX.victory();
-
-      state.wins += 1;
-      updateGlobalUI();
-      saveAccountProgress();
-
-      const botName = `${battle.enemyDeck.char.name} (${battle.enemyDeck.weapon.name})`;
-      showCustomModal({
-        icon: '🏆',
-        title: '봇 덱 대전 승리!',
-        desc: `상대 덱 [${botName}]을(를) 격파했습니다!\n승리 보상: +1 W 획득! (현재 보유: ${state.wins} W)`,
-        buttons: [
-          {
-            label: '다음 상대와 대전',
-            className: 'px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs cursor-pointer',
-            onClick: () => initBotBattle()
-          },
-          {
-            label: `뽑기 (보유 ${state.wins} W)`,
-            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
-            onClick: () => navigateTo('gacha')
-          }
-        ]
-      });
-    }
-
-    function handleBotBattleDefeat() {
-      battle.active = false;
-      stopArenaLoop();
-      SoundFX.hurt();
-
-      const botName = `${battle.enemyDeck.char.name} (${battle.enemyDeck.weapon.name})`;
-      showCustomModal({
-        icon: '💀',
-        title: '전투 패배...',
-        desc: `상대 덱 [${botName}]에게 패배했습니다.\n뽑기에서 더 강한 인간과 무기를 얻어 재도전하세요!`,
-        buttons: [
-          {
-            label: '다시 대전 (새 상대)',
-            className: 'px-4 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs cursor-pointer',
-            onClick: () => initBotBattle()
-          },
-          {
-            label: '뽑기 하러 가기',
-            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
-            onClick: () => navigateTo('gacha')
-          }
-        ]
-      });
-    }
-
     /* ============================================================================
-       레이드 시스템 (아비스 로드 100 HP · 3스킬 / 심판의 해골 샌즈 메탈 3 HP · 2스킬 · 2페이즈)
+       랭크전 시스템 (아이언 → 브론즈 → 실버 → 골드 → 다이아몬드 → 마스터 → 챌린저)
     ============================================================================ */
-    const RAID_BOSS_MAX_HP = 100;
-    const RAID_SANS_MAX_HP = 3;
-    const RAID_BOSS_HIT_DAMAGE = 6;
-    let selectedRaidBossType = 'abyss';
-
-    function selectRaidBoss(bossType) {
-      SoundFX.click();
-      selectedRaidBossType = bossType;
-      const btnAbyss = document.getElementById('btn-boss-abyss');
-      const btnSans = document.getElementById('btn-boss-sans');
-      const infoBox = document.getElementById('raid-boss-info-box');
-
-      if (bossType === 'sans') {
-        btnSans.className = 'p-3 rounded-2xl bg-sky-950/50 border-2 border-sky-400 text-left transition cursor-pointer';
-        btnAbyss.className = 'p-3 rounded-2xl bg-black border-2 border-zinc-700 hover:border-purple-400 text-left transition cursor-pointer';
-        infoBox.className = 'mb-4 p-3 rounded-2xl bg-sky-950/30 border border-sky-500/40 text-xs text-sky-200 space-y-1';
-        infoBox.innerHTML = `
-          <div class="font-black text-sky-300">💀 심판의 해골 · 샌즈 (메탈 보스 · 2페이즈)</div>
-          <div>• 보스 체력: <span class="text-white font-bold">메탈 3 HP</span> (모든 공격 피해 1 고정)</div>
-          <div>• 2페이즈 각성: <span class="text-amber-300 font-bold">첫 처치 시 체력 3 회복 & 시너지 필살기 [✨ 최후의 심판] 해금!</span></div>
-          <div>• 클리어 보상: <span class="text-emerald-300 font-bold">전설 무기 [이상한 뼈다귀] 확정 지급 + 3 W</span></div>
-        `;
-      } else {
-        btnAbyss.className = 'p-3 rounded-2xl bg-purple-950/50 border-2 border-purple-400 text-left transition cursor-pointer';
-        btnSans.className = 'p-3 rounded-2xl bg-black border-2 border-zinc-700 hover:border-sky-400 text-left transition cursor-pointer';
-        infoBox.className = 'mb-4 p-3 rounded-2xl bg-purple-950/30 border border-purple-500/40 text-xs text-purple-200 space-y-1';
-        infoBox.innerHTML = `
-          <div class="font-black text-purple-300">🔥 심연의 군주 · 아비스 로드</div>
-          <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
-          <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 무기 패턴 동시 발사!</span></div>
-        `;
+    const RANK_TIERS = [
+      {
+        id: 'iron',
+        name: '아이언',
+        icon: '⚙️',
+        minRp: 0,
+        nextRp: 100,
+        nextName: '브론즈',
+        badgeClass: 'bg-zinc-800 border-zinc-500 text-zinc-200',
+        hpMult: 1.0,
+        enemyDamage: 5,
+        skillCount: 1,
+        duration: 5.5,
+        winReward: 2,
+        decks: [
+          { charId: 'human_low', weaponId: 'rusty_dagger' },
+          { charId: 'human_low', weaponId: 'wooden_club' }
+        ]
+      },
+      {
+        id: 'bronze',
+        name: '브론즈',
+        icon: '🥉',
+        minRp: 100,
+        nextRp: 250,
+        nextName: '실버',
+        badgeClass: 'bg-amber-950/80 border-amber-600 text-amber-300',
+        hpMult: 1.3,
+        enemyDamage: 6,
+        skillCount: 1,
+        duration: 6.0,
+        winReward: 2,
+        decks: [
+          { charId: 'human_low', weaponId: 'iron_sword' },
+          { charId: 'human_mid', weaponId: 'hunter_bow' },
+          { charId: 'human_mid', weaponId: 'bronze_axe' }
+        ]
+      },
+      {
+        id: 'silver',
+        name: '실버',
+        icon: '🥈',
+        minRp: 250,
+        nextRp: 450,
+        nextName: '골드',
+        badgeClass: 'bg-slate-800 border-slate-400 text-slate-200',
+        hpMult: 1.6,
+        enemyDamage: 8,
+        skillCount: 2,
+        duration: 6.2,
+        winReward: 2,
+        decks: [
+          { charId: 'human_mid', weaponId: 'steel_spear' },
+          { charId: 'human_mid', weaponId: 'dagger_bow' },
+          { charId: 'human_mid', weaponId: 'greatsword_axe' }
+        ]
+      },
+      {
+        id: 'gold',
+        name: '골드',
+        icon: '🥇',
+        minRp: 450,
+        nextRp: 700,
+        nextName: '다이아몬드',
+        badgeClass: 'bg-yellow-950/80 border-yellow-400 text-yellow-300',
+        hpMult: 2.0,
+        enemyDamage: 10,
+        skillCount: 2,
+        duration: 6.5,
+        winReward: 3,
+        decks: [
+          { charId: 'human_high', weaponId: 'knight_greatsword' },
+          { charId: 'human_high', weaponId: 'sacred_halberd' },
+          { charId: 'human_high', weaponId: 'arcane_mace' }
+        ]
+      },
+      {
+        id: 'diamond',
+        name: '다이아몬드',
+        icon: '💎',
+        minRp: 700,
+        nextRp: 1000,
+        nextName: '마스터',
+        badgeClass: 'bg-cyan-950/80 border-cyan-400 text-cyan-200',
+        hpMult: 2.5,
+        enemyDamage: 12,
+        skillCount: 3,
+        duration: 6.8,
+        winReward: 3,
+        decks: [
+          { charId: 'kai', weaponId: 'bloodmoon' },
+          { charId: 'sera', weaponId: 'lightning_daggers' },
+          { charId: 'sans', weaponId: 'strange_bone' }
+        ]
+      },
+      {
+        id: 'master',
+        name: '마스터',
+        icon: '🔮',
+        minRp: 1000,
+        nextRp: 1400,
+        nextName: '챌린저',
+        badgeClass: 'bg-purple-950/80 border-purple-400 text-purple-200',
+        hpMult: 3.2,
+        enemyDamage: 15,
+        skillCount: 3,
+        duration: 7.0,
+        winReward: 4,
+        decks: [
+          { charId: 'sans', weaponId: 'thunder_bone' },
+          { charId: 'kai', weaponId: 'bloodmoon' },
+          { charId: 'sera', weaponId: 'lightning_daggers' }
+        ]
+      },
+      {
+        id: 'challenger',
+        name: '챌린저',
+        icon: '👑',
+        minRp: 1400,
+        nextRp: 9999,
+        nextName: '최정점',
+        badgeClass: 'bg-gradient-to-r from-red-950 via-amber-950 to-red-950 border-amber-300 text-amber-200',
+        hpMult: 5.0,
+        fixedHp: 250,
+        enemyDamage: 22,
+        skillCount: 5,
+        duration: 7.5,
+        winReward: 10,
+        decks: [
+          { charId: 'sans', weaponId: 'thunder_bone' },
+          { charId: 'kai', weaponId: 'bloodmoon' },
+          { charId: 'sera', weaponId: 'lightning_daggers' }
+        ]
       }
+    ];
+
+    function getRankTierInfo(rp = 0) {
+      let current = RANK_TIERS[0];
+      for (const tier of RANK_TIERS) {
+        if (rp >= tier.minRp) {
+          current = tier;
+        }
+      }
+      return current;
     }
 
-    let raidSession = {
-      roomCode: null,
-      role: null,
-      unsub: null,
-      lastTurnSeq: -1,
-      lastPosSync: 0,
-      allyHeartPos: { x: 220, y: 110 }
-    };
-
-    function cleanupRaidSubscription() {
-      const oldCode = raidSession.roomCode;
-      const oldRole = raidSession.role;
-      if (raidSession.unsub) {
-        raidSession.unsub();
-        raidSession.unsub = null;
-      }
-      if (oldCode && oldRole === 'host') {
-        RoomStore.cleanupP2P('raid', oldCode);
-      }
-      raidSession.roomCode = null;
-      raidSession.role = null;
-      raidSession.lastTurnSeq = -1;
-    }
-
-    function openRaidModeModal() {
-      SoundFX.click();
+    function startRankedBattle() {
+      SoundFX.equip();
       if (!state.equippedCharId) {
         showCustomModal({
           icon: '🛡️',
@@ -5274,116 +5306,63 @@
         });
         return;
       }
-      selectRaidBoss(selectedRaidBossType);
-      backToRaidStepSelect();
-      document.getElementById('raid-mode-modal').classList.remove('hidden');
-    }
-
-    function closeRaidModeModal() {
-      document.getElementById('raid-mode-modal').classList.add('hidden');
-    }
-
-    function backToRaidStepSelect() {
-      document.getElementById('raid-step-select').classList.remove('hidden');
-      document.getElementById('raid-step-friend').classList.add('hidden');
-      document.getElementById('raid-step-friend').classList.remove('flex');
-      document.getElementById('raid-host-wait-box').classList.add('hidden');
-      document.getElementById('raid-join-input-box').classList.add('hidden');
-    }
-
-    function showFriendRaidStep() {
-      SoundFX.click();
-      document.getElementById('raid-step-select').classList.add('hidden');
-      document.getElementById('raid-step-friend').classList.remove('hidden');
-      document.getElementById('raid-step-friend').classList.add('flex');
-    }
-
-    function openRaidJoinCodeInput() {
-      SoundFX.click();
-      document.getElementById('raid-host-wait-box').classList.add('hidden');
-      document.getElementById('raid-join-input-box').classList.remove('hidden');
-      document.getElementById('raid-join-status').textContent = '';
-      const inp = document.getElementById('raid-code-input');
-      inp.value = '';
-      inp.focus();
-    }
-
-    function pickBossSkills(bossType = 'abyss', phase = 1) {
-      if (bossType === 'sans') {
-        const sansSkills = [
-          { weaponName: '이상한 뼈다귀', name: '뼈다귀 파도', pattern: 'sb_1' },
-          { weaponName: '이상한 뼈다귀', name: '가스터 블래스터', pattern: 'sb_2' },
-          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' }
-        ];
-        if (phase >= 2) {
-          const ultSkill = { weaponName: '심판의 시간', name: '✨ 최후의 심판', pattern: 'sb_ult' };
-          const partner = sansSkills[Math.floor(Math.random() * sansSkills.length)];
-          return [ultSkill, partner];
-        }
-        const i1 = Math.floor(Math.random() * sansSkills.length);
-        const i2 = (i1 + 1 + Math.floor(Math.random() * (sansSkills.length - 1))) % sansSkills.length;
-        return [sansSkills[i1], sansSkills[i2]];
-      }
-      const allAttackSkills = [];
-      WEAPONS.forEach(w => {
-        w.skills.forEach(s => {
-          if (s.type === 'attack') {
-            allAttackSkills.push({ weaponName: w.name, name: s.name, pattern: s.pattern });
-          }
-        });
-      });
-      const len = allAttackSkills.length;
-      const i1 = Math.floor(Math.random() * len);
-      const i2 = (i1 + 3) % len;
-      const i3 = (i1 + 7) % len;
-      return [allAttackSkills[i1], allAttackSkills[i2], allAttackSkills[i3]];
-    }
-
-    function startSoloRaid() {
-      SoundFX.equip();
-      closeRaidModeModal();
-      cleanupRaidSubscription();
       cleanupPvpSubscription();
+      cleanupRaidSubscription();
       navigateTo('battle');
-      initSoloRaidBattle();
+      initRankedBattle();
     }
 
-    function initSoloRaidBattle() {
+    function initRankedBattle() {
       stopArenaLoop();
       const stats = calculateCombatStats();
-      const isSans = selectedRaidBossType === 'sans';
-      const initialBossHp = isSans ? RAID_SANS_MAX_HP : RAID_BOSS_MAX_HP;
+      const rp = state.rankPoints || 0;
+      const tier = getRankTierInfo(rp);
+      const preset = tier.decks[Math.floor(Math.random() * tier.decks.length)];
+      const botChar = getCharById(preset.charId) || CHARACTERS[0];
+      const botWeapon = getWeaponById(preset.weaponId) || WEAPONS[0];
+      const botSynergy = SYNERGIES.find(s => s.charId === botChar.id && s.weaponId === botWeapon.id) || null;
+
+      const calcHp = tier.fixedHp
+        ? tier.fixedHp
+        : Math.round((botChar.baseHp + (botSynergy ? botSynergy.bonusHp : 0)) * tier.hpMult);
 
       battle = {
         active: true,
-        mode: 'solo_raid',
+        mode: 'ranked',
         turn: 'player',
-        enemyDeck: null,
-        enemyHp: initialBossHp,
-        enemyMaxHp: initialBossHp,
-        enemyHitDamage: RAID_BOSS_HIT_DAMAGE,
+        rankTier: tier,
+        enemyDeck: { char: botChar, weapon: botWeapon, synergy: botSynergy },
+        enemyHealed: false,
+        enemyHp: calcHp,
+        enemyMaxHp: calcHp,
+        enemyHitDamage: tier.enemyDamage,
         playerHp: stats.maxHp,
         playerMaxHp: stats.maxHp,
         allyHp: 0,
         allyMaxHp: 0,
-        raidBossType: selectedRaidBossType,
+        raidBossType: 'abyss',
         bossPhase: 1,
         stats
       };
 
-      document.getElementById('battle-stage-badge').textContent = isSans ? 'SOLO RAID · 1페이즈' : 'SOLO RAID';
+      document.getElementById('battle-stage-badge').textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
+      document.getElementById('battle-turn-badge').classList.add('hidden');
       document.getElementById('battle-stage-controls').classList.remove('hidden');
-      document.getElementById('enemy-synergy-badge').textContent = isSans ? '🛡️ 메탈 장갑 · 2스킬' : '🔥 3스킬 동시 발동';
-      document.getElementById('enemy-synergy-badge').classList.remove('hidden');
       document.getElementById('ally-hp-container').classList.add('hidden');
       document.getElementById('ally-hp-container').classList.remove('flex');
 
-      document.getElementById('battle-enemy-title').textContent = isSans ? '심판의 해골 · 샌즈' : '심연의 군주 · 아비스 로드';
-      document.getElementById('enemy-name-display').textContent = isSans ? '샌즈 1페이즈 (메탈 HP 3)' : '레이드 보스 (HP 100)';
-      document.getElementById('enemy-sprite-container').innerHTML = isSans ? SVG_ART.sans : SVG_ART.raid_boss;
-      document.getElementById('battle-dialogue-text').textContent = isSans
-        ? '심판의 해골 · 샌즈가 나타났습니다! (메탈: 모든 피해 1 고정 · 한 번에 2가지 공격)'
-        : '심연의 군주가 강림했습니다! 체력 100 · 한 번에 3가지 스킬을 동시에 사용합니다!';
+      const enemySynBadge = document.getElementById('enemy-synergy-badge');
+      enemySynBadge.textContent = tier.id === 'challenger'
+        ? '💀 챌린저 · 5중 필살기 & 초고화력'
+        : `⚔️ ${tier.name} AI · ${tier.skillCount}스킬 동시 발동`;
+      enemySynBadge.classList.remove('hidden');
+
+      document.getElementById('battle-enemy-title').textContent = `[${tier.name}] ${botChar.name} (${botWeapon.name})`;
+      document.getElementById('enemy-name-display').textContent = `${tier.icon} ${tier.name} AI · ${botChar.name}`;
+      document.getElementById('enemy-sprite-container').innerHTML = botChar.art;
+      document.getElementById('battle-dialogue-text').textContent = tier.id === 'challenger'
+        ? `👑 [챌린저] 심판자 AI [${botChar.name} + ${botWeapon.name}] 강림! (HP ${calcHp} · 위력 ${tier.enemyDamage} · 5중 필살기!)`
+        : `${tier.icon} [${tier.name}] 랭크 상대 [${botChar.name} + ${botWeapon.name}]이(가) 나타났습니다! (HP ${calcHp})`;
 
       document.getElementById('battle-player-name').textContent = stats.char.name;
       document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
@@ -5401,524 +5380,111 @@
       showBattlePanel('player_skills');
     }
 
-    function startRaidBossAttackTurn() {
+    function startRankedAiAttackTurn() {
       if (!battle.active) return;
-      const isSans = battle.raidBossType === 'sans';
-      const skills = pickBossSkills(battle.raidBossType, battle.bossPhase || 1);
-      const [sk1, sk2, sk3] = skills;
+      const tier = battle.rankTier || getRankTierInfo(state.rankPoints || 0);
+      const botWeapon = battle.enemyDeck.weapon;
+      const botChar = battle.enemyDeck.char;
+      const botSynergy = battle.enemyDeck.synergy;
+      const attackSkills = botWeapon.skills.filter(s => s.type === 'attack');
+      const healSkill = botWeapon.skills.find(s => s.type === 'heal');
+
+      // 마스터/챌린저 AI는 체력이 45% 이하일 때 자가 회복을 적극 활용
+      const healThreshold = tier.id === 'challenger' ? 0.45 : 0.35;
+      const healChance = tier.id === 'challenger' ? 0.65 : (tier.id === 'master' ? 0.45 : 0.25);
+      if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * healThreshold && Math.random() < healChance) {
+        battle.enemyHealed = true;
+        SoundFX.heal();
+        const healAmt = tier.id === 'challenger' ? 45 : Math.round(healSkill.heal * tier.hpMult);
+        battle.enemyHp = Math.min(battle.enemyMaxHp, battle.enemyHp + healAmt);
+        updateBattleBars();
+        spawnDamagePopup(`+${healAmt} HP`, 'text-emerald-400');
+        document.getElementById('battle-dialogue-text').textContent =
+          `${tier.icon} [${tier.name} AI] ${botChar.name}이(가) [${healSkill.name}]으로 체력을 ${healAmt} 회복했습니다!`;
+
+        setTimeout(() => {
+          if (!battle.active) return;
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
+        }, 900);
+        return;
+      }
+
+      let chosenPatterns = [];
+      let labelText = '';
+
+      if (tier.id === 'challenger') {
+        // 챌린저 AI: 5가지 전설/시너지 필살기 패턴을 전부 동시에 발사
+        chosenPatterns = ['sb_ult', 'bm_ult', 'ld_ult', 'sb_2', 'ld_1'];
+        labelText = `👑 [챌린저 AI] 5중 종말 필살기 동시 발사! (위력 ${tier.enemyDamage})`;
+      } else {
+        const pool = [...attackSkills];
+        if (botSynergy?.specialSkill) pool.push(botSynergy.specialSkill);
+        const count = Math.min(tier.skillCount, pool.length);
+        const picked = [];
+        for (let i = 0; i < count; i++) {
+          const sk = pool[(Math.floor(Math.random() * pool.length) + i) % pool.length];
+          picked.push(sk);
+        }
+        chosenPatterns = picked.map(s => s.pattern);
+        const names = picked.map(s => `[${s.name}]`).join(' + ');
+        labelText = `${tier.icon} [${tier.name} AI] ${names} 발사!`;
+      }
 
       showBattlePanel('arena');
       document.getElementById('mobile-touch-pad').classList.remove('hidden');
-      if (isSans) {
-        const phasePrefix = (battle.bossPhase || 1) >= 2 ? '💀 샌즈 2페이즈' : '💀 샌즈 1페이즈';
-        document.getElementById('dodge-pattern-label').textContent =
-          `${phasePrefix}: [${sk1.name}] + [${sk2.name}]!`;
-        document.getElementById('battle-dialogue-text').textContent =
-          `심판의 해골 · 샌즈가 [${sk1.name}]와 [${sk2.name}]을(를) 동시에 시전합니다!`;
-      } else {
-        document.getElementById('dodge-pattern-label').textContent =
-          `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]!`;
-        document.getElementById('battle-dialogue-text').textContent =
-          `심연의 군주가 [${sk1.name}], [${sk2.name}], [${sk3.name}]을(를) 동시에 시전합니다!`;
-      }
+      document.getElementById('dodge-pattern-label').textContent = labelText;
+      document.getElementById('battle-dialogue-text').textContent =
+        `${tier.icon} [${tier.name}] ${botChar.name}의 총공격! 빨간 하트로 끝까지 회피하세요!`;
 
       startArenaPhase({
         controller: 'human_defend',
-        pattern: sk1.pattern,
-        pattern2: sk2 ? sk2.pattern : null,
-        pattern3: sk3 ? sk3.pattern : null,
-        hitDamage: RAID_BOSS_HIT_DAMAGE,
+        patterns: chosenPatterns,
+        hitDamage: battle.enemyHitDamage,
         defenderSpeed: battle.stats.speed,
         defenderReduce: battle.stats.dmgReduce,
-        duration: 6.5,
+        duration: tier.duration,
         onHumanDefendComplete: () => {
           if (!battle.active) return;
           if (battle.playerHp <= 0) {
-            handleRaidDefeat(false);
+            handleRankedDefeat();
           } else {
             showBattlePanel('player_skills');
-            document.getElementById('battle-dialogue-text').textContent = '당신의 턴입니다! 보스를 공격할 스킬을 선택하세요!';
+            document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
           }
         }
       });
     }
 
-    async function createRaidRoom() {
-      SoundFX.click();
-      cleanupRaidSubscription();
-      const code = String(Math.floor(1000 + Math.random() * 9000));
-      const hostLoadout = buildMyPvpLoadout();
-      hostLoadout.nickname = loggedInUser?.nickname || '방장';
-      hostLoadout.heartX = 160;
-      hostLoadout.heartY = 110;
-      const isSans = selectedRaidBossType === 'sans';
-      const initialBossHp = isSans ? RAID_SANS_MAX_HP : RAID_BOSS_MAX_HP;
-
-      const roomMode = await RoomStore.create('raid', code, {
-        code,
-        status: 'waiting',
-        bossType: selectedRaidBossType,
-        bossPhase: 1,
-        bossHp: initialBossHp,
-        bossMaxHp: initialBossHp,
-        host: hostLoadout,
-        guest: null,
-        phase: 'host_attack',
-        turnSeq: 0,
-        bossSkills: null,
-        lastActionLog: '',
-        winner: null,
-        createdAt: Date.now()
-      });
-
-      raidSession.roomCode = code;
-      raidSession.role = 'host';
-
-      document.getElementById('raid-join-input-box').classList.add('hidden');
-      document.getElementById('raid-host-wait-box').classList.remove('hidden');
-      document.getElementById('raid-generated-code').textContent = code;
-      const syncBadge = document.getElementById('raid-room-sync-badge');
-      if (roomMode === 'relay' || roomMode === 'p2p') {
-        syncBadge.textContent = '🟢 실시간 레이드 직통 서버 연결 완료! (어떤 기기에서도 입장 가능)';
-        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
-      } else if (roomMode === 'cloud') {
-        syncBadge.textContent = '🟢 온라인 클라우드 레이드 방 활성화됨';
-        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
-      } else {
-        syncBadge.textContent = '🟠 로컬 모드 방 (동일 브라우저 탭)';
-        syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
-      }
-
-      subscribeRaidRoom(code);
-    }
-
-    async function cancelRaidRoom() {
-      if (raidSession.roomCode) {
-        await RoomStore.remove('raid', raidSession.roomCode);
-      }
-      cleanupRaidSubscription();
-      document.getElementById('raid-host-wait-box').classList.add('hidden');
-    }
-
-    async function joinRaidRoom() {
-      SoundFX.click();
-      const rawCode = document.getElementById('raid-code-input').value.trim();
-      const statusEl = document.getElementById('raid-join-status');
-
-      if (!/^\d{4}$/.test(rawCode)) {
-        statusEl.textContent = '⚠️ 4자리 숫자를 정확히 입력해주세요!';
-        statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-        return;
-      }
-
-      statusEl.textContent = '🔗 직통 연결로 레이드 방장을 찾는 중...';
-      statusEl.className = 'text-[11px] text-amber-300 mt-2';
-
-      try {
-        const guestLoadout = buildMyPvpLoadout();
-        guestLoadout.nickname = loggedInUser?.nickname || '동료';
-        guestLoadout.heartX = 260;
-        guestLoadout.heartY = 110;
-
-        raidSession.roomCode = rawCode;
-        raidSession.role = 'guest';
-
-        try {
-          const syncedState = await RoomStore.joinP2P('raid', rawCode, guestLoadout);
-          subscribeRaidRoom(rawCode);
-          handleRaidStateUpdate(syncedState);
-          return;
-        } catch (p2pErr) {
-          console.warn('P2P raid join fallback to cloud/local:', p2pErr?.message || p2pErr);
-        }
-
-        const data = await RoomStore.get('raid', rawCode);
-
-        if (!data) {
-          raidSession.roomCode = null;
-          raidSession.role = null;
-          statusEl.textContent = '❌ 존재하지 않는 레이드 코드입니다. 방장이 대기 중인지 확인해주세요.';
-          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-          return;
-        }
-
-        if (data.status !== 'waiting' || data.guest) {
-          raidSession.roomCode = null;
-          raidSession.role = null;
-          statusEl.textContent = '❌ 이미 토벌이 시작되었거나 만원인 방입니다.';
-          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-          return;
-        }
-
-        await RoomStore.update('raid', rawCode, {
-          status: 'playing',
-          guest: guestLoadout,
-          phase: 'host_attack',
-          lastActionLog: `[${guestLoadout.nickname}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
-          turnSeq: 1
-        });
-
-        subscribeRaidRoom(rawCode);
-      } catch (e) {
-        console.error(e);
-        statusEl.textContent = '❌ 입장 중 오류가 발생했습니다.';
-        statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
-      }
-    }
-
-    function subscribeRaidRoom(code) {
-      if (raidSession.unsub) raidSession.unsub();
-      raidSession.unsub = RoomStore.subscribe('raid', code, (data) => {
-        handleRaidStateUpdate(data);
-      });
-    }
-
-    function initCoopRaidBattle(data) {
-      stopArenaLoop();
-      const meKey = raidSession.role;
-      const allyKey = meKey === 'host' ? 'guest' : 'host';
-      const meData = data[meKey];
-      const allyData = data[allyKey];
-      const myStats = calculateCombatStats();
-      const bossType = data.bossType || 'abyss';
-      const isSans = bossType === 'sans';
-      const currentPhase = data.bossPhase || 1;
-
-      battle = {
-        active: true,
-        mode: 'coop_raid',
-        turn: 'player',
-        enemyDeck: null,
-        enemyHp: data.bossHp,
-        enemyMaxHp: data.bossMaxHp,
-        enemyHitDamage: RAID_BOSS_HIT_DAMAGE,
-        playerHp: meData.hp,
-        playerMaxHp: meData.maxHp,
-        allyHp: allyData.hp,
-        allyMaxHp: allyData.maxHp,
-        raidBossType: bossType,
-        bossPhase: currentPhase,
-        stats: myStats
-      };
-
-      raidSession.allyHeartPos = {
-        x: allyData.heartX || 240,
-        y: allyData.heartY || 110
-      };
-
-      document.getElementById('battle-stage-badge').textContent = isSans
-        ? `CO-OP RAID #${data.code} · ${currentPhase}페이즈`
-        : `CO-OP RAID #${data.code}`;
-      document.getElementById('battle-stage-controls').classList.remove('hidden');
-      document.getElementById('enemy-synergy-badge').textContent = isSans
-        ? (currentPhase >= 2 ? '✨ 2페이즈 · 최후의 심판 해금' : '🛡️ 메탈 장갑 · 2스킬')
-        : '🔥 3스킬 동시 발동';
-      document.getElementById('enemy-synergy-badge').classList.remove('hidden');
-
-      const allyBox = document.getElementById('ally-hp-container');
-      allyBox.classList.remove('hidden');
-      allyBox.classList.add('flex');
-      document.getElementById('battle-ally-name').textContent = `${allyData.nickname} (${allyData.charName})`;
-      document.getElementById('battle-ally-weapon').textContent = allyData.weaponName;
-
-      document.getElementById('battle-enemy-title').textContent = isSans ? '심판의 해골 · 샌즈' : '심연의 군주 · 아비스 로드';
-      document.getElementById('enemy-name-display').textContent = isSans
-        ? `협동 샌즈 ${currentPhase}페이즈 (메탈 HP 3)`
-        : '협동 레이드 보스 (HP 100)';
-      document.getElementById('enemy-sprite-container').innerHTML = isSans ? SVG_ART.sans : SVG_ART.raid_boss;
-
-      document.getElementById('battle-player-name').textContent = `${meData.nickname} (${meData.charName})`;
-      document.getElementById('battle-player-weapon').textContent = meData.weaponName;
-
-      const synTag = document.getElementById('battle-synergy-active-tag');
-      if (myStats.synergy) {
-        synTag.textContent = `✨ 시너지: ${myStats.synergy.name}`;
-        synTag.classList.remove('hidden');
-      } else {
-        synTag.classList.add('hidden');
-      }
-
-      updateBattleBars();
-      renderPlayerSkills();
-      raidSession.lastTurnSeq = -1;
-      handleRaidStateUpdate(data);
-    }
-
-    async function advanceCoopRaidTurn(damageDealt, skillName, isHeal) {
-      if (!raidSession.roomCode) return;
-      const meKey = raidSession.role;
-      const myName = loggedInUser?.nickname || (meKey === 'host' ? '방장' : '동료');
-      const isSans = battle.raidBossType === 'sans';
-      const curPhase = battle.bossPhase || 1;
-
-      const newBossHp = Math.max(0, battle.enemyHp - damageDealt);
-      const logMsg = isHeal
-        ? `[${myName}]님이 [${skillName}]으로 체력을 회복했습니다!`
-        : (isSans
-          ? `[${myName}]님의 [${skillName}] 명중! 샌즈(메탈)에게 -1 피해!`
-          : `[${myName}]님의 [${skillName}] 명중! 보스에게 -${damageDealt} 피해!`);
-
-      if (newBossHp <= 0) {
-        if (isSans && curPhase === 1) {
-          battle.bossPhase = 2;
-          const skills = pickBossSkills('sans', 2);
-          await RoomStore.update('raid', raidSession.roomCode, {
-            bossPhase: 2,
-            bossHp: RAID_SANS_MAX_HP,
-            bossMaxHp: RAID_SANS_MAX_HP,
-            [`${meKey}.hp`]: battle.playerHp,
-            phase: 'boss_dodge',
-            bossSkills: skills,
-            lastActionLog: `⚡ 샌즈가 쓰러지지 않고 2페이즈로 각성했습니다! 체력 3 회복 & [✨ 최후의 심판] 해금!`,
-            turnSeq: raidSession.lastTurnSeq + 1
-          });
-          return;
-        }
-
-        await RoomStore.update('raid', raidSession.roomCode, {
-          bossHp: 0,
-          [`${meKey}.hp`]: battle.playerHp,
-          phase: 'finished',
-          winner: 'players',
-          lastActionLog: logMsg,
-          turnSeq: raidSession.lastTurnSeq + 1
-        });
-        return;
-      }
-
-      if (meKey === 'host') {
-        if (battle.allyHp > 0) {
-          await RoomStore.update('raid', raidSession.roomCode, {
-            bossHp: newBossHp,
-            [`${meKey}.hp`]: battle.playerHp,
-            phase: 'guest_attack',
-            lastActionLog: logMsg,
-            turnSeq: raidSession.lastTurnSeq + 1
-          });
-        } else {
-          const skills = pickBossSkills(battle.raidBossType, curPhase);
-          await RoomStore.update('raid', raidSession.roomCode, {
-            bossHp: newBossHp,
-            [`${meKey}.hp`]: battle.playerHp,
-            phase: 'boss_dodge',
-            bossSkills: skills,
-            lastActionLog: logMsg,
-            turnSeq: raidSession.lastTurnSeq + 1
-          });
-        }
-      } else {
-        const skills = pickBossSkills(battle.raidBossType, curPhase);
-        await RoomStore.update('raid', raidSession.roomCode, {
-          bossHp: newBossHp,
-          [`${meKey}.hp`]: battle.playerHp,
-          phase: 'boss_dodge',
-          bossSkills: skills,
-          lastActionLog: logMsg,
-          turnSeq: raidSession.lastTurnSeq + 1
-        });
-      }
-    }
-
-    function handleRaidStateUpdate(data) {
-      if (data.status === 'waiting') return;
-
-      if (data.status === 'playing' && (!battle.active || battle.mode !== 'coop_raid')) {
-        closeRaidModeModal();
-        SoundFX.synergy();
-        showToast(`👹 레이드 방 [${data.code}] 매치 성사! 2인 협동 토벌 시작!`, 'border-purple-400 text-purple-200');
-        navigateTo('battle');
-        initCoopRaidBattle(data);
-        return;
-      }
-
-      if (battle.mode !== 'coop_raid') return;
-
-      const meKey = raidSession.role;
-      const allyKey = meKey === 'host' ? 'guest' : 'host';
-      const meData = data[meKey];
-      const allyData = data[allyKey];
-      if (!meData || !allyData) return;
-
-      const isSans = (data.bossType || battle.raidBossType) === 'sans';
-      const nextPhase = data.bossPhase || 1;
-      if (isSans && nextPhase !== battle.bossPhase) {
-        battle.bossPhase = nextPhase;
-        SoundFX.synergy();
-        spawnDamagePopup('⚡ 2페이즈 각성! HP 3 회복!', 'text-sky-300');
-        document.getElementById('battle-stage-badge').textContent = `CO-OP RAID #${data.code} · 2페이즈`;
-        document.getElementById('enemy-synergy-badge').textContent = '✨ 2페이즈 · 최후의 심판 해금';
-        document.getElementById('enemy-name-display').textContent = '협동 샌즈 2페이즈 (메탈 HP 3)';
-      }
-
-      if (typeof allyData.heartX === 'number' && typeof allyData.heartY === 'number') {
-        raidSession.allyHeartPos.x = allyData.heartX;
-        raidSession.allyHeartPos.y = allyData.heartY;
-      }
-
-      if (battle.enemyHp > data.bossHp) {
-        spawnDamagePopup(isSans ? '-1 (메탈)' : `-${battle.enemyHp - data.bossHp}`, 'text-amber-300');
-        const sprite = document.getElementById('enemy-sprite-container');
-        sprite.classList.remove('animate-shake');
-        void sprite.offsetWidth;
-        sprite.classList.add('animate-shake');
-      }
-
-      battle.enemyHp = data.bossHp;
-      battle.enemyMaxHp = data.bossMaxHp;
-      battle.allyHp = allyData.hp;
-      battle.allyMaxHp = allyData.maxHp;
-      if (data.phase !== 'boss_dodge') {
-        battle.playerHp = meData.hp;
-      }
-      updateBattleBars();
-
-      if (data.phase === 'finished' || data.bossHp <= 0 || (meData.hp <= 0 && allyData.hp <= 0)) {
-        const playersWon = data.winner === 'players' || data.bossHp <= 0;
-        if (playersWon) handleRaidVictory(true, data.bossType || battle.raidBossType);
-        else handleRaidDefeat(true);
-        return;
-      }
-
-      if (data.turnSeq === raidSession.lastTurnSeq) return;
-      raidSession.lastTurnSeq = data.turnSeq;
-
-      if (data.lastActionLog) {
-        document.getElementById('battle-dialogue-text').textContent = data.lastActionLog;
-      }
-
-      if (data.phase === 'host_attack') {
-        stopArenaLoop();
-        if (meKey === 'host') {
-          if (meData.hp <= 0) {
-            advanceCoopRaidTurn(0, '전투 불능', true);
-            return;
-          }
-          showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 무기 스킬로 보스를 공격하세요!';
-        } else {
-          showBattlePanel('pvp_wait');
-          document.getElementById('battle-pvp-wait-panel').innerHTML = `
-            <div class="text-sm font-black text-red-300 animate-pulse">⚔️ [${allyData.nickname}]님이 보스를 공격할 스킬을 고르고 있습니다...</div>
-            <div class="text-xs text-zinc-400 mt-1">방장의 공격이 끝나면 당신의 공격 차례가 옵니다!</div>
-          `;
-        }
-      } else if (data.phase === 'guest_attack') {
-        stopArenaLoop();
-        if (meKey === 'guest') {
-          if (meData.hp <= 0) {
-            advanceCoopRaidTurn(0, '전투 불능', true);
-            return;
-          }
-          showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 이어서 보스를 공격하세요!';
-        } else {
-          showBattlePanel('pvp_wait');
-          document.getElementById('battle-pvp-wait-panel').innerHTML = `
-            <div class="text-sm font-black text-sky-300 animate-pulse">⚔️ [${allyData.nickname}]님이 연계 공격 스킬을 고르고 있습니다...</div>
-            <div class="text-xs text-zinc-400 mt-1">친구의 공격이 끝나면 보스의 공격을 함께 회피합니다!</div>
-          `;
-        }
-      } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 2) {
-        const [sk1, sk2, sk3] = data.bossSkills;
-        const bossType = data.bossType || battle.raidBossType;
-        const isSansBoss = bossType === 'sans';
-        const curBossPhase = data.bossPhase || battle.bossPhase || 1;
-        showBattlePanel('arena');
-        document.getElementById('mobile-touch-pad').classList.remove('hidden');
-        if (isSansBoss) {
-          document.getElementById('dodge-pattern-label').textContent =
-            `💀 샌즈 ${curBossPhase}페이즈: [${sk1.name}] + [${sk2.name}]! (빨간 하트=나 / 파란 하트=친구)`;
-          document.getElementById('battle-dialogue-text').textContent =
-            `심판의 해골 · 샌즈가 [${sk1.name}] + [${sk2.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
-        } else {
-          document.getElementById('dodge-pattern-label').textContent =
-            `👹 보스 3중 스킬: [${sk1.name}] + [${sk2.name}] + [${sk3.name}]! (빨간 하트=나 / 파란 하트=친구)`;
-          document.getElementById('battle-dialogue-text').textContent =
-            `심연의 군주가 [${sk1.name}] + [${sk2.name}] + [${sk3.name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
-        }
-
-        startArenaPhase({
-          controller: meData.hp > 0 ? 'human_defend' : 'pvp_spectate',
-          coopAllyHeart: true,
-          pattern: sk1.pattern,
-          pattern2: sk2 ? sk2.pattern : null,
-          pattern3: sk3 ? sk3.pattern : null,
-          hitDamage: RAID_BOSS_HIT_DAMAGE,
-          defenderSpeed: battle.stats.speed,
-          defenderReduce: battle.stats.dmgReduce,
-          duration: 6.5,
-          onHumanDefendComplete: async () => {
-            if (!battle.active || battle.mode !== 'coop_raid') return;
-            if (!raidSession.roomCode) return;
-
-            if (meKey === 'host') {
-              await RoomStore.update('raid', raidSession.roomCode, {
-                'host.hp': Math.max(0, battle.playerHp)
-              });
-              const latest = await RoomStore.get('raid', raidSession.roomCode);
-              if (!latest) return;
-              const guestHp = latest.guest?.hp ?? 0;
-
-              if (battle.playerHp <= 0 && guestHp <= 0) {
-                await RoomStore.update('raid', raidSession.roomCode, {
-                  'host.hp': 0,
-                  phase: 'finished',
-                  winner: 'boss',
-                  turnSeq: data.turnSeq + 1
-                });
-              } else {
-                const nextPhase = battle.playerHp > 0 ? 'host_attack' : 'guest_attack';
-                await RoomStore.update('raid', raidSession.roomCode, {
-                  'host.hp': Math.max(0, battle.playerHp),
-                  phase: nextPhase,
-                  bossSkills: null,
-                  lastActionLog: '보스의 공격을 버텨냈습니다! 다시 반격하세요!',
-                  turnSeq: data.turnSeq + 1
-                });
-              }
-            } else {
-              await RoomStore.update('raid', raidSession.roomCode, {
-                'guest.hp': Math.max(0, battle.playerHp)
-              });
-            }
-          }
-        });
-      }
-    }
-
-    function handleRaidVictory(isCoop, bossType = 'abyss') {
+    function handleRankedVictory() {
       battle.active = false;
       stopArenaLoop();
-      cleanupRaidSubscription();
       SoundFX.victory();
 
-      const reward = 3;
-      state.wins += reward;
+      const prevRp = state.rankPoints || 0;
+      const prevTier = getRankTierInfo(prevRp);
+      const gainRp = 35;
+      const newRp = prevRp + gainRp;
+      const newTier = getRankTierInfo(newRp);
 
-      let boneRewardText = '';
-      if (bossType === 'sans') {
-        if (!state.ownedWeapons['strange_bone']) {
-          state.ownedWeapons['strange_bone'] = { level: 1 };
-          boneRewardText = '\n🦴 특별 보상: 전설 무기 [이상한 뼈다귀] (신규 획득!)';
-        } else {
-          state.ownedWeapons['strange_bone'].level += 1;
-          boneRewardText = `\n🦴 특별 보상: 전설 무기 [이상한 뼈다귀] Lv.${state.ownedWeapons['strange_bone'].level} 강화!`;
-        }
-      }
-
+      state.rankPoints = newRp;
+      state.wins += prevTier.winReward;
       updateGlobalUI();
       saveAccountProgress();
 
-      const bossTitle = bossType === 'sans' ? '심판의 해골 · 샌즈 (메탈 HP 3)' : '심연의 군주 (100 HP)';
+      const promotedMsg = prevTier.id !== newTier.id
+        ? `\n🎉 티어 승급! [${prevTier.name}] → [${newTier.icon} ${newTier.name}]!`
+        : '';
+
       showCustomModal({
-        icon: '👑',
-        title: isCoop ? '2인 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
-        desc: `${bossTitle}를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)${boneRewardText}`,
+        icon: newTier.icon,
+        title: `랭크전 승리! (+${gainRp} RP)`,
+        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${newRp} RP)${promotedMsg}\n승리 보상: +${prevTier.winReward} W 획득! (보유: ${state.wins} W)`,
         buttons: [
           {
-            label: bossType === 'sans' ? '🛡️ 편성에서 장착하기' : `뽑기 (보유 ${state.wins} W)`,
-            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
-            onClick: () => navigateTo(bossType === 'sans' ? 'formation' : 'gacha')
+            label: '다음 랭크전 도전',
+            className: 'px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs cursor-pointer',
+            onClick: () => initRankedBattle()
           },
           {
             label: '메인 화면으로',
@@ -5929,1169 +5495,35 @@
       });
     }
 
-    function handleRaidDefeat(isCoop) {
+    function handleRankedDefeat() {
       battle.active = false;
       stopArenaLoop();
-      cleanupRaidSubscription();
       SoundFX.hurt();
 
-      const bossTitle = battle.raidBossType === 'sans' ? '심판의 해골 · 샌즈' : '심연의 군주';
+      const prevRp = state.rankPoints || 0;
+      const lossRp = Math.min(prevRp, 20);
+      const newRp = Math.max(0, prevRp - lossRp);
+      const newTier = getRankTierInfo(newRp);
+
+      state.rankPoints = newRp;
+      updateGlobalUI();
+      saveAccountProgress();
+
       showCustomModal({
         icon: '💀',
-        title: isCoop ? '협동 레이드 전멸...' : '솔로 레이드 패배...',
-        desc: `${bossTitle}의 공격을 버텨내지 못했습니다.\n더 강한 캐릭터와 시너지를 편성해 다시 도전하세요!`,
+        title: `랭크전 패배... (-${lossRp} RP)`,
+        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${newRp} RP)\n더 강력한 무기와 시너지를 편성해 다시 도전하세요!`,
         buttons: [
           {
+            label: '랭크전 재도전',
+            className: 'px-4 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs cursor-pointer',
+            onClick: () => initRankedBattle()
+          },
+          {
             label: '메인 화면으로',
-            className: 'px-4 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
+            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-bold text-xs cursor-pointer',
             onClick: () => navigateTo('lobby')
           }
         ]
       });
     }
-
-    /* ============================================================================
-       언더테일 스타일 Canvas 탄막 회피 & 쌍방향 공격 엔진
-    ============================================================================ */
-    let arenaAnimId = null;
-    let arenaState = null;
-    const keysPressed = { up: false, down: false, left: false, right: false };
-    let pointerTarget = null;
-
-    function setTouchDir(dir, isDown) {
-      keysPressed[dir] = isDown;
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keysPressed.up = true;
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keysPressed.down = true;
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysPressed.left = true;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysPressed.right = true;
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keysPressed.up = false;
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keysPressed.down = false;
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysPressed.left = false;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysPressed.right = false;
-    });
-
-    function resizeArenaCanvas() {
-      const canvas = document.getElementById('dodgeCanvas');
-      const wrapper = document.getElementById('dodge-arena-wrapper');
-      if (!canvas || !wrapper) return;
-      const rect = wrapper.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(rect.width * dpr);
-      canvas.height = Math.floor(rect.height * dpr);
-      const ctx = canvas.getContext('2d');
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      if (arenaState) {
-        arenaState.width = rect.width;
-        arenaState.height = rect.height;
-        arenaState.heart.x = Math.max(14, Math.min(rect.width - 14, arenaState.heart.x));
-        arenaState.heart.y = Math.max(14, Math.min(rect.height - 14, arenaState.heart.y));
-      }
-    }
-
-    window.addEventListener('resize', resizeArenaCanvas);
-
-    (function setupArenaPointer() {
-      const wrapper = document.getElementById('dodge-arena-wrapper');
-      if (!wrapper) return;
-      wrapper.addEventListener('pointerdown', (e) => {
-        const rect = wrapper.getBoundingClientRect();
-        pointerTarget = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      });
-      wrapper.addEventListener('pointermove', (e) => {
-        if (!pointerTarget) return;
-        const rect = wrapper.getBoundingClientRect();
-        pointerTarget = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      });
-      const clearPointer = () => { pointerTarget = null; };
-      wrapper.addEventListener('pointerup', clearPointer);
-      wrapper.addEventListener('pointercancel', clearPointer);
-    })();
-
-    function stopArenaLoop() {
-      if (arenaAnimId) {
-        cancelAnimationFrame(arenaAnimId);
-        arenaAnimId = null;
-      }
-      pointerTarget = null;
-    }
-
-    function startArenaPhase(config) {
-      stopArenaLoop();
-      const wrapper = document.getElementById('dodge-arena-wrapper');
-      const rect = wrapper.getBoundingClientRect();
-      const w = rect.width || 360;
-      const h = rect.height || 225;
-
-      arenaState = {
-        ...config,
-        width: w,
-        height: h,
-        duration: config.duration || 6.0,
-        elapsed: 0,
-        timers: [
-          { spawnTimer: 0, waveTimer: 0, patternPhase: 0, toggleSide: false, toggleAxe: false },
-          { spawnTimer: 0.25, waveTimer: 0.35, patternPhase: 1.5, toggleSide: true, toggleAxe: true },
-          { spawnTimer: 0.5, waveTimer: 0.65, patternPhase: 3.0, toggleSide: false, toggleAxe: true }
-        ],
-        invuln: 0,
-        aiWanderAngle: Math.random() * Math.PI * 2,
-        aiDecisionTimer: 0,
-        heart: {
-          x: w / 2,
-          y: h / 2,
-          radius: 8,
-          speed: config.defenderSpeed || 3.4
-        },
-        projectiles: []
-      };
-
-      resizeArenaCanvas();
-      let lastTime = performance.now();
-
-      function loop(now) {
-        if (!battle.active || !arenaState) return;
-        const dt = Math.min((now - lastTime) / 1000, 0.05);
-        lastTime = now;
-
-        const finished = updateArena(dt);
-        if (!finished) {
-          drawArena();
-          arenaAnimId = requestAnimationFrame(loop);
-        }
-      }
-
-      arenaAnimId = requestAnimationFrame(loop);
-    }
-
-    function spawnSinglePattern(dt, pattern, tState) {
-      const as = arenaState;
-      const { width: w, height: h, heart } = as;
-      tState.spawnTimer += dt;
-      tState.waveTimer += dt;
-      tState.patternPhase += dt;
-
-      const addDagger = (x, y, angle, speed, color = '#ef4444', telegraph = 0.42, radius = 5) => {
-        as.projectiles.push({
-          kind: 'dagger',
-          x,
-          y,
-          angle,
-          speed,
-          telegraph,
-          radius,
-          color
-        });
-      };
-
-      const addWave = (fromLeft, y, speed, arcRadius = 26, color = '#22d3ee', sineAmp = 0, sineFreq = 4) => {
-        as.projectiles.push({
-          kind: 'wave',
-          x: fromLeft ? -16 : w + 16,
-          y,
-          baseY: y,
-          vx: speed * (fromLeft ? 1 : -1),
-          dir: fromLeft ? 1 : -1,
-          arcRadius,
-          thickness: 8,
-          sineAmp,
-          sineFreq,
-          age: 0,
-          color
-        });
-      };
-
-      const addBarGap = (fromLeft, speed, gapY, gapH, color = '#e5e7eb', waveAmp = 0) => {
-        as.projectiles.push({
-          kind: 'bar_gap',
-          x: fromLeft ? -14 : w + 14,
-          vx: speed * (fromLeft ? 1 : -1),
-          width: 14,
-          gapY,
-          baseGapY: gapY,
-          gapH,
-          waveAmp,
-          age: 0,
-          color
-        });
-      };
-
-      const addBeam = (x1, y1, x2, y2, telegraph = 0.68, activeTime = 0.28, halfWidth = 11, color = '#ef4444', isBlaster = false) => {
-        as.projectiles.push({
-          kind: 'beam',
-          x1,
-          y1,
-          x2,
-          y2,
-          telegraph,
-          maxTelegraph: telegraph,
-          activeTime,
-          halfWidth,
-          color,
-          isBlaster
-        });
-      };
-
-      const addSpike = (x, fromTop, telegraph = 0.58, activeTime = 0.32, spikeLen = h * 0.62, color = '#38bdf8') => {
-        as.projectiles.push({
-          kind: 'spike',
-          x,
-          fromTop,
-          width: 16,
-          telegraph,
-          activeTime,
-          spikeLen,
-          color
-        });
-      };
-
-      if (pattern === 'rd_1') {
-        if (tState.spawnTimer >= 0.65) {
-          tState.spawnTimer = 0;
-          const side = Math.floor(Math.random() * 4);
-          let x = 12, y = 12;
-          if (side === 0) { x = Math.random() * w; y = 10; }
-          else if (side === 1) { x = w - 10; y = Math.random() * h; }
-          else if (side === 2) { x = Math.random() * w; y = h - 10; }
-          else { x = 10; y = Math.random() * h; }
-          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 150, '#a8a29e', 0.55);
-        }
-      } else if (pattern === 'rd_2') {
-        if (tState.spawnTimer >= 0.58) {
-          tState.spawnTimer = 0;
-          tState.toggleSide = !tState.toggleSide;
-          const x = tState.toggleSide ? 10 : w - 10;
-          const y = 24 + Math.random() * (h - 48);
-          addDagger(x, y, tState.toggleSide ? 0 : Math.PI, 165, '#d6d3d1', 0.45);
-        }
-      } else if (pattern === 'rd_3') {
-        if (tState.spawnTimer >= 0.48) {
-          tState.spawnTimer = 0;
-          const rx = 24 + Math.random() * (w - 48);
-          addDagger(rx, 10, Math.PI / 2, 160, '#a8a29e', 0.45);
-        }
-      } else if (pattern === 'is_1') {
-        if (tState.waveTimer >= 0.68) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addWave(fromLeft, 28 + Math.random() * (h - 56), 175, 24, '#e5e7eb');
-        }
-      } else if (pattern === 'is_2') {
-        if (tState.waveTimer >= 1.15) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          const gapY = 48 + Math.random() * (h - 96);
-          addBarGap(fromLeft, 150, gapY, 64, '#e5e7eb', 0);
-        }
-      } else if (pattern === 'is_3') {
-        if (tState.waveTimer >= 0.78) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addWave(fromLeft, heart.y, 175, 22, '#93c5fd');
-          addDagger(24 + Math.random() * (w - 48), 10, Math.PI / 2, 175, '#e5e7eb', 0.45);
-        }
-      } else if (pattern === 'is_ult') {
-        if (tState.waveTimer >= 0.55) {
-          tState.waveTimer = 0;
-          addWave(true, 26 + Math.random() * (h - 52), 195, 26, '#facc15', 18, 4);
-          addWave(false, 26 + Math.random() * (h - 52), 195, 26, '#e5e7eb', 18, 4);
-        }
-        if (tState.spawnTimer >= 1.25) {
-          tState.spawnTimer = 0;
-          const gapY = 48 + Math.random() * (h - 96);
-          addBarGap(Math.random() < 0.5, 165, gapY, 62, '#fde047', 10);
-        }
-      } else if (pattern === 'wc_1') {
-        if (tState.waveTimer >= 0.78) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addWave(fromLeft, h - 34, 155, 22, '#d97706');
-        }
-      } else if (pattern === 'wc_2') {
-        if (tState.spawnTimer >= 0.55) {
-          tState.spawnTimer = 0;
-          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 145, '#b45309', 0.5, 5.5);
-        }
-      } else if (pattern === 'wc_3') {
-        if (tState.spawnTimer >= 0.62) {
-          tState.spawnTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addDagger(fromLeft ? 10 : w - 10, 22 + Math.random() * (h - 44), fromLeft ? 0 : Math.PI, 155, '#d97706', 0.48, 6);
-        }
-      } else if (pattern === 'hb_1') {
-        if (tState.spawnTimer >= 0.62) {
-          tState.spawnTimer = 0;
-          const side = Math.floor(Math.random() * 4);
-          let x = 10, y = 10;
-          if (side === 0) { x = Math.random() * w; y = 10; }
-          else if (side === 1) { x = w - 10; y = Math.random() * h; }
-          else if (side === 2) { x = Math.random() * w; y = h - 10; }
-          else { x = 10; y = Math.random() * h; }
-          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 185, '#fbbf24', 0.5, 4);
-        }
-      } else if (pattern === 'hb_2') {
-        if (tState.spawnTimer >= 0.95) {
-          tState.spawnTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          const sx = fromLeft ? 12 : w - 12;
-          const sy = h * 0.5;
-          const baseAng = fromLeft ? 0 : Math.PI;
-          [-0.28, 0, 0.28].forEach(offset => {
-            addDagger(sx, sy, baseAng + offset, 175, '#f59e0b', 0.45, 4);
-          });
-        }
-      } else if (pattern === 'hb_3') {
-        if (tState.spawnTimer >= 0.42) {
-          tState.spawnTimer = 0;
-          addDagger(18 + Math.random() * (w - 36), 10, Math.PI / 2, 180, '#fde047', 0.42, 4);
-        }
-      } else if (pattern === 'ba_1') {
-        if (tState.spawnTimer >= 0.58) {
-          tState.spawnTimer = 0;
-          tState.toggleAxe = !tState.toggleAxe;
-          const x = tState.toggleAxe ? 10 : w - 10;
-          addDagger(x, 24 + Math.random() * (h - 48), tState.toggleAxe ? 0 : Math.PI, 175, '#f59e0b', 0.45, 6);
-        }
-      } else if (pattern === 'ba_2') {
-        if (tState.spawnTimer >= 0.85) {
-          tState.spawnTimer = 0;
-          const bx = 24 + Math.random() * (w - 48);
-          addBeam(bx, 0, bx, h, 0.72, 0.24, 9, '#f59e0b', false);
-        }
-      } else if (pattern === 'ba_3') {
-        if (tState.spawnTimer >= 0.72) {
-          tState.spawnTimer = 0;
-          const topLeft = Math.random() < 0.5;
-          const sx = topLeft ? 12 : w - 12;
-          const sy = 12;
-          addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 175, '#d97706', 0.48, 5.5);
-        }
-      } else if (pattern === 'ts_1') {
-        if (tState.spawnTimer >= 0.64) {
-          tState.spawnTimer = 0;
-          const rx = 20 + Math.random() * (w - 40);
-          addDagger(rx, 12, Math.atan2(heart.y - 12, heart.x - rx), 145, '#38bdf8', 0.5, 5.5);
-        }
-      } else if (pattern === 'ts_2') {
-        if (tState.spawnTimer >= 0.95) {
-          tState.spawnTimer = 0;
-          const rot = tState.patternPhase * 1.1;
-          for (let i = 0; i < 4; i++) {
-            addDagger(w / 2, h / 2, rot + (i * Math.PI) / 2, 150, '#7dd3fc', 0.35, 5);
-          }
-        }
-      } else if (pattern === 'ts_3') {
-        if (tState.spawnTimer >= 0.56) {
-          tState.spawnTimer = 0;
-          const fromTop = Math.random() < 0.5;
-          const rx = 22 + Math.random() * (w - 44);
-          addDagger(rx, fromTop ? 10 : h - 10, fromTop ? Math.PI / 2 : -Math.PI / 2, 155, '#38bdf8', 0.45, 5);
-        }
-      } else if (pattern === 'sh_1') {
-        if (tState.spawnTimer >= 0.72) {
-          tState.spawnTimer = 0;
-          const sx = 24 + Math.random() * (w - 48);
-          addSpike(sx, false, 0.68, 0.3, h * 0.48, '#a8a29e');
-        }
-      } else if (pattern === 'sh_2') {
-        if (tState.spawnTimer >= 0.65) {
-          tState.spawnTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addDagger(fromLeft ? 10 : w - 10, h - 18, fromLeft ? 0 : Math.PI, 165, '#78716c', 0.45, 7);
-        }
-      } else if (pattern === 'sh_3') {
-        if (tState.spawnTimer >= 0.52) {
-          tState.spawnTimer = 0;
-          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 160, '#a8a29e', 0.48, 6.5);
-        }
-      } else if (pattern === 'ss_1') {
-        if (tState.spawnTimer >= 1.25) {
-          tState.spawnTimer = 0;
-          const count = 5;
-          const rad = Math.min(w, h) * 0.42;
-          const baseRot = Math.random() * Math.PI * 2;
-          for (let i = 0; i < count; i++) {
-            const a = baseRot + (i * Math.PI * 2) / count;
-            const sx = Math.max(14, Math.min(w - 14, heart.x + Math.cos(a) * rad));
-            const sy = Math.max(14, Math.min(h - 14, heart.y + Math.sin(a) * rad));
-            addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 215, '#38bdf8', 0.62 + i * 0.08);
-          }
-        }
-      } else if (pattern === 'ss_2') {
-        if (tState.spawnTimer >= 0.62) {
-          tState.spawnTimer = 0;
-          const sx = 24 + Math.random() * (w - 48);
-          const fromTop = Math.random() < 0.35;
-          addSpike(sx, fromTop, 0.62, 0.32, h * 0.65, '#38bdf8');
-        }
-      } else if (pattern === 'ss_3') {
-        if (tState.waveTimer >= 0.92) {
-          tState.waveTimer = 0;
-          const gapY = 44 + Math.random() * (h - 88);
-          addBarGap(true, 195, gapY, 54, '#38bdf8', 0);
-        }
-      } else if (pattern === 'kg_1') {
-        if (tState.waveTimer >= 0.56) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addWave(fromLeft, h * 0.5, 205, 32, '#c084fc', 38, 4.5);
-        }
-      } else if (pattern === 'kg_2') {
-        if (tState.spawnTimer >= 0.72) {
-          tState.spawnTimer = 0;
-          if (Math.random() < 0.5) {
-            const y1 = Math.random() * h;
-            const y2 = Math.random() * h;
-            addBeam(0, y1, w, y2, 0.66, 0.25, 10, '#c084fc', false);
-          } else {
-            const x1 = Math.random() * w;
-            const x2 = Math.random() * w;
-            addBeam(x1, 0, x2, h, 0.66, 0.25, 10, '#e879f9', false);
-          }
-        }
-      } else if (pattern === 'kg_3') {
-        if (tState.spawnTimer >= 1.35) {
-          tState.spawnTimer = 0;
-          const cx = w / 2;
-          const cy = h / 2;
-          const count = 6;
-          const startAng = tState.patternPhase * 1.5;
-          for (let i = 0; i < count; i++) {
-            const a = startAng + (i * Math.PI * 2) / count;
-            const sx = cx + Math.cos(a) * (w * 0.44);
-            const sy = cy + Math.sin(a) * (h * 0.44);
-            addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 210, '#e879f9', 0.58);
-          }
-        }
-      } else if (pattern === 'kg_ult') {
-        if (tState.spawnTimer >= 0.85) {
-          tState.spawnTimer = 0;
-          const gx = 32 + Math.random() * (w - 64);
-          const gy = 28 + Math.random() * (h - 56);
-          addBeam(gx, 0, gx, h, 0.65, 0.25, 10, '#c084fc', false);
-          addBeam(0, gy, w, gy, 0.65, 0.25, 10, '#facc15', false);
-        }
-        if (tState.waveTimer >= 0.65) {
-          tState.waveTimer = 0;
-          addWave(Math.random() < 0.5, h * 0.5, 210, 32, '#e879f9', 36, 4.5);
-        }
-      } else if (pattern === 'bm_1') {
-        if (tState.waveTimer >= 0.58) {
-          tState.waveTimer = 0;
-          const fromLeft = Math.random() < 0.5;
-          addWave(fromLeft, 26 + Math.random() * (h - 52), 205, 30, '#f43f5e', 28, 4.2);
-        }
-      } else if (pattern === 'bm_2') {
-        if (tState.spawnTimer >= 0.46) {
-          tState.spawnTimer = 0;
-          const side = Math.floor(Math.random() * 4);
-          let x = 12, y = 12;
-          if (side === 0) { x = Math.random() * w; y = 10; }
-          else if (side === 1) { x = w - 10; y = Math.random() * h; }
-          else if (side === 2) { x = Math.random() * w; y = h - 10; }
-          else { x = 10; y = Math.random() * h; }
-          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 215, '#ef4444', 0.42, 5.2);
-        }
-      } else if (pattern === 'bm_3') {
-        if (tState.spawnTimer >= 0.86) {
-          tState.spawnTimer = 0;
-          const gx = 32 + Math.random() * (w - 64);
-          const gy = 28 + Math.random() * (h - 56);
-          addBeam(gx, 0, gx, h, 0.66, 0.25, 9.5, '#f43f5e', false);
-          addBeam(0, gy, w, gy, 0.66, 0.25, 9.5, '#fb7185', false);
-        }
-      } else if (pattern === 'bm_ult') {
-        if (tState.spawnTimer >= 0.95) {
-          tState.spawnTimer = 0;
-          addBeam(10, 10, w - 10, h - 10, 0.68, 0.25, 10, '#f43f5e', false);
-          addBeam(w - 10, 10, 10, h - 10, 0.68, 0.25, 10, '#ef4444', false);
-        }
-        if (tState.waveTimer >= 0.45) {
-          tState.waveTimer = 0;
-          tState.toggleSide = !tState.toggleSide;
-          addWave(tState.toggleSide, 28 + Math.random() * (h - 56), 215, 28, '#fda4af', 24, 4.5);
-        }
-      } else if (pattern === 'sb_1') {
-        if (tState.waveTimer >= 0.92) {
-          tState.waveTimer = 0;
-          tState.toggleSide = !tState.toggleSide;
-          const gapY = 48 + Math.random() * (h - 96);
-          addBarGap(tState.toggleSide, 185, gapY, 58, '#f8fafc', 16);
-        }
-        if (tState.spawnTimer >= 0.95) {
-          tState.spawnTimer = 0;
-          const sx = 28 + Math.random() * (w - 56);
-          addSpike(sx, Math.random() < 0.5, 0.72, 0.26, h * 0.34, '#e2e8f0');
-        }
-      } else if (pattern === 'sb_2') {
-        if (tState.spawnTimer >= 0.85) {
-          tState.spawnTimer = 0;
-          const side = Math.floor(Math.random() * 4);
-          let bx = 14, by = 14;
-          if (side === 0) { bx = 22 + Math.random() * (w - 44); by = 10; }
-          else if (side === 1) { bx = w - 10; by = 22 + Math.random() * (h - 44); }
-          else if (side === 2) { bx = 22 + Math.random() * (w - 44); by = h - 10; }
-          else { bx = 10; by = 22 + Math.random() * (h - 44); }
-          const ang = Math.atan2(heart.y - by, heart.x - bx);
-          addBeam(bx, by, bx + Math.cos(ang) * 540, by + Math.sin(ang) * 540, 0.68, 0.24, 10, '#38bdf8', true);
-        }
-      } else if (pattern === 'sb_3') {
-        if (tState.waveTimer >= 1.05) {
-          tState.waveTimer = 0;
-          tState.toggleSide = !tState.toggleSide;
-          const gapY = 48 + Math.random() * (h - 96);
-          addBarGap(tState.toggleSide, 175, gapY, 56, '#f8fafc', 12);
-        }
-        if (tState.spawnTimer >= 0.48) {
-          tState.spawnTimer = 0;
-          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 185, '#38bdf8', 0.45, 5);
-        }
-      } else if (pattern === 'sb_ult') {
-        if (tState.spawnTimer >= 1.05) {
-          tState.spawnTimer = 0;
-          tState.toggleAxe = !tState.toggleAxe;
-          if (tState.toggleAxe) {
-            addBeam(10, 10, w - 10, h - 10, 0.72, 0.24, 10, '#38bdf8', true);
-            addBeam(w - 10, 10, 10, h - 10, 0.72, 0.24, 10, '#38bdf8', true);
-          } else {
-            addBeam(w / 2, 8, w / 2, h - 8, 0.72, 0.24, 10, '#38bdf8', true);
-            addBeam(8, h / 2, w - 8, h / 2, 0.72, 0.24, 10, '#38bdf8', true);
-          }
-        }
-        if (tState.waveTimer >= 0.42) {
-          tState.waveTimer = 0;
-          tState.toggleSide = !tState.toggleSide;
-          const sx = tState.toggleSide ? 10 : w - 10;
-          const sy = 24 + Math.random() * (h - 48);
-          addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 205, '#f8fafc', 0.42, 4.8);
-        }
-      } else if (pattern === 'ld_1') {
-        if (tState.spawnTimer >= 0.16) {
-          tState.spawnTimer = 0;
-          const spiralAng = tState.patternPhase * 5.2;
-          addDagger(w / 2, h / 2, spiralAng, 195, '#22d3ee', 0.15, 4.5);
-          addDagger(w / 2, h / 2, spiralAng + Math.PI, 195, '#facc15', 0.15, 4.5);
-        }
-      } else if (pattern === 'ld_2') {
-        if (tState.spawnTimer >= 0.88) {
-          tState.spawnTimer = 0;
-          const gx = 32 + Math.random() * (w - 64);
-          const gy = 28 + Math.random() * (h - 56);
-          addBeam(gx, 0, gx, h, 0.66, 0.25, 9, '#22d3ee', false);
-          addBeam(0, gy, w, gy, 0.66, 0.25, 9, '#facc15', false);
-        }
-      } else if (pattern === 'ld_3') {
-        if (tState.spawnTimer >= 0.42) {
-          tState.spawnTimer = 0;
-          const corners = [
-            [12, 12],
-            [w - 12, 12],
-            [12, h - 12],
-            [w - 12, h - 12]
-          ];
-          const [cx, cy] = corners[Math.floor(Math.random() * 4)];
-          const baseAng = Math.atan2(heart.y - cy, heart.x - cx);
-          addDagger(cx, cy, baseAng - 0.14, 265, '#22d3ee', 0.34);
-          addDagger(cx, cy, baseAng + 0.14, 265, '#fef08a', 0.34);
-        }
-      } else if (pattern === 'ld_ult') {
-        if (tState.spawnTimer >= 0.18) {
-          tState.spawnTimer = 0;
-          const spiralAng = tState.patternPhase * 5.4;
-          addDagger(w / 2, h / 2, spiralAng, 200, '#22d3ee', 0.15, 4.5);
-          addDagger(w / 2, h / 2, spiralAng + Math.PI, 200, '#facc15', 0.15, 4.5);
-        }
-        if (tState.waveTimer >= 1.05) {
-          tState.waveTimer = 0;
-          const gx = 32 + Math.random() * (w - 64);
-          const gy = 28 + Math.random() * (h - 56);
-          addBeam(gx, 0, gx, h, 0.66, 0.24, 9, '#22d3ee', false);
-          addBeam(0, gy, w, gy, 0.66, 0.24, 9, '#facc15', false);
-        }
-      }
-    }
-
-    function spawnPatternProjectiles(dt) {
-      const as = arenaState;
-      if (as.pattern) {
-        spawnSinglePattern(dt, as.pattern, as.timers[0]);
-      }
-      if (as.pattern2) {
-        spawnSinglePattern(dt, as.pattern2, as.timers[1]);
-      }
-      if (as.pattern3) {
-        spawnSinglePattern(dt, as.pattern3, as.timers[2]);
-      }
-    }
-
-    function distToSegment(px, py, x1, y1, x2, y2) {
-      const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-      if (l2 === 0) return { dist: Math.hypot(px - x1, py - y1), projX: x1, projY: y1 };
-      let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-      t = Math.max(0, Math.min(1, t));
-      const projX = x1 + t * (x2 - x1);
-      const projY = y1 + t * (y2 - y1);
-      return { dist: Math.hypot(px - projX, py - projY), projX, projY };
-    }
-
-    function moveAiHeart(dt) {
-      const as = arenaState;
-      const { width: w, height: h, heart, projectiles } = as;
-      const skill = as.aiSkill || 0.28;
-      const spd = heart.speed * 42;
-
-      as.aiDecisionTimer -= dt;
-      if (as.aiDecisionTimer <= 0) {
-        as.aiDecisionTimer = 0.45 + Math.random() * 0.45;
-        as.aiWanderAngle += (Math.random() - 0.5) * 2.6;
-        as.aiHesitate = Math.random() < (1 - skill * 1.3);
-      }
-
-      if (as.aiHesitate) {
-        heart.x += Math.cos(as.aiWanderAngle) * spd * 0.25 * dt;
-        heart.y += Math.sin(as.aiWanderAngle) * spd * 0.25 * dt;
-        return;
-      }
-
-      let vx = (w / 2 - heart.x) * 0.012 + Math.cos(as.aiWanderAngle) * 0.55;
-      let vy = (h / 2 - heart.y) * 0.012 + Math.sin(as.aiWanderAngle) * 0.55;
-
-      projectiles.forEach(p => {
-        if (p.kind === 'dagger' || p.kind === 'wave') {
-          const dx = heart.x - p.x;
-          const dy = heart.y - p.y;
-          const dist = Math.hypot(dx, dy);
-          const dangerRange = p.kind === 'wave' ? 62 : 52;
-          if (dist < dangerRange && dist > 0.1) {
-            const force = ((dangerRange - dist) / dangerRange) * (1.8 * skill);
-            vx += (dx / dist) * force;
-            vy += (dy / dist) * force;
-          }
-        } else if (p.kind === 'bar_gap') {
-          if (Math.abs(heart.x - p.x) < 110) {
-            vy += (p.gapY - heart.y) * 0.04 * skill;
-          }
-        } else if (p.kind === 'beam') {
-          const seg = distToSegment(heart.x, heart.y, p.x1, p.y1, p.x2, p.y2);
-          if (seg.dist < 42 && seg.dist > 0.1) {
-            const dx = heart.x - seg.projX;
-            const dy = heart.y - seg.projY;
-            vx += (dx / seg.dist) * (1.6 * skill);
-            vy += (dy / seg.dist) * (1.6 * skill);
-          }
-        } else if (p.kind === 'spike') {
-          if (Math.abs(heart.x - p.x) < 35) {
-            vx += (heart.x >= p.x ? 1 : -1) * (1.5 * skill);
-          }
-        }
-      });
-
-      const len = Math.hypot(vx, vy);
-      if (len > 0.05) {
-        heart.x += (vx / len) * spd * dt;
-        heart.y += (vy / len) * spd * dt;
-      }
-    }
-
-    function updateArena(dt) {
-      const as = arenaState;
-      as.elapsed += dt;
-      const remain = Math.max(0, as.duration - as.elapsed);
-      document.getElementById('dodge-timer-text').textContent = remain.toFixed(1);
-
-      if (remain <= 0) {
-        stopArenaLoop();
-        if (as.controller === 'ai_enemy' && as.onBotAttackComplete) {
-          as.onBotAttackComplete();
-        } else if (as.controller === 'human_defend') {
-          if (battle.mode === 'pvp' && as.onPvpDefendComplete) {
-            as.onPvpDefendComplete(Math.max(0, battle.playerHp));
-          } else if (as.onHumanDefendComplete) {
-            as.onHumanDefendComplete();
-          }
-        }
-        return true;
-      }
-
-      if (as.invuln > 0) as.invuln -= dt;
-
-      if (as.controller === 'human_defend') {
-        const spd = as.heart.speed * 60;
-        let dx = 0, dy = 0;
-        if (keysPressed.left) dx -= 1;
-        if (keysPressed.right) dx += 1;
-        if (keysPressed.up) dy -= 1;
-        if (keysPressed.down) dy += 1;
-
-        if (dx !== 0 || dy !== 0) {
-          const len = Math.hypot(dx, dy);
-          as.heart.x += (dx / len) * spd * dt;
-          as.heart.y += (dy / len) * spd * dt;
-        } else if (pointerTarget) {
-          const pdx = pointerTarget.x - as.heart.x;
-          const pdy = pointerTarget.y - as.heart.y;
-          const dist = Math.hypot(pdx, pdy);
-          if (dist > 3) {
-            const step = Math.min(dist, spd * 1.25 * dt);
-            as.heart.x += (pdx / dist) * step;
-            as.heart.y += (pdy / dist) * step;
-          }
-        }
-      } else {
-        moveAiHeart(dt);
-      }
-
-      const pad = as.heart.radius + 5;
-      as.heart.x = Math.max(pad, Math.min(as.width - pad, as.heart.x));
-      as.heart.y = Math.max(pad, Math.min(as.height - pad, as.heart.y));
-
-      if (as.coopAllyHeart && raidSession.roomCode && raidSession.role) {
-        const now = performance.now();
-        if (now - raidSession.lastPosSync > 130) {
-          raidSession.lastPosSync = now;
-          const meKey = raidSession.role;
-          RoomStore.update('raid', raidSession.roomCode, {
-            [`${meKey}.heartX`]: Math.round(as.heart.x),
-            [`${meKey}.heartY`]: Math.round(as.heart.y),
-            [`${meKey}.hp`]: Math.max(0, battle.playerHp)
-          }).catch(() => {});
-        }
-      }
-
-      spawnPatternProjectiles(dt);
-
-      for (let i = as.projectiles.length - 1; i >= 0; i--) {
-        const p = as.projectiles[i];
-
-        if (p.kind === 'dagger') {
-          if (p.telegraph > 0) {
-            p.telegraph -= dt;
-            continue;
-          }
-          p.x += Math.cos(p.angle) * p.speed * dt;
-          p.y += Math.sin(p.angle) * p.speed * dt;
-
-          if (p.x < -40 || p.x > as.width + 40 || p.y < -40 || p.y > as.height + 40) {
-            as.projectiles.splice(i, 1);
-            continue;
-          }
-
-          const dist = Math.hypot(p.x - as.heart.x, p.y - as.heart.y);
-          if (dist < as.heart.radius + p.radius) {
-            const killed = handleArenaHeartHit();
-            as.projectiles.splice(i, 1);
-            if (killed) return true;
-          }
-        } else if (p.kind === 'wave') {
-          p.age += dt;
-          p.x += p.vx * dt;
-          if (p.sineAmp > 0) {
-            p.y = p.baseY + Math.sin(p.age * p.sineFreq) * p.sineAmp;
-          }
-          if (p.x < -60 || p.x > as.width + 60) {
-            as.projectiles.splice(i, 1);
-            continue;
-          }
-
-          const dxWave = Math.abs(p.x - as.heart.x);
-          const dyWave = Math.abs(p.y - as.heart.y);
-          if (dxWave < p.thickness + as.heart.radius - 2 && dyWave < p.arcRadius) {
-            const killed = handleArenaHeartHit();
-            if (killed) return true;
-          }
-        } else if (p.kind === 'bar_gap') {
-          p.age += dt;
-          p.x += p.vx * dt;
-          if (p.waveAmp > 0) {
-            p.gapY = p.baseGapY + Math.sin(p.age * 3.5) * p.waveAmp;
-          }
-          if (p.x < -40 || p.x > as.width + 40) {
-            as.projectiles.splice(i, 1);
-            continue;
-          }
-
-          const inX = Math.abs(as.heart.x - p.x) < (p.width / 2 + as.heart.radius - 2);
-          const inSafeGap = Math.abs(as.heart.y - p.gapY) < (p.gapH / 2 - as.heart.radius + 2);
-          if (inX && !inSafeGap) {
-            const killed = handleArenaHeartHit();
-            if (killed) return true;
-          }
-        } else if (p.kind === 'beam') {
-          if (p.telegraph > 0) {
-            p.telegraph -= dt;
-            if (p.telegraph <= 0) SoundFX.slash();
-            continue;
-          }
-          p.activeTime -= dt;
-          if (p.activeTime <= 0) {
-            as.projectiles.splice(i, 1);
-            continue;
-          }
-
-          const seg = distToSegment(as.heart.x, as.heart.y, p.x1, p.y1, p.x2, p.y2);
-          if (seg.dist < p.halfWidth + as.heart.radius - 2) {
-            const killed = handleArenaHeartHit();
-            if (killed) return true;
-          }
-        } else if (p.kind === 'spike') {
-          if (p.telegraph > 0) {
-            p.telegraph -= dt;
-            if (p.telegraph <= 0) SoundFX.slash();
-            continue;
-          }
-          p.activeTime -= dt;
-          if (p.activeTime <= 0) {
-            as.projectiles.splice(i, 1);
-            continue;
-          }
-
-          const inX = Math.abs(as.heart.x - p.x) < (p.width / 2 + as.heart.radius - 2);
-          const inY = p.fromTop ? (as.heart.y < p.spikeLen) : (as.heart.y > as.height - p.spikeLen);
-          if (inX && inY) {
-            const killed = handleArenaHeartHit();
-            if (killed) return true;
-          }
-        }
-      }
-
-      return false;
-    }
-
-    function handleArenaHeartHit() {
-      const as = arenaState;
-      if (!as || as.invuln > 0 || !battle.active) return false;
-      if (as.controller === 'pvp_spectate') return false;
-
-      as.invuln = 0.65;
-
-      if (as.controller === 'ai_enemy') {
-        SoundFX.slash();
-        const dmg = as.hitDamage;
-        battle.enemyHp = Math.max(0, battle.enemyHp - dmg);
-        updateBattleBars();
-        spawnDamagePopup(`-${dmg} 명중!`, 'text-amber-300');
-
-        const sprite = document.getElementById('enemy-sprite-container');
-        sprite.classList.remove('animate-shake');
-        void sprite.offsetWidth;
-        sprite.classList.add('animate-shake');
-
-        if (battle.enemyHp <= 0) {
-          stopArenaLoop();
-          if (as.onBotAttackComplete) as.onBotAttackComplete();
-          return true;
-        }
-        return false;
-      }
-
-      if (as.controller === 'human_defend') {
-        SoundFX.hurt();
-        const reduced = Math.max(2, Math.round(as.hitDamage * (1 - (as.defenderReduce || 0))));
-        battle.playerHp = Math.max(0, battle.playerHp - reduced);
-        updateBattleBars();
-        spawnDamagePopup(`-${reduced} 피격!`, 'text-red-500');
-
-        if (battle.playerHp <= 0) {
-          if (battle.mode === 'coop_raid') {
-            if (raidSession.roomCode && raidSession.role) {
-              RoomStore.update('raid', raidSession.roomCode, {
-                [`${raidSession.role}.hp`]: 0
-              }).catch(() => {});
-            }
-            return false;
-          }
-          stopArenaLoop();
-          if (battle.mode === 'pvp' && as.onPvpDefendComplete) {
-            as.onPvpDefendComplete(0);
-          } else if (as.onHumanDefendComplete) {
-            as.onHumanDefendComplete();
-          }
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function drawArena() {
-      const canvas = document.getElementById('dodgeCanvas');
-      if (!canvas || !arenaState) return;
-      const ctx = canvas.getContext('2d');
-      const { width: w, height: h, heart, projectiles, invuln, controller } = arenaState;
-
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      for (let gx = 24; gx < w; gx += 24) {
-        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
-      }
-      for (let gy = 24; gy < h; gy += 24) {
-        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
-      }
-
-      projectiles.forEach(p => {
-        if (p.kind === 'dagger') {
-          if (p.telegraph > 0) {
-            ctx.save();
-            ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
-            ctx.setLineDash([4, 4]);
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + Math.cos(p.angle) * 400, p.y + Math.sin(p.angle) * 400);
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.angle);
-          ctx.fillStyle = '#f8fafc';
-          ctx.beginPath();
-          ctx.moveTo(14, 0);
-          ctx.lineTo(-6, -4.5);
-          ctx.lineTo(-6, 4.5);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = p.color || '#ef4444';
-          ctx.lineWidth = 1.3;
-          ctx.stroke();
-          ctx.fillStyle = '#facc15';
-          ctx.fillRect(-8, -6, 2.5, 12);
-          ctx.restore();
-        } else if (p.kind === 'wave') {
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          if (p.dir < 0) ctx.scale(-1, 1);
-
-          ctx.strokeStyle = p.color || '#22d3ee';
-          ctx.shadowColor = p.color || '#06b6d4';
-          ctx.shadowBlur = 12;
-          ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.arc(-10, 0, p.arcRadius, -Math.PI * 0.42, Math.PI * 0.42);
-          ctx.stroke();
-
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(-8, 0, p.arcRadius - 2, -Math.PI * 0.38, Math.PI * 0.38);
-          ctx.stroke();
-          ctx.restore();
-        } else if (p.kind === 'bar_gap') {
-          const topEnd = Math.max(0, p.gapY - p.gapH / 2);
-          const botStart = Math.min(h, p.gapY + p.gapH / 2);
-
-          ctx.save();
-          ctx.fillStyle = p.color || '#e5e7eb';
-          ctx.shadowColor = p.color || '#ffffff';
-          ctx.shadowBlur = 8;
-
-          if (topEnd > 0) {
-            ctx.fillRect(p.x - p.width / 2, 0, p.width, topEnd);
-            ctx.fillStyle = '#facc15';
-            ctx.fillRect(p.x - p.width / 2 - 2, topEnd - 4, p.width + 4, 4);
-            ctx.fillStyle = p.color || '#e5e7eb';
-          }
-          if (botStart < h) {
-            ctx.fillRect(p.x - p.width / 2, botStart, p.width, h - botStart);
-            ctx.fillStyle = '#facc15';
-            ctx.fillRect(p.x - p.width / 2 - 2, botStart, p.width + 4, 4);
-          }
-          ctx.restore();
-        } else if (p.kind === 'beam') {
-          ctx.save();
-          if (p.telegraph > 0) {
-            ctx.strokeStyle = p.color || '#ef4444';
-            ctx.globalAlpha = 0.55;
-            ctx.setLineDash([6, 4]);
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(p.x1, p.y1);
-            ctx.lineTo(p.x2, p.y2);
-            ctx.stroke();
-          } else {
-            ctx.strokeStyle = p.color || '#ef4444';
-            ctx.shadowColor = p.color || '#ef4444';
-            ctx.shadowBlur = 18;
-            ctx.lineCap = 'round';
-            ctx.lineWidth = p.halfWidth * 2;
-            ctx.beginPath();
-            ctx.moveTo(p.x1, p.y1);
-            ctx.lineTo(p.x2, p.y2);
-            ctx.stroke();
-
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = p.halfWidth * 0.85;
-            ctx.beginPath();
-            ctx.moveTo(p.x1, p.y1);
-            ctx.lineTo(p.x2, p.y2);
-            ctx.stroke();
-          }
-
-          if (p.isBlaster) {
-            const ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
-            ctx.globalAlpha = 1;
-            ctx.translate(p.x1, p.y1);
-            ctx.rotate(ang);
-            ctx.fillStyle = '#18181b';
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(14, 0);
-            ctx.lineTo(-10, -11);
-            ctx.lineTo(-6, 0);
-            ctx.lineTo(-10, 11);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          }
-          ctx.restore();
-        } else if (p.kind === 'spike') {
-          ctx.save();
-          if (p.telegraph > 0) {
-            ctx.strokeStyle = p.color || '#38bdf8';
-            ctx.globalAlpha = 0.45;
-            ctx.setLineDash([4, 4]);
-            ctx.lineWidth = 2;
-            ctx.strokeRect(p.x - p.width / 2, p.fromTop ? 0 : h - p.spikeLen, p.width, p.spikeLen);
-          } else {
-            ctx.fillStyle = p.color || '#38bdf8';
-            ctx.shadowColor = p.color || '#38bdf8';
-            ctx.shadowBlur = 10;
-            const yStart = p.fromTop ? 0 : h - p.spikeLen;
-            ctx.fillRect(p.x - p.width / 2, yStart, p.width, p.spikeLen);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(p.x - 2, yStart, 4, p.spikeLen);
-          }
-          ctx.restore();
-        }
-      });
-
-      if (arenaState.coopAllyHeart && battle.allyHp > 0) {
-        const ax = Math.max(12, Math.min(w - 12, raidSession.allyHeartPos.x));
-        const ay = Math.max(12, Math.min(h - 12, raidSession.allyHeartPos.y));
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#0284c7';
-        ctx.shadowBlur = 10;
-
-        const s = 0.85;
-        ctx.beginPath();
-        ctx.moveTo(0, 7 * s);
-        ctx.bezierCurveTo(-10 * s, -2 * s, -10 * s, -9 * s, -4.5 * s, -9 * s);
-        ctx.bezierCurveTo(-1.5 * s, -9 * s, 0, -6.5 * s, 0, -5 * s);
-        ctx.bezierCurveTo(0, -6.5 * s, 1.5 * s, -9 * s, 4.5 * s, -9 * s);
-        ctx.bezierCurveTo(10 * s, -9 * s, 10 * s, -2 * s, 0, 7 * s);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#bae6fd';
-        ctx.font = 'bold 9px "Noto Sans KR", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('친구', 0, -12);
-        ctx.restore();
-      }
-
-      if (battle.playerHp > 0 && (invuln <= 0 || Math.floor(invuln * 16) % 2 === 0)) {
-        const isEnemyHeart = controller === 'ai_enemy' || controller === 'pvp_spectate';
-        ctx.save();
-        ctx.translate(heart.x, heart.y);
-        ctx.fillStyle = isEnemyHeart ? '#c084fc' : '#ff1e1e';
-        ctx.shadowColor = isEnemyHeart ? '#a855f7' : '#ef4444';
-        ctx.shadowBlur = 10;
-
-        const s = 0.85;
-        ctx.beginPath();
-        ctx.moveTo(0, 7 * s);
-        ctx.bezierCurveTo(-10 * s, -2 * s, -10 * s, -9 * s, -4.5 * s, -9 * s);
-        ctx.bezierCurveTo(-1.5 * s, -9 * s, 0, -6.5 * s, 0, -5 * s);
-        ctx.bezierCurveTo(0, -6.5 * s, 1.5 * s, -9 * s, 4.5 * s, -9 * s);
-        ctx.bezierCurveTo(10 * s, -9 * s, 10 * s, -2 * s, 0, 7 * s);
-        ctx.closePath();
-        ctx.fill();
-
-        if (isEnemyHeart || arenaState.coopAllyHeart) {
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = isEnemyHeart ? '#e9d5ff' : '#fecaca';
-          ctx.font = 'bold 9px "Noto Sans KR", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(isEnemyHeart ? (controller === 'ai_enemy' ? 'AI' : 'OPP') : '나', 0, -12);
-        }
-        ctx.restore();
-      }
-    }
-
-    /* ============================================================================
-       전역 함수 바인딩 & 초기 구동
-    ============================================================================ */
-    Object.assign(window, {
-      openInExternalBrowser,
-      switchAuthTab,
-      handleAuthSubmit,
-      logoutAccount,
-      openCodeModal,
-      closeCodeModal,
-      openAdminCreateCodePanel,
-      openAdminExpireCodePanel,
-      adminCreateCode,
-      adminExpireCode,
-      redeemPromoCode,
-      navigateTo,
-      confirmLeaveToLobby,
-      toggleSound,
-      rollWeaponGacha,
-      rollCharGacha,
-      closeGachaModal,
-      selectWeaponForCraft,
-      clearCraftSlot,
-      clearAllCraftSlots,
-      selectRecipeToCraft,
-      executeCraftWeapon,
-      handleFormationSlotClick,
-      selectCharacterForSlot,
-      selectWeaponForSlot,
-      resetFormation,
-      openWarModeModal,
-      closeWarModeModal,
-      backToWarStepSelect,
-      showFriendPvpStep,
-      openJoinCodeInput,
-      startBotWar,
-      createPvpRoom,
-      cancelPvpRoom,
-      joinPvpRoom,
-      castSelectedDualPvpSkills,
-      selectRaidBoss,
-      openRaidModeModal,
-      closeRaidModeModal,
-      backToRaidStepSelect,
-      showFriendRaidStep,
-      openRaidJoinCodeInput,
-      startSoloRaid,
-      createRaidRoom,
-      cancelRaidRoom,
-      joinRaidRoom,
-      setTouchDir,
-      closeCustomModal
-    });
-
-    window.onload = function () {
-      updateGlobalUI();
-      navigateTo('auth');
-      syncPromoCodesFromCloud();
-    };
-  </script>
-</body>
-</html>
