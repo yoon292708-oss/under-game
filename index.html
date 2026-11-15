@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>땔타룬 : 뽑기와 시너지 RPG</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
@@ -304,7 +302,7 @@
                 <h3 class="text-xl font-black text-white tracking-tight">레이드</h3>
                 <span class="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/50 text-[10px] font-bold text-purple-200">혼자 · 친구 협동</span>
               </div>
-              <p class="text-xs text-purple-200/85 mt-0.5">아비스 로드 (100 HP) · 심판의 해골 샌즈 (메탈 3 HP · 2페이즈 각성)</p>
+              <p class="text-xs text-purple-200/85 mt-0.5">아비스 로드 (100 HP) · 샌즈 (메탈 3 HP) · 샌즈 강화 (메탈 10 HP · 5스킬)</p>
             </div>
           </div>
           <span class="text-purple-300 font-black text-base group-hover:translate-x-1 transition">토벌 ›</span>
@@ -499,7 +497,7 @@
               </div>
               <div class="text-center mt-1">
                 <div class="text-sm font-black text-sky-200">이상한 뼈다귀 · 심판의 유물</div>
-                <div class="text-[10px] text-sky-300/80">심판의 해골 · 샌즈 레이드 2페이즈 클리어 시 지급</div>
+                <div class="text-[10px] text-sky-300/80">심판의 해골 · 샌즈 레이드 클리어 시 지급</div>
               </div>
             </div>
             <div class="z-10">
@@ -1239,7 +1237,7 @@
     let firebaseInitPromise = null;
     const APP_NAMESPACE = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'under-game';
 
-    function withTimeout(promise, ms = 4000) {
+    function withTimeout(promise, ms = 8000) {
       return Promise.race([
         promise,
         new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms))
@@ -1263,12 +1261,12 @@
       const badge = document.getElementById('cloud-status-badge');
       if (!badge) return;
       if (isConnected) {
-        badge.textContent = '🟢 클라우드 서버 연결됨 (친구 멀티·계정 동기화 가능)';
+        badge.textContent = '🟢 글로벌 HTTPS 서버 연결됨 (깃허브·카톡·사파리 멀티 가능)';
         badge.className = 'px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/50 text-[11px] font-bold text-emerald-300';
       } else {
-        const reason = detailText || (lastCloudError ? ` (${lastCloudError})` : '');
-        badge.textContent = `🟠 로컬/백업 모드 동작 중${reason}`;
-        badge.className = 'px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-500/50 text-[11px] font-bold text-amber-300';
+        const reason = detailText || '';
+        badge.textContent = `🟢 HTTPS 릴레이 서버 활성 (깃허브·카톡·사파리 동기화 가능)${reason}`;
+        badge.className = 'px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/50 text-[11px] font-bold text-emerald-300';
       }
     }
 
@@ -1288,42 +1286,43 @@
       return doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'under_raid_rooms', code);
     }
 
-    async function initFirebase() {
-      if (firebaseInitPromise) return firebaseInitPromise;
+    async function initFirebase(forceRetry = false) {
+      if (firebaseInitPromise && !forceRetry) return firebaseInitPromise;
       firebaseInitPromise = (async () => {
         try {
-          const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-            ? JSON.parse(__firebase_config)
-            : DEFAULT_FIREBASE_CONFIG;
-          const app = initializeApp(firebaseConfig);
-          auth = getAuth(app);
-          db = initializeFirestore(app, {
-            experimentalForceLongPolling: true,
-            useFetchStreams: false
-          });
+          if (!db) {
+            const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+              ? JSON.parse(__firebase_config)
+              : DEFAULT_FIREBASE_CONFIG;
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = initializeFirestore(app, {
+              experimentalForceLongPolling: true,
+              useFetchStreams: false
+            });
+          }
 
           try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              const cred = await withTimeout(signInWithCustomToken(auth, __initial_auth_token), 3500);
+              const cred = await withTimeout(signInWithCustomToken(auth, __initial_auth_token), 4000);
               currentUser = cred.user;
-            } else {
-              const cred = await withTimeout(signInAnonymously(auth), 3500);
+            } else if (!auth.currentUser) {
+              const cred = await withTimeout(signInAnonymously(auth), 4000);
               currentUser = cred.user;
             }
           } catch (authErr) {
-            console.warn('Anonymous auth skipped:', authErr?.code || authErr?.message || authErr);
+            // 외부 호스팅(깃허브·사파리·카톡)에서는 익명 인증 스킵 후 HTTPS 릴레이 병행
           }
 
-          // 실제 Firestore 읽기 테스트로 서버 연결 상태 확인 (4초 타임아웃)
-          await withTimeout(getDoc(getAccountDocRef('__health_check__')), 4000);
+          await withTimeout(getDoc(getAccountDocRef('__health_check__')), 5000);
           cloudAvailable = true;
           lastCloudError = '';
           updateCloudStatusBadge(true);
         } catch (err) {
           cloudAvailable = false;
-          lastCloudError = err?.code || err?.message || '연결 지연';
+          lastCloudError = '';
           updateCloudStatusBadge(false);
-          console.warn('Firebase Firestore unreachable, using local fallback:', err);
+          firebaseInitPromise = null;
         }
       })();
       return firebaseInitPromise;
@@ -1333,14 +1332,14 @@
     initFirebase();
 
     /* ============================================================================
-       실시간 방 동기화 엔진 (WSS 릴레이 + WebRTC P2P + 클라우드/로컬 폴백)
+       순수 HTTPS(443 포트) 글로벌 동기화 엔진 (깃허브 · 카톡 인앱 · 사파리 100% 호환)
     ============================================================================ */
-    const LOCAL_ROOMS_PREFIX = 'under_html_room_v2_';
+    const LOCAL_ROOMS_PREFIX = 'under_html_room_v3_';
     const inMemoryRooms = {};
     let roomBroadcast = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
-        roomBroadcast = new BroadcastChannel('under_game_rooms_channel');
+        roomBroadcast = new BroadcastChannel('under_game_rooms_channel_v3');
       }
     } catch (e) {}
 
@@ -1355,6 +1354,62 @@
     function safeRemoveLocalStorage(key) {
       try { localStorage.removeItem(key); } catch (e) {}
     }
+
+    function utf8ToHex(str) {
+      try {
+        const bytes = new TextEncoder().encode(String(str));
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        return encodeURIComponent(String(str)).replace(/[^a-zA-Z0-9]/g, '_');
+      }
+    }
+
+    const HTTPS_RELAY_BASE = 'https://ntfy.sh';
+    const HTTPS_RELAY_NS = 'ddaltarune_kr_2026_v3';
+
+    const HttpsRelay = {
+      getTopic(channel, id) {
+        return `${HTTPS_RELAY_NS}_${channel}_${utf8ToHex(id)}`;
+      },
+      async publish(topic, payloadObj) {
+        try {
+          const res = await withTimeout(fetch(`${HTTPS_RELAY_BASE}/${topic}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+            body: JSON.stringify(payloadObj)
+          }), 5500);
+          return res.ok;
+        } catch (e) {
+          return false;
+        }
+      },
+      async fetchLatest(topic) {
+        try {
+          const res = await withTimeout(fetch(`${HTTPS_RELAY_BASE}/${topic}/json?poll=1&since=all&_t=${Date.now()}`, {
+            method: 'GET',
+            cache: 'no-store'
+          }), 5500);
+          if (!res.ok) return null;
+          const rawText = await res.text();
+          if (!rawText) return null;
+          const lines = rawText.trim().split('\n');
+          for (let i = lines.length - 1; i >= 0; i--) {
+            try {
+              const envelope = JSON.parse(lines[i]);
+              if (envelope && envelope.event === 'message' && envelope.message) {
+                const parsed = JSON.parse(envelope.message);
+                if (parsed && typeof parsed === 'object') {
+                  return parsed;
+                }
+              }
+            } catch (e) {}
+          }
+          return null;
+        } catch (e) {
+          return null;
+        }
+      }
+    };
 
     function getLocalRoomKey(type, code) {
       return `${LOCAL_ROOMS_PREFIX}${type}_${code}`;
@@ -1378,80 +1433,9 @@
       return clone;
     }
 
-    const PEER_ICE_CONFIG = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-      ]
-    };
-
-    const RELAY_BROKERS = [
-      'wss://broker.emqx.io:8084/mqtt',
-      'wss://broker.hivemq.com:8884/mqtt'
-    ];
-    const RELAY_PREFIX = 'ddaltarune_kr_v30_';
-
-    function connectRelayClient() {
-      return new Promise((resolve, reject) => {
-        if (typeof mqtt === 'undefined') {
-          reject(new Error('RELAY_SDK_UNAVAILABLE'));
-          return;
-        }
-        let idx = 0;
-        let done = false;
-
-        const tryNext = () => {
-          if (done) return;
-          if (idx >= RELAY_BROKERS.length) {
-            done = true;
-            reject(new Error('RELAY_CONNECT_FAILED'));
-            return;
-          }
-          const url = RELAY_BROKERS[idx++];
-          const client = mqtt.connect(url, {
-            clientId: 'ddal_' + Math.random().toString(16).slice(2, 10) + '_' + Date.now().toString(36),
-            clean: true,
-            connectTimeout: 3500,
-            reconnectPeriod: 2000
-          });
-
-          const timer = setTimeout(() => {
-            if (!done && !client.connected) {
-              try { client.end(true); } catch (e) {}
-              tryNext();
-            }
-          }, 3800);
-
-          client.on('connect', () => {
-            if (done) {
-              try { client.end(true); } catch (e) {}
-              return;
-            }
-            done = true;
-            clearTimeout(timer);
-            resolve(client);
-          });
-
-          client.on('error', () => {
-            if (!done && !client.connected) {
-              clearTimeout(timer);
-              try { client.end(true); } catch (e) {}
-              tryNext();
-            }
-          });
-        };
-
-        tryNext();
-      });
-    }
-
     const RoomStore = {
       modeMap: {},
       lastErrorMap: {},
-      relayClients: {},
-      peers: {},
-      conns: {},
       hostStates: {},
       listeners: {},
 
@@ -1459,21 +1443,14 @@
         return type === 'pvp' ? getPvpRoomDocRef(code) : getRaidRoomDocRef(code);
       },
 
-      getPeerId(type, code) {
-        return `ddaltarune-game-${type}-${code}`;
-      },
-
-      getRelayTopics(type, code) {
-        const base = `${RELAY_PREFIX}${type}/${code}`;
-        return {
-          stateTopic: `${base}/state`,
-          actionTopic: `${base}/action`
-        };
+      getRoomTopic(type, code) {
+        return HttpsRelay.getTopic(`room_${type}`, code);
       },
 
       emitLocalRoom(type, code, data) {
         const roomKey = `${type}_${code}`;
         const storageKey = getLocalRoomKey(type, code);
+        this.hostStates[roomKey] = data;
         inMemoryRooms[storageKey] = data;
         safeSetLocalStorage(storageKey, JSON.stringify(data));
         if (roomBroadcast) {
@@ -1487,373 +1464,93 @@
 
       cleanupP2P(type, code) {
         const roomKey = `${type}_${code}`;
-        if (this.relayClients[roomKey]) {
-          try {
-            const { stateTopic } = this.getRelayTopics(type, code);
-            if (this.hostStates[roomKey]) {
-              this.relayClients[roomKey].publish(stateTopic, '', { retain: true });
-            }
-            this.relayClients[roomKey].end(true);
-          } catch (e) {}
-          delete this.relayClients[roomKey];
-        }
-        if (this.conns[roomKey]) {
-          try { this.conns[roomKey].close(); } catch (e) {}
-          delete this.conns[roomKey];
-        }
-        if (this.peers[roomKey]) {
-          try { this.peers[roomKey].destroy(); } catch (e) {}
-          delete this.peers[roomKey];
-        }
         delete this.hostStates[roomKey];
-      },
-
-      async createHostRelay(type, code, payload) {
-        const roomKey = `${type}_${code}`;
-        this.cleanupP2P(type, code);
-        const client = await connectRelayClient();
-        const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
-
-        this.relayClients[roomKey] = client;
-        this.hostStates[roomKey] = JSON.parse(JSON.stringify(payload));
-
-        client.subscribe(actionTopic, { qos: 1 });
-        client.publish(stateTopic, JSON.stringify(this.hostStates[roomKey]), { retain: true, qos: 1 });
-
-        client.on('message', (topic, rawBuf) => {
-          if (topic !== actionTopic) return;
-          let msg = null;
-          try { msg = JSON.parse(rawBuf.toString()); } catch (e) { return; }
-          if (!msg || typeof msg !== 'object') return;
-
-          if (msg.type === 'JOIN_REQUEST' && msg.guest) {
-            const cur = this.hostStates[roomKey];
-            if (!cur || cur.status !== 'waiting' || cur.guest) return;
-            const nextState = {
-              ...cur,
-              status: 'playing',
-              guest: msg.guest,
-              ...(type === 'raid'
-                ? {
-                    phase: 'host_attack',
-                    lastActionLog: `[${msg.guest.nickname || '동료'}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
-                    turnSeq: 1
-                  }
-                : { turnSeq: 1 })
-            };
-            this.hostStates[roomKey] = nextState;
-            client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 });
-            this.emitLocalRoom(type, code, nextState);
-          } else if (msg.type === 'STATE_PATCH' && msg.updates) {
-            const cur = this.hostStates[roomKey];
-            if (!cur) return;
-            const nextState = applyDotUpdate(cur, msg.updates);
-            this.hostStates[roomKey] = nextState;
-            client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 });
-            this.emitLocalRoom(type, code, nextState);
-          }
-        });
-
-        return 'relay';
-      },
-
-      connectGuestRelay(type, code, guestLoadout) {
-        return new Promise(async (resolve, reject) => {
-          const roomKey = `${type}_${code}`;
-          this.cleanupP2P(type, code);
-
-          let client = null;
-          try {
-            client = await connectRelayClient();
-          } catch (e) {
-            reject(new Error('서버 연결에 실패했습니다. 네트워크를 확인해주세요.'));
-            return;
-          }
-
-          const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
-          this.relayClients[roomKey] = client;
-
-          let settled = false;
-          let joinSent = false;
-
-          const timer = setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              this.cleanupP2P(type, code);
-              reject(new Error('❌ 존재하지 않는 방 코드이거나 방장이 대기 중이 아닙니다.'));
-            }
-          }, 5000);
-
-          client.subscribe(stateTopic, { qos: 1 });
-
-          client.on('message', (topic, rawBuf) => {
-            if (topic !== stateTopic) return;
-            const str = rawBuf.toString();
-            if (!str) return;
-            let roomState = null;
-            try { roomState = JSON.parse(str); } catch (e) { return; }
-            if (!roomState || typeof roomState !== 'object') return;
-
-            if (!joinSent) {
-              if (roomState.status !== 'waiting' || roomState.guest) {
-                if (!settled) {
-                  settled = true;
-                  clearTimeout(timer);
-                  this.cleanupP2P(type, code);
-                  reject(new Error('❌ 이미 시작되었거나 만원인 방입니다.'));
-                }
-                return;
-              }
-              joinSent = true;
-              client.publish(actionTopic, JSON.stringify({ type: 'JOIN_REQUEST', guest: guestLoadout }), { qos: 1 });
-              return;
-            }
-
-            if (roomState.status === 'playing' && roomState.guest) {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timer);
-                this.modeMap[roomKey] = 'relay';
-                resolve(roomState);
-              }
-              this.emitLocalRoom(type, code, roomState);
-            }
-          });
-        });
-      },
-
-      createHostPeer(type, code, payload) {
-        return new Promise((resolve, reject) => {
-          if (typeof Peer === 'undefined') {
-            reject(new Error('P2P_SDK_UNAVAILABLE'));
-            return;
-          }
-          const roomKey = `${type}_${code}`;
-          this.cleanupP2P(type, code);
-
-          const peerId = this.getPeerId(type, code);
-          const peer = new Peer(peerId, { config: PEER_ICE_CONFIG, debug: 0 });
-          let settled = false;
-
-          const timer = setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              try { peer.destroy(); } catch (e) {}
-              reject(new Error('P2P_TIMEOUT'));
-            }
-          }, 6000);
-
-          peer.on('open', () => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            this.peers[roomKey] = peer;
-            this.hostStates[roomKey] = JSON.parse(JSON.stringify(payload));
-
-            peer.on('connection', (conn) => {
-              this.conns[roomKey] = conn;
-              conn.on('data', (msg) => {
-                if (!msg || typeof msg !== 'object') return;
-                if (msg.type === 'JOIN_REQUEST' && msg.guest) {
-                  const cur = this.hostStates[roomKey];
-                  if (!cur || cur.status !== 'waiting' || cur.guest) {
-                    try { conn.send({ type: 'JOIN_REJECTED', reason: '이미 시작되었거나 만원인 방입니다.' }); } catch (e) {}
-                    return;
-                  }
-                  const nextState = {
-                    ...cur,
-                    status: 'playing',
-                    guest: msg.guest,
-                    ...(type === 'raid'
-                      ? {
-                          phase: 'host_attack',
-                          lastActionLog: `[${msg.guest.nickname || '동료'}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
-                          turnSeq: 1
-                        }
-                      : { turnSeq: 1 })
-                  };
-                  this.hostStates[roomKey] = nextState;
-                  try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
-                  this.emitLocalRoom(type, code, nextState);
-                } else if (msg.type === 'STATE_PATCH' && msg.updates) {
-                  const cur = this.hostStates[roomKey];
-                  if (!cur) return;
-                  const nextState = applyDotUpdate(cur, msg.updates);
-                  this.hostStates[roomKey] = nextState;
-                  try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
-                  this.emitLocalRoom(type, code, nextState);
-                }
-              });
-            });
-
-            resolve('p2p');
-          });
-
-          peer.on('error', (err) => {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timer);
-              try { peer.destroy(); } catch (e) {}
-              reject(err || new Error('P2P_ERROR'));
-            }
-          });
-        });
-      },
-
-      connectGuestPeer(type, code, guestLoadout) {
-        return new Promise((resolve, reject) => {
-          if (typeof Peer === 'undefined') {
-            reject(new Error('P2P_SDK_UNAVAILABLE'));
-            return;
-          }
-          const roomKey = `${type}_${code}`;
-          this.cleanupP2P(type, code);
-
-          const peer = new Peer({ config: PEER_ICE_CONFIG, debug: 0 });
-          let settled = false;
-
-          const timer = setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              try { peer.destroy(); } catch (e) {}
-              reject(new Error('방장 기기와 연결 시간이 초과되었습니다. 코드를 다시 확인해주세요.'));
-            }
-          }, 7000);
-
-          peer.on('open', () => {
-            const conn = peer.connect(this.getPeerId(type, code), { reliable: true });
-            this.peers[roomKey] = peer;
-            this.conns[roomKey] = conn;
-
-            conn.on('open', () => {
-              try {
-                conn.send({ type: 'JOIN_REQUEST', guest: guestLoadout });
-              } catch (e) {}
-            });
-
-            conn.on('data', (msg) => {
-              if (!msg || typeof msg !== 'object') return;
-              if (msg.type === 'JOIN_REJECTED') {
-                if (!settled) {
-                  settled = true;
-                  clearTimeout(timer);
-                  this.cleanupP2P(type, code);
-                  reject(new Error(msg.reason || '입장이 거절되었습니다.'));
-                }
-              } else if (msg.type === 'STATE_SYNC' && msg.state) {
-                if (!settled) {
-                  settled = true;
-                  clearTimeout(timer);
-                  this.modeMap[roomKey] = 'p2p';
-                  resolve(msg.state);
-                }
-                this.emitLocalRoom(type, code, msg.state);
-              }
-            });
-
-            conn.on('error', (err) => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timer);
-                this.cleanupP2P(type, code);
-                reject(err || new Error('P2P 연결 오류'));
-              }
-            });
-          });
-
-          peer.on('error', (err) => {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timer);
-              this.cleanupP2P(type, code);
-              const msg = err?.type === 'peer-unavailable'
-                ? '❌ 존재하지 않는 방 코드이거나 방장이 대기 중이 아닙니다.'
-                : '❌ P2P 연결에 실패했습니다. 코드를 확인해주세요.';
-              reject(new Error(msg));
-            }
-          });
-        });
       },
 
       async create(type, code, payload) {
         const roomKey = `${type}_${code}`;
-        try {
-          await this.createHostRelay(type, code, payload);
-          this.modeMap[roomKey] = 'relay';
-          this.lastErrorMap[roomKey] = '';
-          this.emitLocalRoom(type, code, payload);
-          if (db) {
-            setDoc(this.getDocRef(type, code), payload).catch(() => {});
-          }
-          return 'relay';
-        } catch (relayErr) {
-          console.warn('Relay host creation fallback:', relayErr);
+        const topic = this.getRoomTopic(type, code);
+        const stamped = { ...payload, _ts: Date.now() };
+        this.emitLocalRoom(type, code, stamped);
+
+        const okHttps = await HttpsRelay.publish(topic, stamped);
+        if (db) {
+          setDoc(this.getDocRef(type, code), stamped).catch(() => {});
         }
 
-        try {
-          await this.createHostPeer(type, code, payload);
-          this.modeMap[roomKey] = 'p2p';
+        if (okHttps) {
+          this.modeMap[roomKey] = 'relay';
           this.lastErrorMap[roomKey] = '';
-          this.emitLocalRoom(type, code, payload);
-          if (db) {
-            setDoc(this.getDocRef(type, code), payload).catch(() => {});
-          }
-          return 'p2p';
-        } catch (p2pErr) {
-          console.warn('P2P host creation fallback:', p2pErr);
+          return 'relay';
         }
 
         if (db) {
           try {
-            await withTimeout(setDoc(this.getDocRef(type, code), payload), 4000);
-            cloudAvailable = true;
-            lastCloudError = '';
-            updateCloudStatusBadge(true);
+            await withTimeout(setDoc(this.getDocRef(type, code), stamped), 5000);
             this.modeMap[roomKey] = 'cloud';
-            this.lastErrorMap[roomKey] = '';
             return 'cloud';
-          } catch (err) {
-            const errCode = err?.code || err?.message || 'FIRESTORE_ERROR';
-            lastCloudError = errCode;
-            cloudAvailable = false;
-            updateCloudStatusBadge(false);
-            this.lastErrorMap[roomKey] = errCode;
-          }
-        } else {
-          this.lastErrorMap[roomKey] = 'OFFLINE';
+          } catch (e) {}
         }
 
         this.modeMap[roomKey] = 'local';
-        this.emitLocalRoom(type, code, payload);
         return 'local';
       },
 
       async joinP2P(type, code, guestLoadout) {
-        try {
-          return await this.connectGuestRelay(type, code, guestLoadout);
-        } catch (relayErr) {
-          if (relayErr?.message && relayErr.message.includes('만원')) {
-            throw relayErr;
-          }
-          return await this.connectGuestPeer(type, code, guestLoadout);
+        const roomKey = `${type}_${code}`;
+        const topic = this.getRoomTopic(type, code);
+        const roomState = await HttpsRelay.fetchLatest(topic);
+        if (!roomState || roomState._closed) {
+          throw new Error('❌ 존재하지 않는 방 코드이거나 방장이 대기 중이 아닙니다.');
         }
+        if (roomState.status !== 'waiting' || roomState.guest) {
+          throw new Error('❌ 이미 시작되었거나 만원인 방입니다.');
+        }
+        const nextState = {
+          ...roomState,
+          status: 'playing',
+          guest: guestLoadout,
+          _ts: Date.now(),
+          ...(type === 'raid'
+            ? {
+                phase: 'host_attack',
+                lastActionLog: `[${guestLoadout.nickname || '동료'}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
+                turnSeq: 1
+              }
+            : { turnSeq: 1 })
+        };
+        const published = await HttpsRelay.publish(topic, nextState);
+        if (!published) {
+          throw new Error('❌ 서버 응답이 지연되고 있습니다. 다시 시도해주세요.');
+        }
+        this.modeMap[roomKey] = 'relay';
+        this.emitLocalRoom(type, code, nextState);
+        if (db) {
+          setDoc(this.getDocRef(type, code), nextState).catch(() => {});
+        }
+        return nextState;
       },
 
       async get(type, code) {
         const roomKey = `${type}_${code}`;
+        const topic = this.getRoomTopic(type, code);
+        const remote = await HttpsRelay.fetchLatest(topic);
+        if (remote && !remote._closed) {
+          this.modeMap[roomKey] = 'relay';
+          this.emitLocalRoom(type, code, remote);
+          return remote;
+        }
+
         if (this.hostStates[roomKey]) return this.hostStates[roomKey];
 
         if (db) {
           try {
-            const snap = await withTimeout(getDoc(this.getDocRef(type, code)), 3500);
-            cloudAvailable = true;
+            const snap = await withTimeout(getDoc(this.getDocRef(type, code)), 4500);
             if (snap.exists()) {
               this.modeMap[roomKey] = 'cloud';
               return snap.data();
             }
-          } catch (err) {
-            lastCloudError = err?.code || err?.message || 'GET_TIMEOUT';
-          }
+          } catch (err) {}
         }
         const key = getLocalRoomKey(type, code);
         const raw = safeGetLocalStorage(key);
@@ -1870,78 +1567,30 @@
 
       async update(type, code, updates) {
         const roomKey = `${type}_${code}`;
-        const mode = this.modeMap[roomKey];
+        const storageKey = getLocalRoomKey(type, code);
+        const baseObj = this.hostStates[roomKey] || inMemoryRooms[storageKey] || (() => {
+          const raw = safeGetLocalStorage(storageKey);
+          return raw ? JSON.parse(raw) : null;
+        })() || await this.get(type, code);
 
-        if (mode === 'relay') {
-          const client = this.relayClients[roomKey];
-          const { stateTopic, actionTopic } = this.getRelayTopics(type, code);
-          if (this.hostStates[roomKey]) {
-            const nextState = applyDotUpdate(this.hostStates[roomKey], updates);
-            this.hostStates[roomKey] = nextState;
-            if (client && client.connected) {
-              try { client.publish(stateTopic, JSON.stringify(nextState), { retain: true, qos: 1 }); } catch (e) {}
-            }
-            this.emitLocalRoom(type, code, nextState);
-          } else {
-            if (client && client.connected) {
-              try { client.publish(actionTopic, JSON.stringify({ type: 'STATE_PATCH', updates }), { qos: 1 }); } catch (e) {}
-            }
-            const storageKey = getLocalRoomKey(type, code);
-            const raw = safeGetLocalStorage(storageKey);
-            const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[storageKey];
-            if (baseObj) {
-              this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
-            }
-          }
-          return;
-        }
-
-        if (mode === 'p2p') {
-          if (this.hostStates[roomKey]) {
-            const nextState = applyDotUpdate(this.hostStates[roomKey], updates);
-            this.hostStates[roomKey] = nextState;
-            const conn = this.conns[roomKey];
-            if (conn && conn.open) {
-              try { conn.send({ type: 'STATE_SYNC', state: nextState }); } catch (e) {}
-            }
-            this.emitLocalRoom(type, code, nextState);
-          } else {
-            const conn = this.conns[roomKey];
-            if (conn && conn.open) {
-              try { conn.send({ type: 'STATE_PATCH', updates }); } catch (e) {}
-            }
-            const storageKey = getLocalRoomKey(type, code);
-            const raw = safeGetLocalStorage(storageKey);
-            const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[storageKey];
-            if (baseObj) {
-              this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
-            }
-          }
-          return;
-        }
-
-        if (mode === 'cloud' && db) {
-          try {
-            await withTimeout(updateDoc(this.getDocRef(type, code), updates), 4000);
-            return;
-          } catch (err) {}
-        }
-
-        const key = getLocalRoomKey(type, code);
-        const raw = safeGetLocalStorage(key);
-        const baseObj = raw ? JSON.parse(raw) : inMemoryRooms[key];
         if (!baseObj) return;
-        this.emitLocalRoom(type, code, applyDotUpdate(baseObj, updates));
+        const nextState = applyDotUpdate(baseObj, { ...updates, _ts: Date.now() });
+        this.emitLocalRoom(type, code, nextState);
+
+        const topic = this.getRoomTopic(type, code);
+        HttpsRelay.publish(topic, nextState).catch(() => {});
+        if (db) {
+          setDoc(this.getDocRef(type, code), nextState).catch(() => {});
+        }
       },
 
       async remove(type, code) {
         const roomKey = `${type}_${code}`;
+        const topic = this.getRoomTopic(type, code);
+        HttpsRelay.publish(topic, { code, _closed: true, _ts: Date.now() }).catch(() => {});
         this.cleanupP2P(type, code);
-        const mode = this.modeMap[roomKey];
-        if (mode === 'cloud' && db) {
-          try {
-            await withTimeout(deleteDoc(this.getDocRef(type, code)), 3000);
-          } catch (err) {}
+        if (db) {
+          deleteDoc(this.getDocRef(type, code)).catch(() => {});
         }
         const key = getLocalRoomKey(type, code);
         delete inMemoryRooms[key];
@@ -1952,31 +1601,20 @@
 
       subscribe(type, code, onData) {
         const roomKey = `${type}_${code}`;
-        const mode = this.modeMap[roomKey];
-        if (mode === 'cloud' && db) {
-          return onSnapshot(
-            this.getDocRef(type, code),
-            (snap) => {
-              if (snap.exists()) onData(snap.data());
-            },
-            (err) => {
-              console.warn('Cloud room snapshot error:', err?.code || err?.message || err);
-            }
-          );
-        }
-
         if (!this.listeners[roomKey]) this.listeners[roomKey] = [];
         this.listeners[roomKey].push(onData);
 
         const key = getLocalRoomKey(type, code);
+        const topic = this.getRoomTopic(type, code);
         let lastJson = '';
+        let pollingRemote = false;
 
-        const checkAndEmit = () => {
+        const checkLocalAndEmit = () => {
           const curObj = this.hostStates[roomKey] || inMemoryRooms[key] || (() => {
             const raw = safeGetLocalStorage(key);
             return raw ? JSON.parse(raw) : null;
           })();
-          if (curObj) {
+          if (curObj && !curObj._closed) {
             const curJson = JSON.stringify(curObj);
             if (curJson !== lastJson) {
               lastJson = curJson;
@@ -1985,7 +1623,28 @@
           }
         };
 
-        checkAndEmit();
+        const pollRemote = async () => {
+          if (pollingRemote) return;
+          pollingRemote = true;
+          try {
+            const remote = await HttpsRelay.fetchLatest(topic);
+            if (remote && !remote._closed) {
+              const curObj = this.hostStates[roomKey];
+              const curTs = curObj?._ts || 0;
+              const remTs = remote._ts || 0;
+              const curSeq = curObj?.turnSeq ?? -1;
+              const remSeq = remote.turnSeq ?? -1;
+              if (remSeq > curSeq || remTs > curTs) {
+                this.emitLocalRoom(type, code, remote);
+              }
+            }
+          } finally {
+            pollingRemote = false;
+          }
+        };
+
+        checkLocalAndEmit();
+        pollRemote();
 
         const storageHandler = (e) => {
           if (e.key === key && e.newValue && e.newValue !== lastJson) {
@@ -2005,12 +1664,14 @@
 
         window.addEventListener('storage', storageHandler);
         if (roomBroadcast) roomBroadcast.addEventListener('message', bcHandler);
-        const pollId = setInterval(checkAndEmit, 250);
+        const localPollId = setInterval(checkLocalAndEmit, 250);
+        const remotePollId = setInterval(pollRemote, 700);
 
         return () => {
           window.removeEventListener('storage', storageHandler);
           if (roomBroadcast) roomBroadcast.removeEventListener('message', bcHandler);
-          clearInterval(pollId);
+          clearInterval(localPollId);
+          clearInterval(remotePollId);
           if (this.listeners[roomKey]) {
             this.listeners[roomKey] = this.listeners[roomKey].filter(fn => fn !== onData);
           }
@@ -2108,7 +1769,7 @@
       human_low: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="34" r="14" fill="#d6d3d1"/><path d="M 28 84 C 30 58, 70 58, 72 84 Z" fill="#78716c"/><circle cx="45" cy="33" r="2" fill="#1c1917"/><circle cx="55" cy="33" r="2" fill="#1c1917"/></svg>`,
       human_mid: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="32" r="14" fill="#fed7aa"/><path d="M 25 85 C 28 55, 72 55, 75 85 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/><path d="M 38 24 Q 50 14 62 24" fill="none" stroke="#92400e" stroke-width="5" stroke-linecap="round"/><circle cx="45" cy="32" r="2" fill="#0f172a"/><circle cx="55" cy="32" r="2" fill="#0f172a"/></svg>`,
       human_high: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="31" r="14" fill="#ffedd5"/><path d="M 22 86 C 26 52, 74 52, 78 86 Z" fill="#6d28d9" stroke="#facc15" stroke-width="2.5"/><polygon points="38,20 44,12 50,19 56,12 62,20" fill="#facc15"/><circle cx="45" cy="31" r="2" fill="#1e1b4b"/><circle cx="55" cy="31" r="2" fill="#1e1b4b"/></svg>`,
-      kai: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 24 88 C 28 56, 72 56, 76 88 Z" fill="#991b1b" stroke="#f87171" stroke-width="2"/><polygon points="50,58 41,86 59,86" fill="#18181b"/><circle cx="50" cy="35" r="12" fill="#ffedd5"/><path d="M 36 33 C 34 16, 66 16, 64 33 L 58 23 L 50 28 L 42 23 Z" fill="#dc2626"/><circle cx="46" cy="35" r="2" fill="#ef4444"/><circle cx="54" cy="35" r="2" fill="#ef4444"/></svg>`,
+      kai: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 22 88 C 26 54, 74 54, 78 88 Z" fill="#991b1b" stroke="#f87171" stroke-width="2"/><polygon points="50,55 41,78 50,90 59,78" fill="#18181b"/><circle cx="50" cy="33" r="13" fill="#ffedd5"/><path d="M 35 32 C 34 15, 66 15, 65 32 L 60 22 L 50 27 L 40 22 Z" fill="#dc2626"/><circle cx="45" cy="33" r="2" fill="#ef4444"/><circle cx="55" cy="33" r="2" fill="#ef4444"/></svg>`,
       sans: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 24 88 C 28 56, 72 56, 76 88 Z" fill="#1d4ed8" stroke="#38bdf8" stroke-width="2"/><path d="M 43 58 L 50 88 L 57 58 Z" fill="#f8fafc"/><ellipse cx="50" cy="34" rx="16" ry="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><rect x="40" y="42" width="20" height="9" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/><circle cx="43" cy="33" r="4.5" fill="#09090b"/><circle cx="57" cy="33" r="4.5" fill="#09090b"/><circle cx="57" cy="33" r="3" fill="#38bdf8"/><polygon points="50,37 48,41 52,41" fill="#09090b"/><path d="M 41 46 Q 50 50 59 46" fill="none" stroke="#09090b" stroke-width="1.8"/></svg>`,
       sera: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 30 38 C 28 20, 72 20, 70 38 L 76 70 L 24 70 Z" fill="#facc15"/><path d="M 26 88 L 34 52 L 66 52 L 74 88 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="50" cy="36" r="11" fill="#ffedd5"/><circle cx="46" cy="36" r="2" fill="#0284c7"/><circle cx="54" cy="36" r="2" fill="#0284c7"/><path d="M 38 27 L 50 20 L 62 27" fill="none" stroke="#eab308" stroke-width="2.5"/></svg>`,
 
@@ -2121,8 +1782,8 @@
       stone_hammer: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="26" y1="82" x2="66" y2="34" stroke="#713f12" stroke-width="5.5" stroke-linecap="round"/><rect x="48" y="18" width="34" height="22" rx="4" transform="rotate(38 65 29)" fill="#78716c" stroke="#d6d3d1" stroke-width="2"/></svg>`,
       steel_spear: `<svg viewBox="0 0 100 100" class="w-full h-full"><line x1="18" y1="84" x2="72" y2="30" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/><polygon points="66,24 86,16 78,36" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.5"/></svg>`,
       knight_greatsword: `<svg viewBox="0 0 100 100" class="w-full h-full"><polygon points="24,74 78,16 86,24 32,82" fill="#f3e8ff" stroke="#c084fc" stroke-width="2"/><line x1="18" y1="64" x2="40" y2="86" stroke="#facc15" stroke-width="5.5" stroke-linecap="round"/><line x1="29" y1="75" x2="14" y2="90" stroke="#4c1d95" stroke-width="6" stroke-linecap="round"/></svg>`,
+      bloodmoon: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 60 20 A 28 28 0 1 0 76 68 A 21 21 0 1 1 60 20 Z" fill="#dc2626" opacity="0.55"/><polygon points="24,76 74,18 82,26 32,84" fill="#fecaca" stroke="#ef4444" stroke-width="2"/><line x1="18" y1="66" x2="40" y2="88" stroke="#facc15" stroke-width="5" stroke-linecap="round"/><line x1="29" y1="77" x2="15" y2="91" stroke="#7f1d1d" stroke-width="6" stroke-linecap="round"/></svg>`,
       lightning_daggers: `<svg viewBox="0 0 100 100" class="w-full h-full"><g transform="rotate(-22 50 50)"><polygon points="38,16 45,62 31,62" fill="#22d3ee" stroke="#cffafe" stroke-width="1.2"/><rect x="28" y="62" width="20" height="5" fill="#facc15"/><rect x="35" y="67" width="6" height="15" fill="#0f172a"/></g><g transform="rotate(22 50 50)"><polygon points="62,16 69,62 55,62" fill="#38bdf8" stroke="#cffafe" stroke-width="1.2"/><rect x="52" y="62" width="20" height="5" fill="#facc15"/><rect x="59" y="67" width="6" height="15" fill="#0f172a"/></g></svg>`,
-      bloodmoon: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 62 20 A 30 30 0 1 0 78 72 A 22 22 0 1 1 62 20 Z" fill="#dc2626" opacity="0.45"/><polygon points="24,74 76,16 84,24 32,82" fill="#fecaca" stroke="#ef4444" stroke-width="2"/><line x1="18" y1="64" x2="40" y2="86" stroke="#facc15" stroke-width="5" stroke-linecap="round"/><line x1="29" y1="75" x2="14" y2="90" stroke="#7f1d1d" stroke-width="6" stroke-linecap="round"/></svg>`,
       strange_bone: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="34" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/><g transform="rotate(-38 50 50)"><rect x="42" y="22" width="16" height="56" rx="4" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="41" cy="22" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="59" cy="22" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="41" cy="78" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><circle cx="59" cy="78" r="9" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/><rect x="44" y="21" width="12" height="58" fill="#f8fafc"/></g></svg>`,
 
       dagger_bow: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 28 18 Q 82 50 28 82" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round"/><line x1="28" y1="18" x2="28" y2="82" stroke="#e5e7eb" stroke-width="1.5"/><polygon points="24,50 76,45 86,50 76,55" fill="#f8fafc" stroke="#facc15" stroke-width="1.5"/></svg>`,
@@ -2331,6 +1992,21 @@
         ]
       },
       {
+        id: 'bloodmoon',
+        name: '블러드문',
+        rarity: '전설',
+        rarityColor: 'text-red-300 border-red-400/70 bg-red-950/70',
+        atk: 10,
+        desc: '[기간 한정] 붉은 달의 검기와 핏빛 결계 참격을 날리는 진홍의 전설 대검!',
+        art: SVG_ART.bloodmoon,
+        skills: [
+          { name: '혈월 참격', type: 'attack', mult: 1.2, pattern: 'bm_1', desc: '출렁이는 진홍빛 초승달 검기가 쇄도' },
+          { name: '진홍의 핏방울', type: 'attack', mult: 1.35, pattern: 'bm_2', desc: '사방에서 하트를 조준하는 붉은 검탄' },
+          { name: '만월의 결계선', type: 'attack', mult: 1.5, pattern: 'bm_3', desc: '예고선 후 가로지르는 붉은 달의 광선' },
+          { name: '혈월 흡수', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
+        ]
+      },
+      {
         id: 'lightning_daggers',
         name: '천둥의 쌍단검',
         rarity: '전설',
@@ -2343,21 +2019,6 @@
           { name: '전격 격자 감옥', type: 'attack', mult: 1.35, pattern: 'ld_2', desc: '가로·세로 십자 번개 레이저 동시 작렬' },
           { name: '초고속 쌍단검 난무', type: 'attack', mult: 1.5, pattern: 'ld_3', desc: '네 모서리에서 초고속 쌍단검 연사' },
           { name: '번개 충전', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
-        ]
-      },
-      {
-        id: 'bloodmoon',
-        name: '블러드문',
-        rarity: '전설',
-        rarityColor: 'text-red-300 border-red-400/70 bg-red-950/70',
-        atk: 10,
-        desc: '[기간 한정] 붉은 달의 저주와 핏빛 초승달 검기를 날리는 전설의 대검!',
-        art: SVG_ART.bloodmoon,
-        skills: [
-          { name: '혈월 참격', type: 'attack', mult: 1.15, pattern: 'bm_1', desc: '붉은 초승달 검기가 사방에서 쇄도' },
-          { name: '진홍의 핏방울', type: 'attack', mult: 1.35, pattern: 'bm_2', desc: '하트를 조준하는 핏빛 탄환 연사' },
-          { name: '만월의 구속', type: 'attack', mult: 1.5, pattern: 'bm_3', desc: '가로·세로 붉은 달 참격 레이저 작렬' },
-          { name: '혈월 흡수', type: 'heal', heal: 10, desc: '체력을 10 회복합니다' }
         ]
       },
       {
@@ -2505,10 +2166,10 @@
         specialSkill: {
           name: '🩸 혈월 개화 · 진홍의 심판 (시너지 필살기)',
           type: 'attack',
-          mult: 1.8,
+          mult: 1.75,
           pattern: 'bm_ult',
           isSynergySkill: true,
-          desc: '[시너지 전용] 대각선 진홍 참격 레이저 + 핏빛 초승달 검기 폭풍'
+          desc: '[시너지 전용] X자 붉은 달 광선 교차 + 진홍빛 초승달 검기 폭풍'
         },
         effectText: '최대 HP +10, 무기 위력 +2, 이동속도 증가, 받는 피해 15% 감소 + 전용 필살기 [🩸 혈월 개화 · 진홍의 심판] 해금'
       },
@@ -2543,14 +2204,14 @@
         bonusSpeed: 0.5,
         dmgReduce: 0.15,
         specialSkill: {
-          name: '⚡ 천뇌 강림 · 심판의 섬광 (시너지 필살기)',
+          name: '⚡ 뇌신 강림 · 천뢰격 (시너지 필살기)',
           type: 'attack',
-          mult: 1.8,
+          mult: 1.75,
           pattern: 'ld_ult',
           isSynergySkill: true,
-          desc: '[시너지 전용] 십자 뇌전 레이저 + 쌍빛 나선 번개 폭풍'
+          desc: '[시너지 전용] 하트 조준 십자 전격 레이저 + 쌍빛 뇌전 나선탄'
         },
-        effectText: '최대 HP +10, 무기 위력 +2, 이동속도 대폭 증가, 받는 피해 15% 감소 + 전용 필살기 [⚡ 천뇌 강림 · 심판의 섬광] 해금'
+        effectText: '최대 HP +10, 무기 위력 +2, 이동속도 대폭 증가, 받는 피해 15% 감소 + 전용 필살기 [⚡ 뇌신 강림 · 천뢰격] 해금'
       },
       {
         id: 'syn_high_knight',
@@ -2563,14 +2224,14 @@
         bonusSpeed: 0.2,
         dmgReduce: 0.12,
         specialSkill: {
-          name: '👑 성검 해방 · 왕국의 맹세 (시너지 필살기)',
+          name: '⚔️ 성왕의 일격 · 심판검 (시너지 필살기)',
           type: 'attack',
-          mult: 1.75,
+          mult: 1.6,
           pattern: 'kg_ult',
           isSynergySkill: true,
-          desc: '[시너지 전용] 성광 십자 절단선 + 거대 파도 대검기 연쇄 발사'
+          desc: '[시너지 전용] 십자 성광 레이저 + 황금 파도 대검기'
         },
-        effectText: '최대 HP +8, 무기 위력 +1, 받는 피해 12% 감소 + 전용 필살기 [👑 성검 해방 · 왕국의 맹세] 해금'
+        effectText: '최대 HP +8, 무기 위력 +1, 받는 피해 12% 감소 + 전용 필살기 [⚔️ 성왕의 일격 · 심판검] 해금'
       },
       {
         id: 'syn_low_iron',
@@ -2583,14 +2244,14 @@
         bonusSpeed: 0.2,
         dmgReduce: 0.10,
         specialSkill: {
-          name: '🔥 불굴의 일격 · 투지의 검기 (시너지 필살기)',
+          name: '🔥 투지의 연격 · 일섬 (시너지 필살기)',
           type: 'attack',
-          mult: 1.7,
+          mult: 1.5,
           pattern: 'is_ult',
           isSynergySkill: true,
-          desc: '[시너지 전용] 양방향 초승달 검기 폭풍 + 틈새 검벽 돌파'
+          desc: '[시너지 전용] 황금 초승달 연격 + 움직이는 틈새 검벽'
         },
-        effectText: '최대 HP +5, 무기 위력 +1, 받는 피해 10% 감소 + 전용 필살기 [🔥 불굴의 일격 · 투지의 검기] 해금'
+        effectText: '최대 HP +5, 무기 위력 +1, 받는 피해 10% 감소 + 전용 필살기 [🔥 투지의 연격 · 일섬] 해금'
       }
     ];
 
@@ -2601,7 +2262,7 @@
       if (mode === 'pvp') {
         return PVP_EQUAL_BASE_DAMAGE;
       }
-      if (mode === 'bot') {
+      if (mode === 'bot' || mode === 'ranked') {
         return Math.max(2, Math.round(baseHitDamage));
       }
       const mult = skill.mult || 1.0;
@@ -2625,6 +2286,28 @@
       { charId: 'sans', weaponId: 'strange_bone' },
       { charId: 'sera', weaponId: 'lightning_daggers' }
     ];
+
+    /* ============================================================================
+       랭크전 티어 시스템 (갈수록 AI가 강해지며, 챌린저는 극악 난이도)
+    ============================================================================ */
+    const RANK_TIERS = [
+      { id: 'iron', name: '아이언', icon: '⚙️', minRp: 0, badgeClass: 'bg-zinc-800 border-zinc-500 text-zinc-200', hpMult: 1.0, aiDmg: 5, skillCount: 1, duration: 5.5, winW: 2 },
+      { id: 'bronze', name: '브론즈', icon: '🥉', minRp: 200, badgeClass: 'bg-amber-950 border-amber-600 text-amber-300', hpMult: 1.3, aiDmg: 7, skillCount: 1, duration: 6.0, winW: 2 },
+      { id: 'silver', name: '실버', icon: '🥈', minRp: 400, badgeClass: 'bg-slate-800 border-slate-400 text-slate-200', hpMult: 1.6, aiDmg: 9, skillCount: 2, duration: 6.2, winW: 3 },
+      { id: 'gold', name: '골드', icon: '🥇', minRp: 650, badgeClass: 'bg-yellow-950 border-yellow-400 text-yellow-300', hpMult: 2.0, aiDmg: 11, skillCount: 2, duration: 6.5, winW: 4 },
+      { id: 'diamond', name: '다이아몬드', icon: '💎', minRp: 900, badgeClass: 'bg-cyan-950 border-cyan-400 text-cyan-200', hpMult: 2.5, aiDmg: 13, skillCount: 3, duration: 6.8, winW: 5 },
+      { id: 'master', name: '마스터', icon: '🔥', minRp: 1150, badgeClass: 'bg-purple-950 border-purple-400 text-purple-200', hpMult: 3.2, aiDmg: 16, skillCount: 3, duration: 7.0, winW: 7 },
+      { id: 'challenger', name: '챌린저', icon: '👑', minRp: 1400, badgeClass: 'bg-gradient-to-r from-red-900 to-amber-900 border-amber-300 text-amber-200', hpMult: 5.0, aiDmg: 22, skillCount: 5, duration: 7.5, winW: 10 }
+    ];
+
+    function getRankTierByRp(rp) {
+      const val = Math.max(0, Number(rp) || 0);
+      let current = RANK_TIERS[0];
+      for (const tier of RANK_TIERS) {
+        if (val >= tier.minRp) current = tier;
+      }
+      return current;
+    }
 
     /* ============================================================================
        플레이어 상태 & 계정 인증/저장 (관리자 계정 & 쿠폰 코드 시스템 포함)
@@ -2666,10 +2349,8 @@
         return {};
       }
     })();
-    let promoCodesUpdatedAt = Number(localStorage.getItem(LOCAL_CODES_KEY + '_ts') || 0);
-    let promoRelayClients = [];
-    const PROMO_RELAY_TOPIC = `${RELAY_PREFIX}global/promo_codes_v2`;
-    const PROMO_REQ_TOPIC = `${RELAY_PREFIX}global/promo_codes_req_v2`;
+    let promoCodesUpdatedAt = Number(safeGetLocalStorage(LOCAL_CODES_KEY + '_ts') || 0);
+    const PROMO_HTTPS_TOPIC = HttpsRelay.getTopic('global', 'promo_codes_v3');
 
     function persistLocalAccounts() {
       try {
@@ -2699,134 +2380,25 @@
       return false;
     }
 
-    function connectSingleBroker(url) {
-      return new Promise((resolve) => {
-        if (typeof mqtt === 'undefined') {
-          resolve(null);
-          return;
-        }
-        let settled = false;
-        const client = mqtt.connect(url, {
-          clientId: 'ddal_promo_' + Math.random().toString(16).slice(2, 10) + '_' + Date.now().toString(36),
-          clean: true,
-          connectTimeout: 4500,
-          reconnectPeriod: 3000
-        });
-
-        const timer = setTimeout(() => {
-          if (!settled && !client.connected) {
-            settled = true;
-            try { client.end(true); } catch (e) {}
-            resolve(null);
-          }
-        }, 4800);
-
-        client.on('connect', () => {
-          if (settled) {
-            try { client.end(true); } catch (e) {}
-            return;
-          }
-          settled = true;
-          clearTimeout(timer);
-          client.subscribe([PROMO_RELAY_TOPIC, PROMO_REQ_TOPIC], { qos: 1 });
-          client.on('message', (topic, rawBuf) => {
-            if (topic === PROMO_RELAY_TOPIC) {
-              try {
-                const str = rawBuf.toString();
-                if (!str) return;
-                applyIncomingPromoPayload(JSON.parse(str));
-              } catch (e) {}
-            } else if (topic === PROMO_REQ_TOPIC) {
-              if (promoCodesUpdatedAt > 0 && Object.keys(activePromoCodes).length > 0) {
-                try {
-                  client.publish(
-                    PROMO_RELAY_TOPIC,
-                    JSON.stringify({ codes: activePromoCodes, updatedAt: promoCodesUpdatedAt }),
-                    { retain: true, qos: 1 }
-                  );
-                } catch (e) {}
-              }
-            }
-          });
-          resolve(client);
-        });
-
-        client.on('error', () => {
-          if (!settled && !client.connected) {
-            settled = true;
-            clearTimeout(timer);
-            try { client.end(true); } catch (e) {}
-            resolve(null);
-          }
-        });
-      });
-    }
-
-    async function ensureAllPromoRelayClients() {
-      promoRelayClients = promoRelayClients.filter(c => c && c.connected);
-      if (promoRelayClients.length > 0) return promoRelayClients;
-      const results = await Promise.all(RELAY_BROKERS.map(url => connectSingleBroker(url)));
-      promoRelayClients = results.filter(Boolean);
-      return promoRelayClients;
-    }
-
-    async function fetchPromoCodesFromRelay(waitMs = 2500) {
-      const clients = await ensureAllPromoRelayClients();
-      if (clients.length === 0) return false;
-
-      return new Promise((resolve) => {
-        let done = false;
-        const handlers = [];
-
-        const finish = (ok) => {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          handlers.forEach(({ c, fn }) => {
-            try { c.removeListener('message', fn); } catch (e) {}
-          });
-          resolve(ok);
-        };
-
-        clients.forEach((c) => {
-          const fn = (topic, rawBuf) => {
-            if (topic !== PROMO_RELAY_TOPIC || done) return;
-            try {
-              const str = rawBuf.toString();
-              if (!str) return;
-              const parsed = JSON.parse(str);
-              if (parsed && typeof parsed.codes === 'object') {
-                applyIncomingPromoPayload(parsed);
-                finish(true);
-              }
-            } catch (e) {}
-          };
-          handlers.push({ c, fn });
-          c.on('message', fn);
-          try {
-            c.subscribe(PROMO_RELAY_TOPIC, { qos: 1 });
-            c.publish(PROMO_REQ_TOPIC, JSON.stringify({ reqAt: Date.now() }), { qos: 0 });
-          } catch (e) {}
-        });
-
-        const timer = setTimeout(() => finish(false), waitMs);
-      });
-    }
-
     async function syncPromoCodesFromCloud(specificCode = '') {
-      const tasks = [fetchPromoCodesFromRelay(2500)];
+      const httpsTask = (async () => {
+        const remote = await HttpsRelay.fetchLatest(PROMO_HTTPS_TOPIC);
+        if (remote && typeof remote.codes === 'object') {
+          applyIncomingPromoPayload(remote);
+        }
+      })();
 
-      tasks.push((async () => {
+      const firestoreTask = (async () => {
         try {
-          await withTimeout(initFirebase(), 4000);
+          await withTimeout(initFirebase(!cloudAvailable), 4500);
           if (!db) return;
-          const snap = await withTimeout(getDoc(getPromoCodesDocRef()), 4000);
+          const snap = await withTimeout(getDoc(getPromoCodesDocRef()), 4500);
           if (snap.exists() && snap.data()?.codes) {
             applyIncomingPromoPayload(snap.data());
           }
           if (specificCode) {
             const singleRef = doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'promo_codes', `code_${specificCode}`);
-            const singleSnap = await withTimeout(getDoc(singleRef), 3500);
+            const singleSnap = await withTimeout(getDoc(singleRef), 4000);
             if (singleSnap.exists()) {
               const item = singleSnap.data();
               if (item && !item.expired && item.reward) {
@@ -2839,9 +2411,9 @@
             }
           }
         } catch (e) {}
-      })());
+      })();
 
-      await Promise.allSettled(tasks);
+      await Promise.allSettled([httpsTask, firestoreTask]);
     }
 
     async function savePromoCodesToCloud(changedCode = '', isExpired = false) {
@@ -2849,34 +2421,25 @@
       persistLocalPromoCodes();
       const payload = { codes: activePromoCodes, updatedAt: promoCodesUpdatedAt };
 
-      const relayTask = (async () => {
-        const clients = await ensureAllPromoRelayClients();
-        clients.forEach((client) => {
-          if (client && client.connected) {
-            try {
-              client.publish(PROMO_RELAY_TOPIC, JSON.stringify(payload), { retain: true, qos: 1 });
-            } catch (e) {}
-          }
-        });
-      })();
+      const httpsTask = HttpsRelay.publish(PROMO_HTTPS_TOPIC, payload);
 
       const firestoreTask = (async () => {
         try {
-          await withTimeout(initFirebase(), 4000);
+          await withTimeout(initFirebase(!cloudAvailable), 4500);
           if (!db) return;
-          await withTimeout(setDoc(getPromoCodesDocRef(), payload), 4000);
+          await withTimeout(setDoc(getPromoCodesDocRef(), payload), 4500);
           if (changedCode) {
             const singleRef = doc(db, 'artifacts', APP_NAMESPACE, 'public', 'data', 'promo_codes', `code_${changedCode}`);
             if (isExpired) {
-              await withTimeout(setDoc(singleRef, { code: changedCode, expired: true, updatedAt: promoCodesUpdatedAt }), 3500);
+              await withTimeout(setDoc(singleRef, { code: changedCode, expired: true, updatedAt: promoCodesUpdatedAt }), 4000);
             } else if (activePromoCodes[changedCode]) {
-              await withTimeout(setDoc(singleRef, { ...activePromoCodes[changedCode], expired: false, updatedAt: promoCodesUpdatedAt }), 3500);
+              await withTimeout(setDoc(singleRef, { ...activePromoCodes[changedCode], expired: false, updatedAt: promoCodesUpdatedAt }), 4000);
             }
           }
         } catch (e) {}
       })();
 
-      await Promise.allSettled([relayTask, firestoreTask]);
+      await Promise.allSettled([httpsTask, firestoreTask]);
     }
 
     function getCharById(id) {
@@ -3008,27 +2571,41 @@
       }
 
       const normKey = nickname.toLowerCase();
+      const accTopic = HttpsRelay.getTopic('account', normKey);
       try {
-        await withTimeout(initFirebase(), 4000);
+        await withTimeout(initFirebase(!cloudAvailable), 4500);
       } catch (e) {}
 
       try {
         let existingAccount = memoryAccounts[normKey] || null;
+        const remoteAcc = await HttpsRelay.fetchLatest(accTopic);
+        if (remoteAcc && remoteAcc.password) {
+          const localTs = existingAccount?.updatedAt || 0;
+          const remoteTs = remoteAcc.updatedAt || 0;
+          if (!existingAccount || remoteTs >= localTs) {
+            existingAccount = remoteAcc;
+            memoryAccounts[normKey] = existingAccount;
+            persistLocalAccounts();
+          }
+        }
+
         if (db) {
           try {
             const accRef = getAccountDocRef(normKey);
-            const snap = await withTimeout(getDoc(accRef), 4000);
+            const snap = await withTimeout(getDoc(accRef), 4500);
             cloudAvailable = true;
             lastCloudError = '';
             updateCloudStatusBadge(true);
             if (snap.exists()) {
-              existingAccount = snap.data();
-              memoryAccounts[normKey] = existingAccount;
-              persistLocalAccounts();
+              const fsAcc = snap.data();
+              if (!existingAccount || (fsAcc.updatedAt || 0) >= (existingAccount.updatedAt || 0)) {
+                existingAccount = fsAcc;
+                memoryAccounts[normKey] = existingAccount;
+                persistLocalAccounts();
+              }
             }
           } catch (cloudReadErr) {
             cloudAvailable = false;
-            lastCloudError = cloudReadErr?.code || cloudReadErr?.message || 'READ_ERROR';
             updateCloudStatusBadge(false);
           }
         }
@@ -3049,17 +2626,9 @@
           };
           memoryAccounts[normKey] = payload;
           persistLocalAccounts();
+          HttpsRelay.publish(accTopic, payload).catch(() => {});
           if (db) {
-            try {
-              await withTimeout(setDoc(getAccountDocRef(normKey), payload), 4000);
-              cloudAvailable = true;
-              lastCloudError = '';
-              updateCloudStatusBadge(true);
-            } catch (cloudWriteErr) {
-              cloudAvailable = false;
-              lastCloudError = cloudWriteErr?.code || cloudWriteErr?.message || 'WRITE_ERROR';
-              updateCloudStatusBadge(false);
-            }
+            setDoc(getAccountDocRef(normKey), payload).catch(() => {});
           }
 
           await syncPromoCodesFromCloud();
@@ -3079,12 +2648,13 @@
           const base = DEFAULT_STATE();
           const saved = existingAccount.gameState || {};
           const resolvedWins = typeof saved.wins === 'number' ? saved.wins : 0;
+          const resolvedRp = typeof saved.rankPoints === 'number' ? saved.rankPoints : 0;
 
           state = {
             ...base,
             ...saved,
             wins: resolvedWins,
-            rankPoints: typeof saved.rankPoints === 'number' ? saved.rankPoints : 0,
+            rankPoints: resolvedRp,
             redeemedCodes: Array.isArray(saved.redeemedCodes) ? saved.redeemedCodes : [],
             formationStep: 0
           };
@@ -3113,6 +2683,7 @@
     async function saveAccountProgress() {
       if (!loggedInUser) return;
       const normKey = loggedInUser.nickname.toLowerCase();
+      const accTopic = HttpsRelay.getTopic('account', normKey);
       const payload = {
         nickname: loggedInUser.nickname,
         password: loggedInUser.password,
@@ -3121,13 +2692,13 @@
       };
       memoryAccounts[normKey] = payload;
       persistLocalAccounts();
+      HttpsRelay.publish(accTopic, payload).catch(() => {});
       if (db) {
         try {
-          await withTimeout(setDoc(getAccountDocRef(normKey), payload), 4000);
+          await withTimeout(setDoc(getAccountDocRef(normKey), payload), 4500);
           cloudAvailable = true;
         } catch (e) {
           cloudAvailable = false;
-          lastCloudError = e?.code || e?.message || 'SAVE_ERROR';
           updateCloudStatusBadge(false);
         }
       }
@@ -3449,6 +3020,20 @@
     function updateGlobalUI() {
       document.getElementById('win-count').textContent = state.wins.toLocaleString();
 
+      const rp = state.rankPoints || 0;
+      const tier = getRankTierByRp(rp);
+      const rankBadge = document.getElementById('lobby-rank-badge');
+      const rankDesc = document.getElementById('lobby-rank-desc');
+      if (rankBadge) {
+        rankBadge.textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
+        rankBadge.className = `px-2 py-0.5 rounded-full border text-[10px] font-black ${tier.badgeClass}`;
+      }
+      if (rankDesc) {
+        rankDesc.textContent = tier.id === 'challenger'
+          ? '👑 챌린저 도달! AI HP 250 · 공격력 22 · 5중 시너지 극악 난이도'
+          : `현재 AI 배율 ${tier.hpMult}x · 공격력 ${tier.aiDmg} · 동시 ${tier.skillCount}스킬 (승리 시 +35 RP / +${tier.winW} W)`;
+      }
+
       const char = getCharById(state.equippedCharId);
       const weapon = getWeaponById(state.equippedWeaponId);
       const stats = calculateCombatStats();
@@ -3482,20 +3067,6 @@
         lobbySyn.classList.remove('hidden');
       } else {
         lobbySyn.classList.add('hidden');
-      }
-
-      const rankBadge = document.getElementById('lobby-rank-badge');
-      const rankDesc = document.getElementById('lobby-rank-desc');
-      if (rankBadge && typeof getRankTierInfo === 'function') {
-        const rp = state.rankPoints || 0;
-        const tier = getRankTierInfo(rp);
-        rankBadge.textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
-        rankBadge.className = `px-2 py-0.5 rounded-full border text-[10px] font-black ${tier.badgeClass}`;
-        if (rankDesc) {
-          rankDesc.textContent = tier.id === 'challenger'
-            ? '⚠️ 최고 티어 도달! 심판의 챌린저 AI (HP 250 · 5중 필살기) 도전 가능'
-            : `다음 티어 [${tier.nextName}]까지 ${tier.nextRp - rp} RP · 승리 시 +35 RP & +${tier.winReward} W`;
-        }
       }
     }
 
@@ -3552,14 +3123,14 @@
         if (bannerType === 'limited_thunder') {
           if (r < 4.0) pickedId = 'lightning_daggers';
           else if (r < 4.5) pickedId = 'bloodmoon';
-          else if (r < 12.0) pickedId = 'knight_greatsword';
-          else if (r < 27.0) pickedId = 'steel_spear';
+          else if (r < 12.5) pickedId = 'knight_greatsword';
+          else if (r < 27.5) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else if (bannerType === 'limited_bloodmoon') {
           if (r < 4.0) pickedId = 'bloodmoon';
           else if (r < 4.5) pickedId = 'lightning_daggers';
-          else if (r < 12.0) pickedId = 'knight_greatsword';
-          else if (r < 27.0) pickedId = 'steel_spear';
+          else if (r < 12.5) pickedId = 'knight_greatsword';
+          else if (r < 27.5) pickedId = 'steel_spear';
           else pickedId = normalPool[Math.floor(Math.random() * normalPool.length)];
         } else {
           if (r < 0.75) pickedId = 'lightning_daggers';
@@ -3614,13 +3185,13 @@
           else pickedId = 'human_low';
         } else if (bannerType === 'limited_sans') {
           if (r < 4.0) pickedId = 'sans';
-          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'sera' : 'kai';
+          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'kai' : 'sera';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
         } else if (bannerType === 'limited_sera') {
           if (r < 4.0) pickedId = 'sera';
-          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'sans' : 'kai';
+          else if (r < 4.75) pickedId = Math.random() < 0.5 ? 'kai' : 'sans';
           else if (r < 12.0) pickedId = 'human_high';
           else if (r < 34.0) pickedId = 'human_mid';
           else pickedId = 'human_low';
@@ -4464,7 +4035,7 @@
     }
 
     /* ============================================================================
-       전투 엔진 (봇 덱 대전 + 실시간 1:1 PvP 10턴 서든데스 2중 스킬)
+       전투 엔진 (봇 덱 대전 + 랭크전 + 실시간 1:1 PvP 10턴 서든데스 2중 스킬)
     ============================================================================ */
     let battle = {
       active: false,
@@ -4481,6 +4052,7 @@
       allyMaxHp: 0,
       raidBossType: 'abyss',
       bossPhase: 1,
+      rankTier: null,
       stats: null
     };
 
@@ -4693,6 +4265,7 @@
         allyMaxHp: 0,
         raidBossType: 'abyss',
         bossPhase: 1,
+        rankTier: null,
         stats
       };
 
@@ -4732,6 +4305,251 @@
       showBattlePanel('player_skills');
     }
 
+    /* ============================================================================
+       랭크전 전투 로직 (티어 상승 시 AI 체력·대미지·동시 스킬 수 대폭 강화, 챌린저 극악)
+    ============================================================================ */
+    function startRankedBattle() {
+      SoundFX.click();
+      if (!state.equippedCharId) {
+        showCustomModal({
+          icon: '🛡️',
+          title: '출전할 사람이 편성되지 않았습니다!',
+          desc: '먼저 [편성]에서 1칸 슬롯을 클릭해 사람을 배치해주세요.',
+          buttons: [
+            {
+              label: '편성으로 이동',
+              className: 'px-4 py-2.5 rounded-xl bg-cyan-400 text-black font-black text-xs cursor-pointer',
+              onClick: () => navigateTo('formation')
+            }
+          ]
+        });
+        return;
+      }
+      SoundFX.equip();
+      cleanupPvpSubscription();
+      cleanupRaidSubscription();
+      navigateTo('battle');
+      initRankedBattle();
+    }
+
+    function initRankedBattle() {
+      stopArenaLoop();
+      const stats = calculateCombatStats();
+      const rp = state.rankPoints || 0;
+      const tier = getRankTierByRp(rp);
+
+      const isChallenger = tier.id === 'challenger';
+      const preset = isChallenger
+        ? { charId: 'sans', weaponId: 'strange_bone' }
+        : BOT_DECK_PRESETS[Math.floor(Math.random() * BOT_DECK_PRESETS.length)];
+
+      const botChar = getCharById(preset.charId) || CHARACTERS[0];
+      const botWeapon = getWeaponById(preset.weaponId) || WEAPONS[0];
+      const botSynergy = SYNERGIES.find(s => s.charId === botChar.id && s.weaponId === botWeapon.id) || null;
+
+      const botMaxHp = isChallenger
+        ? 250
+        : Math.round((botChar.baseHp + (botSynergy ? botSynergy.bonusHp : 0)) * tier.hpMult);
+      const botHitDmg = tier.aiDmg;
+
+      battle = {
+        active: true,
+        mode: 'ranked',
+        turn: 'player',
+        enemyDeck: { char: botChar, weapon: botWeapon, synergy: botSynergy },
+        enemyHealed: false,
+        enemyHp: botMaxHp,
+        enemyMaxHp: botMaxHp,
+        enemyHitDamage: botHitDmg,
+        playerHp: stats.maxHp,
+        playerMaxHp: stats.maxHp,
+        allyHp: 0,
+        allyMaxHp: 0,
+        raidBossType: 'abyss',
+        bossPhase: 1,
+        rankTier: tier,
+        stats
+      };
+
+      document.getElementById('battle-stage-badge').textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
+      document.getElementById('battle-turn-badge').classList.add('hidden');
+      document.getElementById('battle-stage-controls').classList.remove('hidden');
+      document.getElementById('ally-hp-container').classList.add('hidden');
+      document.getElementById('ally-hp-container').classList.remove('flex');
+
+      const enemySynBadge = document.getElementById('enemy-synergy-badge');
+      enemySynBadge.textContent = isChallenger
+        ? '👑 챌린저 각성 · 5중 시너지 극악 패턴'
+        : `⚔️ 공격력 ${botHitDmg} · 동시 ${tier.skillCount}스킬`;
+      enemySynBadge.classList.remove('hidden');
+
+      document.getElementById('battle-enemy-title').textContent = isChallenger
+        ? '👑 챌린저 수호자 · 심판의 제왕'
+        : `[${tier.name}] ${botChar.name} (${botWeapon.name})`;
+      document.getElementById('enemy-name-display').textContent = isChallenger
+        ? '챌린저 AI (HP 250 · DMG 22)'
+        : `${tier.name} AI · ${botChar.name}`;
+      document.getElementById('enemy-sprite-container').innerHTML = isChallenger ? SVG_ART.raid_boss : botChar.art;
+      document.getElementById('battle-dialogue-text').textContent = isChallenger
+        ? '👑 [챌린저] 심판의 제왕이 강림했습니다! 한 번에 5가지 시너지 필살기를 동시에 퍼붓습니다!'
+        : `${tier.icon} [${tier.name}] 랭크전 상대가 나타났습니다! 무기 스킬을 선택하세요!`;
+
+      document.getElementById('battle-player-name').textContent = stats.char.name;
+      document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
+
+      const synTag = document.getElementById('battle-synergy-active-tag');
+      if (stats.synergy) {
+        synTag.textContent = `✨ 시너지: ${stats.synergy.name}`;
+        synTag.classList.remove('hidden');
+      } else {
+        synTag.classList.add('hidden');
+      }
+
+      updateBattleBars();
+      renderPlayerSkills();
+      showBattlePanel('player_skills');
+    }
+
+    function startRankedEnemyAttackTurn() {
+      if (!battle.active) return;
+      const tier = battle.rankTier || getRankTierByRp(state.rankPoints || 0);
+      const botWeapon = battle.enemyDeck.weapon;
+      const botChar = battle.enemyDeck.char;
+      const isChallenger = tier.id === 'challenger';
+
+      const healSkill = botWeapon.skills.find(s => s.type === 'heal');
+      if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * 0.35 && Math.random() < 0.45) {
+        battle.enemyHealed = true;
+        SoundFX.heal();
+        const healAmt = isChallenger ? 35 : Math.round(healSkill.heal * tier.hpMult);
+        battle.enemyHp = Math.min(battle.enemyMaxHp, battle.enemyHp + healAmt);
+        updateBattleBars();
+        spawnDamagePopup(`+${healAmt} HP`, 'text-emerald-400');
+        document.getElementById('battle-dialogue-text').textContent =
+          `[${tier.name}] 상대가 재생 스킬로 체력을 ${healAmt} 회복했습니다!`;
+
+        setTimeout(() => {
+          if (!battle.active) return;
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = '당신의 턴입니다! 사용할 무기 스킬을 선택하세요!';
+        }, 900);
+        return;
+      }
+
+      let patterns = [];
+      let labelText = '';
+      if (isChallenger) {
+        patterns = ['sb_ult', 'bm_ult', 'ld_ult', 'sb_2', 'ld_1'];
+        labelText = '👑 챌린저 5중 시너지 극악 탄막! (피해 22)';
+      } else {
+        const pool = botWeapon.skills.filter(s => s.type === 'attack').map(s => s.pattern);
+        if (battle.enemyDeck.synergy?.specialSkill) {
+          pool.push(battle.enemyDeck.synergy.specialSkill.pattern);
+        }
+        const extraSynergies = ['sb_ult', 'bm_ult', 'ld_ult', 'kg_ult'];
+        while (patterns.length < tier.skillCount) {
+          if (patterns.length === 0) {
+            patterns.push(pool[Math.floor(Math.random() * pool.length)]);
+          } else if (tier.minRp >= 650 && Math.random() < 0.5) {
+            patterns.push(extraSynergies[Math.floor(Math.random() * extraSynergies.length)]);
+          } else {
+            patterns.push(pool[Math.floor(Math.random() * pool.length)]);
+          }
+        }
+        labelText = `⚠️ [${tier.name}] ${tier.skillCount}중 연계 탄막! (피해 ${battle.enemyHitDamage})`;
+      }
+
+      showBattlePanel('arena');
+      document.getElementById('mobile-touch-pad').classList.remove('hidden');
+      document.getElementById('dodge-pattern-label').textContent = labelText;
+      document.getElementById('battle-dialogue-text').textContent =
+        `${tier.icon} [${tier.name}] AI의 맹공! 방향키 / WASD / 드래그로 회피하세요!`;
+
+      startArenaPhase({
+        controller: 'human_defend',
+        patterns,
+        hitDamage: battle.enemyHitDamage,
+        defenderSpeed: battle.stats.speed,
+        defenderReduce: battle.stats.dmgReduce,
+        duration: tier.duration,
+        onHumanDefendComplete: () => {
+          if (!battle.active) return;
+          if (battle.playerHp <= 0) {
+            handleRankedDefeat();
+          } else {
+            showBattlePanel('player_skills');
+            document.getElementById('battle-dialogue-text').textContent = '당신의 턴입니다! 사용할 무기 스킬을 선택하세요!';
+          }
+        }
+      });
+    }
+
+    function handleRankedVictory() {
+      battle.active = false;
+      stopArenaLoop();
+      SoundFX.victory();
+
+      const prevTier = getRankTierByRp(state.rankPoints || 0);
+      const gainRp = 35;
+      const winReward = prevTier.winW || 2;
+      state.rankPoints = (state.rankPoints || 0) + gainRp;
+      state.wins += winReward;
+      const newTier = getRankTierByRp(state.rankPoints);
+      const promoted = newTier.id !== prevTier.id;
+
+      updateGlobalUI();
+      saveAccountProgress();
+
+      showCustomModal({
+        icon: promoted ? '👑' : '🏆',
+        title: promoted ? `승급! [${newTier.icon} ${newTier.name}] 달성!` : `랭크전 승리! (+${gainRp} RP)`,
+        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${state.rankPoints} RP)\n승리 보상: +${winReward} W 획득! (보유: ${state.wins} W)`,
+        buttons: [
+          {
+            label: '다음 랭크전 도전',
+            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
+            onClick: () => initRankedBattle()
+          },
+          {
+            label: '메인 화면으로',
+            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-bold text-xs cursor-pointer',
+            onClick: () => navigateTo('lobby')
+          }
+        ]
+      });
+    }
+
+    function handleRankedDefeat() {
+      battle.active = false;
+      stopArenaLoop();
+      SoundFX.hurt();
+
+      const lossRp = 20;
+      state.rankPoints = Math.max(0, (state.rankPoints || 0) - lossRp);
+      const newTier = getRankTierByRp(state.rankPoints);
+
+      updateGlobalUI();
+      saveAccountProgress();
+
+      showCustomModal({
+        icon: '💀',
+        title: `랭크전 패배... (-${lossRp} RP)`,
+        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${state.rankPoints} RP)\n더 강력한 무기와 시너지를 편성해 다시 도전하세요!`,
+        buttons: [
+          {
+            label: '랭크전 재도전',
+            className: 'px-4 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs cursor-pointer',
+            onClick: () => initRankedBattle()
+          },
+          {
+            label: '메인 화면으로',
+            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-bold text-xs cursor-pointer',
+            onClick: () => navigateTo('lobby')
+          }
+        ]
+      });
+    }
+
     function initPvpBattle(data) {
       stopArenaLoop();
       const meKey = pvpSession.role;
@@ -4756,6 +4574,7 @@
         allyMaxHp: 0,
         raidBossType: 'abyss',
         bossPhase: 1,
+        rankTier: null,
         stats: myStats
       };
 
@@ -4984,7 +4803,8 @@
       const sk = skills[skillIndex];
       if (!sk) return;
 
-      const isSansMetalBoss = (battle.mode === 'solo_raid' || battle.mode === 'coop_raid') && (battle.raidBossType === 'sans' || battle.raidBossType === 'sans_enhanced');
+      const isSansMetalBoss = (battle.mode === 'solo_raid' || battle.mode === 'coop_raid') &&
+        (battle.raidBossType === 'sans' || battle.raidBossType === 'sans_enhanced');
       const rawDmg = computeSkillDamage(battle.mode, battle.stats.hitDamage, sk);
       const dmgPerHit = sk.type === 'attack' ? (isSansMetalBoss ? 1 : rawDmg) : 0;
 
@@ -5024,6 +4844,13 @@
           return;
         }
 
+        if (battle.mode === 'ranked') {
+          setTimeout(() => {
+            if (battle.active) startRankedEnemyAttackTurn();
+          }, 850);
+          return;
+        }
+
         setTimeout(() => {
           if (battle.active) startBotAttackTurn();
         }, 850);
@@ -5057,9 +4884,8 @@
       if (battle.mode === 'solo_raid') {
         battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
         updateBattleBars();
-        const bossLabel = battle.raidBossType === 'sans_enhanced'
-          ? '심판의 해골 · 샌즈 강화'
-          : (battle.raidBossType === 'sans' ? '심판의 해골 · 샌즈' : '심연의 군주');
+        const isSansEnh = battle.raidBossType === 'sans_enhanced';
+        const bossLabel = isSansEnh ? '심판의 해골 · 샌즈 강화' : (isSansMetalBoss ? '심판의 해골 · 샌즈' : '심연의 군주');
         spawnDamagePopup(isSansMetalBoss ? `-1 (메탈)` : `-${dmgPerHit}`, 'text-amber-300');
         document.getElementById('battle-dialogue-text').textContent = isSansMetalBoss
           ? `[${sk.name}] 명중! ${bossLabel}의 메탈 장갑에 1의 피해를 입혔습니다!`
@@ -5073,7 +4899,7 @@
         showBattlePanel('pvp_wait');
         document.getElementById('battle-pvp-wait-panel').innerHTML = `
           <div class="text-sm font-black text-purple-300">⚔️ [${sk.name}] 명중! (-${dmgPerHit} HP)</div>
-          <div class="text-xs text-zinc-400 mt-1">${battle.raidBossType === 'sans_enhanced' ? '샌즈 강화가 5가지 모든 심판 스킬을 동시에 준비하고 있습니다...' : (battle.raidBossType === 'sans' ? '샌즈가 2가지 심판 스킬을 준비하고 있습니다...' : '보스가 3가지 스킬을 동시에 준비하고 있습니다...')}</div>
+          <div class="text-xs text-zinc-400 mt-1">${isSansEnh ? '샌즈 강화가 5가지 모든 심판 스킬을 동시에 준비하고 있습니다...' : (isSansMetalBoss ? '샌즈가 2가지 심판 스킬을 준비하고 있습니다...' : '보스가 3가지 스킬을 동시에 준비하고 있습니다...')}</div>
         `;
 
         setTimeout(() => {
@@ -5105,6 +4931,35 @@
         return;
       }
 
+      if (battle.mode === 'ranked') {
+        battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
+        updateBattleBars();
+        spawnDamagePopup(`-${dmgPerHit}`, 'text-amber-300');
+        document.getElementById('battle-dialogue-text').textContent =
+          `[${sk.name}] 명중! 랭크 상대에게 ${dmgPerHit}의 피해를 입혔습니다!`;
+
+        const sprite = document.getElementById('enemy-sprite-container');
+        sprite.classList.remove('animate-shake');
+        void sprite.offsetWidth;
+        sprite.classList.add('animate-shake');
+
+        showBattlePanel('pvp_wait');
+        document.getElementById('battle-pvp-wait-panel').innerHTML = `
+          <div class="text-sm font-black text-amber-300">⚔️ [${sk.name}] 명중! (-${dmgPerHit} HP)</div>
+          <div class="text-xs text-zinc-400 mt-1">랭크전 AI가 다음 패턴을 준비 중입니다...</div>
+        `;
+
+        setTimeout(() => {
+          if (!battle.active) return;
+          if (battle.enemyHp <= 0) {
+            handleRankedVictory();
+          } else {
+            startRankedEnemyAttackTurn();
+          }
+        }, 850);
+        return;
+      }
+
       battle.enemyHp = Math.max(0, battle.enemyHp - dmgPerHit);
       updateBattleBars();
       spawnDamagePopup(`-${dmgPerHit}`, 'text-amber-300');
@@ -5125,172 +4980,194 @@
       setTimeout(() => {
         if (!battle.active) return;
         if (battle.enemyHp <= 0) {
-          if (battle.mode === 'ranked') {
-            handleRankedVictory();
-          } else {
-            handleBotBattleVictory();
-          }
+          handleBotBattleVictory();
         } else {
-          if (battle.mode === 'ranked') {
-            startRankedAiAttackTurn();
-          } else {
-            startBotAttackTurn();
-          }
+          startBotAttackTurn();
         }
       }, 850);
     }
 
-    /* ============================================================================
-       랭크전 시스템 (아이언 → 브론즈 → 실버 → 골드 → 다이아몬드 → 마스터 → 챌린저)
-    ============================================================================ */
-    const RANK_TIERS = [
-      {
-        id: 'iron',
-        name: '아이언',
-        icon: '⚙️',
-        minRp: 0,
-        nextRp: 100,
-        nextName: '브론즈',
-        badgeClass: 'bg-zinc-800 border-zinc-500 text-zinc-200',
-        hpMult: 1.0,
-        enemyDamage: 5,
-        skillCount: 1,
-        duration: 5.5,
-        winReward: 2,
-        decks: [
-          { charId: 'human_low', weaponId: 'rusty_dagger' },
-          { charId: 'human_low', weaponId: 'wooden_club' }
-        ]
-      },
-      {
-        id: 'bronze',
-        name: '브론즈',
-        icon: '🥉',
-        minRp: 100,
-        nextRp: 250,
-        nextName: '실버',
-        badgeClass: 'bg-amber-950/80 border-amber-600 text-amber-300',
-        hpMult: 1.3,
-        enemyDamage: 6,
-        skillCount: 1,
-        duration: 6.0,
-        winReward: 2,
-        decks: [
-          { charId: 'human_low', weaponId: 'iron_sword' },
-          { charId: 'human_mid', weaponId: 'hunter_bow' },
-          { charId: 'human_mid', weaponId: 'bronze_axe' }
-        ]
-      },
-      {
-        id: 'silver',
-        name: '실버',
-        icon: '🥈',
-        minRp: 250,
-        nextRp: 450,
-        nextName: '골드',
-        badgeClass: 'bg-slate-800 border-slate-400 text-slate-200',
-        hpMult: 1.6,
-        enemyDamage: 8,
-        skillCount: 2,
-        duration: 6.2,
-        winReward: 2,
-        decks: [
-          { charId: 'human_mid', weaponId: 'steel_spear' },
-          { charId: 'human_mid', weaponId: 'dagger_bow' },
-          { charId: 'human_mid', weaponId: 'greatsword_axe' }
-        ]
-      },
-      {
-        id: 'gold',
-        name: '골드',
-        icon: '🥇',
-        minRp: 450,
-        nextRp: 700,
-        nextName: '다이아몬드',
-        badgeClass: 'bg-yellow-950/80 border-yellow-400 text-yellow-300',
-        hpMult: 2.0,
-        enemyDamage: 10,
-        skillCount: 2,
-        duration: 6.5,
-        winReward: 3,
-        decks: [
-          { charId: 'human_high', weaponId: 'knight_greatsword' },
-          { charId: 'human_high', weaponId: 'sacred_halberd' },
-          { charId: 'human_high', weaponId: 'arcane_mace' }
-        ]
-      },
-      {
-        id: 'diamond',
-        name: '다이아몬드',
-        icon: '💎',
-        minRp: 700,
-        nextRp: 1000,
-        nextName: '마스터',
-        badgeClass: 'bg-cyan-950/80 border-cyan-400 text-cyan-200',
-        hpMult: 2.5,
-        enemyDamage: 12,
-        skillCount: 3,
-        duration: 6.8,
-        winReward: 3,
-        decks: [
-          { charId: 'kai', weaponId: 'bloodmoon' },
-          { charId: 'sera', weaponId: 'lightning_daggers' },
-          { charId: 'sans', weaponId: 'strange_bone' }
-        ]
-      },
-      {
-        id: 'master',
-        name: '마스터',
-        icon: '🔮',
-        minRp: 1000,
-        nextRp: 1400,
-        nextName: '챌린저',
-        badgeClass: 'bg-purple-950/80 border-purple-400 text-purple-200',
-        hpMult: 3.2,
-        enemyDamage: 15,
-        skillCount: 3,
-        duration: 7.0,
-        winReward: 4,
-        decks: [
-          { charId: 'sans', weaponId: 'thunder_bone' },
-          { charId: 'kai', weaponId: 'bloodmoon' },
-          { charId: 'sera', weaponId: 'lightning_daggers' }
-        ]
-      },
-      {
-        id: 'challenger',
-        name: '챌린저',
-        icon: '👑',
-        minRp: 1400,
-        nextRp: 9999,
-        nextName: '최정점',
-        badgeClass: 'bg-gradient-to-r from-red-950 via-amber-950 to-red-950 border-amber-300 text-amber-200',
-        hpMult: 5.0,
-        fixedHp: 250,
-        enemyDamage: 22,
-        skillCount: 5,
-        duration: 7.5,
-        winReward: 10,
-        decks: [
-          { charId: 'sans', weaponId: 'thunder_bone' },
-          { charId: 'kai', weaponId: 'bloodmoon' },
-          { charId: 'sera', weaponId: 'lightning_daggers' }
-        ]
-      }
-    ];
+    function startBotAttackTurn() {
+      if (!battle.active) return;
+      const botWeapon = battle.enemyDeck.weapon;
+      const botChar = battle.enemyDeck.char;
+      const attackSkills = botWeapon.skills.filter(s => s.type === 'attack');
+      const healSkill = botWeapon.skills.find(s => s.type === 'heal');
 
-    function getRankTierInfo(rp = 0) {
-      let current = RANK_TIERS[0];
-      for (const tier of RANK_TIERS) {
-        if (rp >= tier.minRp) {
-          current = tier;
-        }
+      if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * 0.4 && Math.random() < 0.35) {
+        battle.enemyHealed = true;
+        SoundFX.heal();
+        battle.enemyHp = Math.min(battle.enemyMaxHp, battle.enemyHp + healSkill.heal);
+        updateBattleBars();
+        spawnDamagePopup(`+${healSkill.heal} HP`, 'text-emerald-400');
+        document.getElementById('battle-dialogue-text').textContent =
+          `[${botChar.name}]이(가) [${healSkill.name}]으로 체력을 ${healSkill.heal} 회복했습니다!`;
+
+        setTimeout(() => {
+          if (!battle.active) return;
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
+        }, 900);
+        return;
       }
-      return current;
+
+      const chosenSkill = attackSkills[Math.floor(Math.random() * attackSkills.length)];
+
+      showBattlePanel('arena');
+      document.getElementById('mobile-touch-pad').classList.remove('hidden');
+      document.getElementById('dodge-pattern-label').textContent = `⚠️ [${botChar.name}]의 [${chosenSkill.name}]! 빨간 하트로 회피하세요!`;
+      document.getElementById('battle-dialogue-text').textContent =
+        `${botChar.name}(${botWeapon.name})의 [${chosenSkill.name}] 공격! 방향키 / WASD / 드래그로 피하세요!`;
+
+      startArenaPhase({
+        controller: 'human_defend',
+        pattern: chosenSkill.pattern,
+        hitDamage: battle.enemyHitDamage,
+        defenderSpeed: battle.stats.speed,
+        defenderReduce: battle.stats.dmgReduce,
+        duration: 6.0,
+        onHumanDefendComplete: () => {
+          if (!battle.active) return;
+          if (battle.playerHp <= 0) {
+            handleBotBattleDefeat();
+          } else {
+            showBattlePanel('player_skills');
+            document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
+          }
+        }
+      });
     }
 
-    function startRankedBattle() {
-      SoundFX.equip();
+    function handleBotBattleVictory() {
+      battle.active = false;
+      stopArenaLoop();
+      SoundFX.victory();
+
+      state.wins += 1;
+      updateGlobalUI();
+      saveAccountProgress();
+
+      const botName = `${battle.enemyDeck.char.name} (${battle.enemyDeck.weapon.name})`;
+      showCustomModal({
+        icon: '🏆',
+        title: '봇 덱 대전 승리!',
+        desc: `상대 덱 [${botName}]을(를) 격파했습니다!\n승리 보상: +1 W 획득! (현재 보유: ${state.wins} W)`,
+        buttons: [
+          {
+            label: '다음 상대와 대전',
+            className: 'px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs cursor-pointer',
+            onClick: () => initBotBattle()
+          },
+          {
+            label: `뽑기 (보유 ${state.wins} W)`,
+            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
+            onClick: () => navigateTo('gacha')
+          }
+        ]
+      });
+    }
+
+    function handleBotBattleDefeat() {
+      battle.active = false;
+      stopArenaLoop();
+      SoundFX.hurt();
+
+      const botName = `${battle.enemyDeck.char.name} (${battle.enemyDeck.weapon.name})`;
+      showCustomModal({
+        icon: '💀',
+        title: '전투 패배...',
+        desc: `상대 덱 [${botName}]에게 패배했습니다.\n뽑기에서 더 강한 인간과 무기를 얻어 재도전하세요!`,
+        buttons: [
+          {
+            label: '다시 대전 (새 상대)',
+            className: 'px-4 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs cursor-pointer',
+            onClick: () => initBotBattle()
+          },
+          {
+            label: '뽑기 하러 가기',
+            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
+            onClick: () => navigateTo('gacha')
+          }
+        ]
+      });
+    }
+
+    /* ============================================================================
+       레이드 시스템 (아비스 로드 100 HP / 샌즈 메탈 3 HP / 샌즈 강화 메탈 10 HP · 5스킬)
+    ============================================================================ */
+    const RAID_BOSS_MAX_HP = 100;
+    const RAID_SANS_MAX_HP = 3;
+    const RAID_SANS_ENHANCED_MAX_HP = 10;
+    const RAID_BOSS_HIT_DAMAGE = 6;
+    let selectedRaidBossType = 'abyss';
+
+    function selectRaidBoss(bossType) {
+      SoundFX.click();
+      selectedRaidBossType = bossType;
+      const btnAbyss = document.getElementById('btn-boss-abyss');
+      const btnSans = document.getElementById('btn-boss-sans');
+      const btnSansEnh = document.getElementById('btn-boss-sans-enhanced');
+      const infoBox = document.getElementById('raid-boss-info-box');
+
+      btnAbyss.className = 'p-2.5 rounded-2xl bg-black border-2 border-zinc-700 hover:border-purple-400 text-left transition cursor-pointer';
+      btnSans.className = 'p-2.5 rounded-2xl bg-black border-2 border-zinc-700 hover:border-sky-400 text-left transition cursor-pointer';
+      btnSansEnh.className = 'p-2.5 rounded-2xl bg-black border-2 border-zinc-700 hover:border-amber-400 text-left transition cursor-pointer';
+
+      if (bossType === 'sans_enhanced') {
+        btnSansEnh.className = 'p-2.5 rounded-2xl bg-amber-950/50 border-2 border-amber-400 text-left transition cursor-pointer';
+        infoBox.className = 'mb-4 p-3 rounded-2xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-200 space-y-1';
+        infoBox.innerHTML = `
+          <div class="font-black text-amber-300">⚡ 심판의 해골 · 샌즈 강화 (최상위 보스)</div>
+          <div>• 보스 체력: <span class="text-white font-bold">메탈 10 HP</span> (모든 공격 피해 1 고정)</div>
+          <div>• 보스 패턴: <span class="text-red-300 font-bold">5가지 심판 스킬을 전부 동시에 발사!</span></div>
+          <div>• 클리어 보상: <span class="text-emerald-300 font-bold">전설 무기 [이상한 뼈다귀] + 5 W</span></div>
+        `;
+      } else if (bossType === 'sans') {
+        btnSans.className = 'p-2.5 rounded-2xl bg-sky-950/50 border-2 border-sky-400 text-left transition cursor-pointer';
+        infoBox.className = 'mb-4 p-3 rounded-2xl bg-sky-950/30 border border-sky-500/40 text-xs text-sky-200 space-y-1';
+        infoBox.innerHTML = `
+          <div class="font-black text-sky-300">💀 심판의 해골 · 샌즈 (메탈 보스 · 2페이즈)</div>
+          <div>• 보스 체력: <span class="text-white font-bold">메탈 3 HP</span> (모든 공격 피해 1 고정)</div>
+          <div>• 2페이즈 각성: <span class="text-amber-300 font-bold">첫 처치 시 체력 3 회복 & [✨ 최후의 심판] 해금!</span></div>
+          <div>• 클리어 보상: <span class="text-emerald-300 font-bold">전설 무기 [이상한 뼈다귀] 확정 지급 + 3 W</span></div>
+        `;
+      } else {
+        btnAbyss.className = 'p-2.5 rounded-2xl bg-purple-950/50 border-2 border-purple-400 text-left transition cursor-pointer';
+        infoBox.className = 'mb-4 p-3 rounded-2xl bg-purple-950/30 border border-purple-500/40 text-xs text-purple-200 space-y-1';
+        infoBox.innerHTML = `
+          <div class="font-black text-purple-300">🔥 심연의 군주 · 아비스 로드</div>
+          <div>• 보스 체력: <span class="text-white font-bold">100 HP</span></div>
+          <div>• 보스 패턴: <span class="text-amber-300 font-bold">한 번에 3가지 무기 패턴 동시 발사!</span></div>
+        `;
+      }
+    }
+
+    let raidSession = {
+      roomCode: null,
+      role: null,
+      unsub: null,
+      lastTurnSeq: -1,
+      lastPosSync: 0,
+      allyHeartPos: { x: 220, y: 110 }
+    };
+
+    function cleanupRaidSubscription() {
+      const oldCode = raidSession.roomCode;
+      const oldRole = raidSession.role;
+      if (raidSession.unsub) {
+        raidSession.unsub();
+        raidSession.unsub = null;
+      }
+      if (oldCode && oldRole === 'host') {
+        RoomStore.cleanupP2P('raid', oldCode);
+      }
+      raidSession.roomCode = null;
+      raidSession.role = null;
+      raidSession.lastTurnSeq = -1;
+    }
+
+    function openRaidModeModal() {
+      SoundFX.click();
       if (!state.equippedCharId) {
         showCustomModal({
           icon: '🛡️',
@@ -5306,63 +5183,139 @@
         });
         return;
       }
-      cleanupPvpSubscription();
-      cleanupRaidSubscription();
-      navigateTo('battle');
-      initRankedBattle();
+      selectRaidBoss(selectedRaidBossType);
+      backToRaidStepSelect();
+      document.getElementById('raid-mode-modal').classList.remove('hidden');
     }
 
-    function initRankedBattle() {
+    function closeRaidModeModal() {
+      document.getElementById('raid-mode-modal').classList.add('hidden');
+    }
+
+    function backToRaidStepSelect() {
+      document.getElementById('raid-step-select').classList.remove('hidden');
+      document.getElementById('raid-step-friend').classList.add('hidden');
+      document.getElementById('raid-step-friend').classList.remove('flex');
+      document.getElementById('raid-host-wait-box').classList.add('hidden');
+      document.getElementById('raid-join-input-box').classList.add('hidden');
+    }
+
+    function showFriendRaidStep() {
+      SoundFX.click();
+      document.getElementById('raid-step-select').classList.add('hidden');
+      document.getElementById('raid-step-friend').classList.remove('hidden');
+      document.getElementById('raid-step-friend').classList.add('flex');
+    }
+
+    function openRaidJoinCodeInput() {
+      SoundFX.click();
+      document.getElementById('raid-host-wait-box').classList.add('hidden');
+      document.getElementById('raid-join-input-box').classList.remove('hidden');
+      document.getElementById('raid-join-status').textContent = '';
+      const inp = document.getElementById('raid-code-input');
+      inp.value = '';
+      inp.focus();
+    }
+
+    function pickBossSkills(bossType = 'abyss', phase = 1) {
+      if (bossType === 'sans_enhanced') {
+        return [
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 파도', pattern: 'sb_1' },
+          { weaponName: '이상한 뼈다귀', name: '가스터 블래스터', pattern: 'sb_2' },
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' },
+          { weaponName: '심판의 시간', name: '✨ 최후의 심판', pattern: 'sb_ult' },
+          { weaponName: '뇌전의 뼈다귀', name: '초신성 뼈다귀 폭풍', pattern: 'ld_1' }
+        ];
+      }
+      if (bossType === 'sans') {
+        const sansSkills = [
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 파도', pattern: 'sb_1' },
+          { weaponName: '이상한 뼈다귀', name: '가스터 블래스터', pattern: 'sb_2' },
+          { weaponName: '이상한 뼈다귀', name: '뼈다귀 감옥 & 낙하', pattern: 'sb_3' }
+        ];
+        if (phase >= 2) {
+          const ultSkill = { weaponName: '심판의 시간', name: '✨ 최후의 심판', pattern: 'sb_ult' };
+          const partner = sansSkills[Math.floor(Math.random() * sansSkills.length)];
+          return [ultSkill, partner];
+        }
+        const i1 = Math.floor(Math.random() * sansSkills.length);
+        const i2 = (i1 + 1 + Math.floor(Math.random() * (sansSkills.length - 1))) % sansSkills.length;
+        return [sansSkills[i1], sansSkills[i2]];
+      }
+      const allAttackSkills = [];
+      WEAPONS.forEach(w => {
+        w.skills.forEach(s => {
+          if (s.type === 'attack') {
+            allAttackSkills.push({ weaponName: w.name, name: s.name, pattern: s.pattern });
+          }
+        });
+      });
+      const len = allAttackSkills.length;
+      const i1 = Math.floor(Math.random() * len);
+      const i2 = (i1 + 3) % len;
+      const i3 = (i1 + 7) % len;
+      return [allAttackSkills[i1], allAttackSkills[i2], allAttackSkills[i3]];
+    }
+
+    function startSoloRaid() {
+      SoundFX.equip();
+      closeRaidModeModal();
+      cleanupRaidSubscription();
+      cleanupPvpSubscription();
+      navigateTo('battle');
+      initSoloRaidBattle();
+    }
+
+    function initSoloRaidBattle() {
       stopArenaLoop();
       const stats = calculateCombatStats();
-      const rp = state.rankPoints || 0;
-      const tier = getRankTierInfo(rp);
-      const preset = tier.decks[Math.floor(Math.random() * tier.decks.length)];
-      const botChar = getCharById(preset.charId) || CHARACTERS[0];
-      const botWeapon = getWeaponById(preset.weaponId) || WEAPONS[0];
-      const botSynergy = SYNERGIES.find(s => s.charId === botChar.id && s.weaponId === botWeapon.id) || null;
-
-      const calcHp = tier.fixedHp
-        ? tier.fixedHp
-        : Math.round((botChar.baseHp + (botSynergy ? botSynergy.bonusHp : 0)) * tier.hpMult);
+      const isSansEnhanced = selectedRaidBossType === 'sans_enhanced';
+      const isSans = selectedRaidBossType === 'sans';
+      const initialBossHp = isSansEnhanced
+        ? RAID_SANS_ENHANCED_MAX_HP
+        : (isSans ? RAID_SANS_MAX_HP : RAID_BOSS_MAX_HP);
 
       battle = {
         active: true,
-        mode: 'ranked',
+        mode: 'solo_raid',
         turn: 'player',
-        rankTier: tier,
-        enemyDeck: { char: botChar, weapon: botWeapon, synergy: botSynergy },
-        enemyHealed: false,
-        enemyHp: calcHp,
-        enemyMaxHp: calcHp,
-        enemyHitDamage: tier.enemyDamage,
+        enemyDeck: null,
+        enemyHp: initialBossHp,
+        enemyMaxHp: initialBossHp,
+        enemyHitDamage: isSansEnhanced ? 8 : RAID_BOSS_HIT_DAMAGE,
         playerHp: stats.maxHp,
         playerMaxHp: stats.maxHp,
         allyHp: 0,
         allyMaxHp: 0,
-        raidBossType: 'abyss',
+        raidBossType: selectedRaidBossType,
         bossPhase: 1,
+        rankTier: null,
         stats
       };
 
-      document.getElementById('battle-stage-badge').textContent = `${tier.icon} ${tier.name} (${rp} RP)`;
-      document.getElementById('battle-turn-badge').classList.add('hidden');
+      document.getElementById('battle-stage-badge').textContent = isSansEnhanced
+        ? 'SOLO RAID · 샌즈 강화'
+        : (isSans ? 'SOLO RAID · 1페이즈' : 'SOLO RAID');
       document.getElementById('battle-stage-controls').classList.remove('hidden');
+      document.getElementById('enemy-synergy-badge').textContent = isSansEnhanced
+        ? '⚡ 메탈 10 HP · 5가지 스킬 전부 발동'
+        : (isSans ? '🛡️ 메탈 장갑 · 2스킬' : '🔥 3스킬 동시 발동');
+      document.getElementById('enemy-synergy-badge').classList.remove('hidden');
       document.getElementById('ally-hp-container').classList.add('hidden');
       document.getElementById('ally-hp-container').classList.remove('flex');
 
-      const enemySynBadge = document.getElementById('enemy-synergy-badge');
-      enemySynBadge.textContent = tier.id === 'challenger'
-        ? '💀 챌린저 · 5중 필살기 & 초고화력'
-        : `⚔️ ${tier.name} AI · ${tier.skillCount}스킬 동시 발동`;
-      enemySynBadge.classList.remove('hidden');
-
-      document.getElementById('battle-enemy-title').textContent = `[${tier.name}] ${botChar.name} (${botWeapon.name})`;
-      document.getElementById('enemy-name-display').textContent = `${tier.icon} ${tier.name} AI · ${botChar.name}`;
-      document.getElementById('enemy-sprite-container').innerHTML = botChar.art;
-      document.getElementById('battle-dialogue-text').textContent = tier.id === 'challenger'
-        ? `👑 [챌린저] 심판자 AI [${botChar.name} + ${botWeapon.name}] 강림! (HP ${calcHp} · 위력 ${tier.enemyDamage} · 5중 필살기!)`
-        : `${tier.icon} [${tier.name}] 랭크 상대 [${botChar.name} + ${botWeapon.name}]이(가) 나타났습니다! (HP ${calcHp})`;
+      document.getElementById('battle-enemy-title').textContent = isSansEnhanced
+        ? '심판의 해골 · 샌즈 강화'
+        : (isSans ? '심판의 해골 · 샌즈' : '심연의 군주 · 아비스 로드');
+      document.getElementById('enemy-name-display').textContent = isSansEnhanced
+        ? '샌즈 강화 (메탈 HP 10)'
+        : (isSans ? '샌즈 1페이즈 (메탈 HP 3)' : '레이드 보스 (HP 100)');
+      document.getElementById('enemy-sprite-container').innerHTML = (isSans || isSansEnhanced) ? SVG_ART.sans : SVG_ART.raid_boss;
+      document.getElementById('battle-dialogue-text').textContent = isSansEnhanced
+        ? '⚡ 심판의 해골 · 샌즈 강화 강림! (메탈 10 HP · 5가지 심판 스킬을 전부 동시에 발사합니다!)'
+        : (isSans
+          ? '심판의 해골 · 샌즈가 나타났습니다! (메탈: 모든 피해 1 고정 · 한 번에 2가지 공격)'
+          : '심연의 군주가 강림했습니다! 체력 100 · 한 번에 3가지 스킬을 동시에 사용합니다!');
 
       document.getElementById('battle-player-name').textContent = stats.char.name;
       document.getElementById('battle-player-weapon').textContent = stats.weapon ? stats.weapon.name : '맨손';
@@ -5380,111 +5333,540 @@
       showBattlePanel('player_skills');
     }
 
-    function startRankedAiAttackTurn() {
+    function startRaidBossAttackTurn() {
       if (!battle.active) return;
-      const tier = battle.rankTier || getRankTierInfo(state.rankPoints || 0);
-      const botWeapon = battle.enemyDeck.weapon;
-      const botChar = battle.enemyDeck.char;
-      const botSynergy = battle.enemyDeck.synergy;
-      const attackSkills = botWeapon.skills.filter(s => s.type === 'attack');
-      const healSkill = botWeapon.skills.find(s => s.type === 'heal');
-
-      // 마스터/챌린저 AI는 체력이 45% 이하일 때 자가 회복을 적극 활용
-      const healThreshold = tier.id === 'challenger' ? 0.45 : 0.35;
-      const healChance = tier.id === 'challenger' ? 0.65 : (tier.id === 'master' ? 0.45 : 0.25);
-      if (healSkill && !battle.enemyHealed && battle.enemyHp <= battle.enemyMaxHp * healThreshold && Math.random() < healChance) {
-        battle.enemyHealed = true;
-        SoundFX.heal();
-        const healAmt = tier.id === 'challenger' ? 45 : Math.round(healSkill.heal * tier.hpMult);
-        battle.enemyHp = Math.min(battle.enemyMaxHp, battle.enemyHp + healAmt);
-        updateBattleBars();
-        spawnDamagePopup(`+${healAmt} HP`, 'text-emerald-400');
-        document.getElementById('battle-dialogue-text').textContent =
-          `${tier.icon} [${tier.name} AI] ${botChar.name}이(가) [${healSkill.name}]으로 체력을 ${healAmt} 회복했습니다!`;
-
-        setTimeout(() => {
-          if (!battle.active) return;
-          showBattlePanel('player_skills');
-          document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
-        }, 900);
-        return;
-      }
-
-      let chosenPatterns = [];
-      let labelText = '';
-
-      if (tier.id === 'challenger') {
-        // 챌린저 AI: 5가지 전설/시너지 필살기 패턴을 전부 동시에 발사
-        chosenPatterns = ['sb_ult', 'bm_ult', 'ld_ult', 'sb_2', 'ld_1'];
-        labelText = `👑 [챌린저 AI] 5중 종말 필살기 동시 발사! (위력 ${tier.enemyDamage})`;
-      } else {
-        const pool = [...attackSkills];
-        if (botSynergy?.specialSkill) pool.push(botSynergy.specialSkill);
-        const count = Math.min(tier.skillCount, pool.length);
-        const picked = [];
-        for (let i = 0; i < count; i++) {
-          const sk = pool[(Math.floor(Math.random() * pool.length) + i) % pool.length];
-          picked.push(sk);
-        }
-        chosenPatterns = picked.map(s => s.pattern);
-        const names = picked.map(s => `[${s.name}]`).join(' + ');
-        labelText = `${tier.icon} [${tier.name} AI] ${names} 발사!`;
-      }
+      const isSansEnhanced = battle.raidBossType === 'sans_enhanced';
+      const isSans = battle.raidBossType === 'sans';
+      const skills = pickBossSkills(battle.raidBossType, battle.bossPhase || 1);
+      const patterns = skills.map(s => s.pattern);
 
       showBattlePanel('arena');
       document.getElementById('mobile-touch-pad').classList.remove('hidden');
-      document.getElementById('dodge-pattern-label').textContent = labelText;
-      document.getElementById('battle-dialogue-text').textContent =
-        `${tier.icon} [${tier.name}] ${botChar.name}의 총공격! 빨간 하트로 끝까지 회피하세요!`;
+      if (isSansEnhanced) {
+        document.getElementById('dodge-pattern-label').textContent =
+          `⚡ 샌즈 강화: 5가지 모든 심판 스킬 동시 폭격!`;
+        document.getElementById('battle-dialogue-text').textContent =
+          `심판의 해골 · 샌즈 강화가 뼈다귀 파도 + 가스터 블래스터 + 뼈다귀 감옥 + 최후의 심판 + 초신성 폭풍을 전부 시전합니다!`;
+      } else if (isSans) {
+        const phasePrefix = (battle.bossPhase || 1) >= 2 ? '💀 샌즈 2페이즈' : '💀 샌즈 1페이즈';
+        document.getElementById('dodge-pattern-label').textContent =
+          `${phasePrefix}: [${skills[0].name}] + [${skills[1].name}]!`;
+        document.getElementById('battle-dialogue-text').textContent =
+          `심판의 해골 · 샌즈가 [${skills[0].name}]와 [${skills[1].name}]을(를) 동시에 시전합니다!`;
+      } else {
+        document.getElementById('dodge-pattern-label').textContent =
+          `👹 보스 3중 스킬: [${skills[0].name}] + [${skills[1].name}] + [${skills[2].name}]!`;
+        document.getElementById('battle-dialogue-text').textContent =
+          `심연의 군주가 [${skills[0].name}], [${skills[1].name}], [${skills[2].name}]을(를) 동시에 시전합니다!`;
+      }
 
       startArenaPhase({
         controller: 'human_defend',
-        patterns: chosenPatterns,
-        hitDamage: battle.enemyHitDamage,
+        patterns,
+        hitDamage: isSansEnhanced ? 8 : RAID_BOSS_HIT_DAMAGE,
         defenderSpeed: battle.stats.speed,
         defenderReduce: battle.stats.dmgReduce,
-        duration: tier.duration,
+        duration: isSansEnhanced ? 7.0 : 6.5,
         onHumanDefendComplete: () => {
           if (!battle.active) return;
           if (battle.playerHp <= 0) {
-            handleRankedDefeat();
+            handleRaidDefeat(false);
           } else {
             showBattlePanel('player_skills');
-            document.getElementById('battle-dialogue-text').textContent = `당신의 턴입니다! 사용할 무기 스킬을 선택하세요!`;
+            document.getElementById('battle-dialogue-text').textContent = '당신의 턴입니다! 보스를 공격할 스킬을 선택하세요!';
           }
         }
       });
     }
 
-    function handleRankedVictory() {
+    async function createRaidRoom() {
+      SoundFX.click();
+      cleanupRaidSubscription();
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+      const hostLoadout = buildMyPvpLoadout();
+      hostLoadout.nickname = loggedInUser?.nickname || '방장';
+      hostLoadout.heartX = 160;
+      hostLoadout.heartY = 110;
+      const isSansEnhanced = selectedRaidBossType === 'sans_enhanced';
+      const isSans = selectedRaidBossType === 'sans';
+      const initialBossHp = isSansEnhanced
+        ? RAID_SANS_ENHANCED_MAX_HP
+        : (isSans ? RAID_SANS_MAX_HP : RAID_BOSS_MAX_HP);
+
+      const roomMode = await RoomStore.create('raid', code, {
+        code,
+        status: 'waiting',
+        bossType: selectedRaidBossType,
+        bossPhase: 1,
+        bossHp: initialBossHp,
+        bossMaxHp: initialBossHp,
+        host: hostLoadout,
+        guest: null,
+        phase: 'host_attack',
+        turnSeq: 0,
+        bossSkills: null,
+        lastActionLog: '',
+        winner: null,
+        createdAt: Date.now()
+      });
+
+      raidSession.roomCode = code;
+      raidSession.role = 'host';
+
+      document.getElementById('raid-join-input-box').classList.add('hidden');
+      document.getElementById('raid-host-wait-box').classList.remove('hidden');
+      document.getElementById('raid-generated-code').textContent = code;
+      const syncBadge = document.getElementById('raid-room-sync-badge');
+      if (roomMode === 'relay' || roomMode === 'p2p') {
+        syncBadge.textContent = '🟢 실시간 레이드 직통 서버 연결 완료! (어떤 기기에서도 입장 가능)';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else if (roomMode === 'cloud') {
+        syncBadge.textContent = '🟢 온라인 클라우드 레이드 방 활성화됨';
+        syncBadge.className = 'text-[10px] text-emerald-400 font-bold mb-1';
+      } else {
+        syncBadge.textContent = '🟠 로컬 모드 방 (동일 브라우저 탭)';
+        syncBadge.className = 'text-[10px] text-amber-400 font-bold mb-1';
+      }
+
+      subscribeRaidRoom(code);
+    }
+
+    async function cancelRaidRoom() {
+      if (raidSession.roomCode) {
+        await RoomStore.remove('raid', raidSession.roomCode);
+      }
+      cleanupRaidSubscription();
+      document.getElementById('raid-host-wait-box').classList.add('hidden');
+    }
+
+    async function joinRaidRoom() {
+      SoundFX.click();
+      const rawCode = document.getElementById('raid-code-input').value.trim();
+      const statusEl = document.getElementById('raid-join-status');
+
+      if (!/^\d{4}$/.test(rawCode)) {
+        statusEl.textContent = '⚠️ 4자리 숫자를 정확히 입력해주세요!';
+        statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+        return;
+      }
+
+      statusEl.textContent = '🔗 직통 연결로 레이드 방장을 찾는 중...';
+      statusEl.className = 'text-[11px] text-amber-300 mt-2';
+
+      try {
+        const guestLoadout = buildMyPvpLoadout();
+        guestLoadout.nickname = loggedInUser?.nickname || '동료';
+        guestLoadout.heartX = 260;
+        guestLoadout.heartY = 110;
+
+        raidSession.roomCode = rawCode;
+        raidSession.role = 'guest';
+
+        try {
+          const syncedState = await RoomStore.joinP2P('raid', rawCode, guestLoadout);
+          subscribeRaidRoom(rawCode);
+          handleRaidStateUpdate(syncedState);
+          return;
+        } catch (p2pErr) {
+          console.warn('P2P raid join fallback to cloud/local:', p2pErr?.message || p2pErr);
+        }
+
+        const data = await RoomStore.get('raid', rawCode);
+
+        if (!data) {
+          raidSession.roomCode = null;
+          raidSession.role = null;
+          statusEl.textContent = '❌ 존재하지 않는 레이드 코드입니다. 방장이 대기 중인지 확인해주세요.';
+          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+          return;
+        }
+
+        if (data.status !== 'waiting' || data.guest) {
+          raidSession.roomCode = null;
+          raidSession.role = null;
+          statusEl.textContent = '❌ 이미 토벌이 시작되었거나 만원인 방입니다.';
+          statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+          return;
+        }
+
+        await RoomStore.update('raid', rawCode, {
+          status: 'playing',
+          guest: guestLoadout,
+          phase: 'host_attack',
+          lastActionLog: `[${guestLoadout.nickname}]님이 레이드에 합류했습니다! 방장부터 공격합니다!`,
+          turnSeq: 1
+        });
+
+        subscribeRaidRoom(rawCode);
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = '❌ 입장 중 오류가 발생했습니다.';
+        statusEl.className = 'text-[11px] text-red-400 mt-2 font-bold';
+      }
+    }
+
+    function subscribeRaidRoom(code) {
+      if (raidSession.unsub) raidSession.unsub();
+      raidSession.unsub = RoomStore.subscribe('raid', code, (data) => {
+        handleRaidStateUpdate(data);
+      });
+    }
+
+    function initCoopRaidBattle(data) {
+      stopArenaLoop();
+      const meKey = raidSession.role;
+      const allyKey = meKey === 'host' ? 'guest' : 'host';
+      const meData = data[meKey];
+      const allyData = data[allyKey];
+      const myStats = calculateCombatStats();
+      const bossType = data.bossType || 'abyss';
+      const isSansEnhanced = bossType === 'sans_enhanced';
+      const isSans = bossType === 'sans';
+      const currentPhase = data.bossPhase || 1;
+
+      battle = {
+        active: true,
+        mode: 'coop_raid',
+        turn: 'player',
+        enemyDeck: null,
+        enemyHp: data.bossHp,
+        enemyMaxHp: data.bossMaxHp,
+        enemyHitDamage: isSansEnhanced ? 8 : RAID_BOSS_HIT_DAMAGE,
+        playerHp: meData.hp,
+        playerMaxHp: meData.maxHp,
+        allyHp: allyData.hp,
+        allyMaxHp: allyData.maxHp,
+        raidBossType: bossType,
+        bossPhase: currentPhase,
+        rankTier: null,
+        stats: myStats
+      };
+
+      raidSession.allyHeartPos = {
+        x: allyData.heartX || 240,
+        y: allyData.heartY || 110
+      };
+
+      document.getElementById('battle-stage-badge').textContent = isSansEnhanced
+        ? `CO-OP RAID #${data.code} · 샌즈 강화`
+        : (isSans ? `CO-OP RAID #${data.code} · ${currentPhase}페이즈` : `CO-OP RAID #${data.code}`);
+      document.getElementById('battle-stage-controls').classList.remove('hidden');
+      document.getElementById('enemy-synergy-badge').textContent = isSansEnhanced
+        ? '⚡ 메탈 10 HP · 5가지 스킬 전부 발동'
+        : (isSans ? (currentPhase >= 2 ? '✨ 2페이즈 · 최후의 심판 해금' : '🛡️ 메탈 장갑 · 2스킬') : '🔥 3스킬 동시 발동');
+      document.getElementById('enemy-synergy-badge').classList.remove('hidden');
+
+      const allyBox = document.getElementById('ally-hp-container');
+      allyBox.classList.remove('hidden');
+      allyBox.classList.add('flex');
+      document.getElementById('battle-ally-name').textContent = `${allyData.nickname} (${allyData.charName})`;
+      document.getElementById('battle-ally-weapon').textContent = allyData.weaponName;
+
+      document.getElementById('battle-enemy-title').textContent = isSansEnhanced
+        ? '심판의 해골 · 샌즈 강화'
+        : (isSans ? '심판의 해골 · 샌즈' : '심연의 군주 · 아비스 로드');
+      document.getElementById('enemy-name-display').textContent = isSansEnhanced
+        ? '협동 샌즈 강화 (메탈 HP 10)'
+        : (isSans ? `협동 샌즈 ${currentPhase}페이즈 (메탈 HP 3)` : '협동 레이드 보스 (HP 100)');
+      document.getElementById('enemy-sprite-container').innerHTML = (isSans || isSansEnhanced) ? SVG_ART.sans : SVG_ART.raid_boss;
+
+      document.getElementById('battle-player-name').textContent = `${meData.nickname} (${meData.charName})`;
+      document.getElementById('battle-player-weapon').textContent = meData.weaponName;
+
+      const synTag = document.getElementById('battle-synergy-active-tag');
+      if (myStats.synergy) {
+        synTag.textContent = `✨ 시너지: ${myStats.synergy.name}`;
+        synTag.classList.remove('hidden');
+      } else {
+        synTag.classList.add('hidden');
+      }
+
+      updateBattleBars();
+      renderPlayerSkills();
+      raidSession.lastTurnSeq = -1;
+      handleRaidStateUpdate(data);
+    }
+
+    async function advanceCoopRaidTurn(damageDealt, skillName, isHeal) {
+      if (!raidSession.roomCode) return;
+      const meKey = raidSession.role;
+      const myName = loggedInUser?.nickname || (meKey === 'host' ? '방장' : '동료');
+      const isSansMetal = battle.raidBossType === 'sans' || battle.raidBossType === 'sans_enhanced';
+      const curPhase = battle.bossPhase || 1;
+
+      const newBossHp = Math.max(0, battle.enemyHp - damageDealt);
+      const logMsg = isHeal
+        ? `[${myName}]님이 [${skillName}]으로 체력을 회복했습니다!`
+        : (isSansMetal
+          ? `[${myName}]님의 [${skillName}] 명중! 샌즈(메탈)에게 -1 피해!`
+          : `[${myName}]님의 [${skillName}] 명중! 보스에게 -${damageDealt} 피해!`);
+
+      if (newBossHp <= 0) {
+        if (battle.raidBossType === 'sans' && curPhase === 1) {
+          battle.bossPhase = 2;
+          const skills = pickBossSkills('sans', 2);
+          await RoomStore.update('raid', raidSession.roomCode, {
+            bossPhase: 2,
+            bossHp: RAID_SANS_MAX_HP,
+            bossMaxHp: RAID_SANS_MAX_HP,
+            [`${meKey}.hp`]: battle.playerHp,
+            phase: 'boss_dodge',
+            bossSkills: skills,
+            lastActionLog: `⚡ 샌즈가 쓰러지지 않고 2페이즈로 각성했습니다! 체력 3 회복 & [✨ 최후의 심판] 해금!`,
+            turnSeq: raidSession.lastTurnSeq + 1
+          });
+          return;
+        }
+
+        await RoomStore.update('raid', raidSession.roomCode, {
+          bossHp: 0,
+          [`${meKey}.hp`]: battle.playerHp,
+          phase: 'finished',
+          winner: 'players',
+          lastActionLog: logMsg,
+          turnSeq: raidSession.lastTurnSeq + 1
+        });
+        return;
+      }
+
+      if (meKey === 'host') {
+        if (battle.allyHp > 0) {
+          await RoomStore.update('raid', raidSession.roomCode, {
+            bossHp: newBossHp,
+            [`${meKey}.hp`]: battle.playerHp,
+            phase: 'guest_attack',
+            lastActionLog: logMsg,
+            turnSeq: raidSession.lastTurnSeq + 1
+          });
+        } else {
+          const skills = pickBossSkills(battle.raidBossType, curPhase);
+          await RoomStore.update('raid', raidSession.roomCode, {
+            bossHp: newBossHp,
+            [`${meKey}.hp`]: battle.playerHp,
+            phase: 'boss_dodge',
+            bossSkills: skills,
+            lastActionLog: logMsg,
+            turnSeq: raidSession.lastTurnSeq + 1
+          });
+        }
+      } else {
+        const skills = pickBossSkills(battle.raidBossType, curPhase);
+        await RoomStore.update('raid', raidSession.roomCode, {
+          bossHp: newBossHp,
+          [`${meKey}.hp`]: battle.playerHp,
+          phase: 'boss_dodge',
+          bossSkills: skills,
+          lastActionLog: logMsg,
+          turnSeq: raidSession.lastTurnSeq + 1
+        });
+      }
+    }
+
+    function handleRaidStateUpdate(data) {
+      if (data.status === 'waiting') return;
+
+      if (data.status === 'playing' && (!battle.active || battle.mode !== 'coop_raid')) {
+        closeRaidModeModal();
+        SoundFX.synergy();
+        showToast(`👹 레이드 방 [${data.code}] 매치 성사! 2인 협동 토벌 시작!`, 'border-purple-400 text-purple-200');
+        navigateTo('battle');
+        initCoopRaidBattle(data);
+        return;
+      }
+
+      if (battle.mode !== 'coop_raid') return;
+
+      const meKey = raidSession.role;
+      const allyKey = meKey === 'host' ? 'guest' : 'host';
+      const meData = data[meKey];
+      const allyData = data[allyKey];
+      if (!meData || !allyData) return;
+
+      const bossType = data.bossType || battle.raidBossType;
+      const isSansEnhanced = bossType === 'sans_enhanced';
+      const isSans = bossType === 'sans';
+      const nextPhase = data.bossPhase || 1;
+      if (isSans && nextPhase !== battle.bossPhase) {
+        battle.bossPhase = nextPhase;
+        SoundFX.synergy();
+        spawnDamagePopup('⚡ 2페이즈 각성! HP 3 회복!', 'text-sky-300');
+        document.getElementById('battle-stage-badge').textContent = `CO-OP RAID #${data.code} · 2페이즈`;
+        document.getElementById('enemy-synergy-badge').textContent = '✨ 2페이즈 · 최후의 심판 해금';
+        document.getElementById('enemy-name-display').textContent = '협동 샌즈 2페이즈 (메탈 HP 3)';
+      }
+
+      if (typeof allyData.heartX === 'number' && typeof allyData.heartY === 'number') {
+        raidSession.allyHeartPos.x = allyData.heartX;
+        raidSession.allyHeartPos.y = allyData.heartY;
+      }
+
+      if (battle.enemyHp > data.bossHp) {
+        spawnDamagePopup((isSans || isSansEnhanced) ? '-1 (메탈)' : `-${battle.enemyHp - data.bossHp}`, 'text-amber-300');
+        const sprite = document.getElementById('enemy-sprite-container');
+        sprite.classList.remove('animate-shake');
+        void sprite.offsetWidth;
+        sprite.classList.add('animate-shake');
+      }
+
+      battle.enemyHp = data.bossHp;
+      battle.enemyMaxHp = data.bossMaxHp;
+      battle.allyHp = allyData.hp;
+      battle.allyMaxHp = allyData.maxHp;
+      if (data.phase !== 'boss_dodge') {
+        battle.playerHp = meData.hp;
+      }
+      updateBattleBars();
+
+      if (data.phase === 'finished' || data.bossHp <= 0 || (meData.hp <= 0 && allyData.hp <= 0)) {
+        const playersWon = data.winner === 'players' || data.bossHp <= 0;
+        if (playersWon) handleRaidVictory(true, bossType);
+        else handleRaidDefeat(true);
+        return;
+      }
+
+      if (data.turnSeq === raidSession.lastTurnSeq) return;
+      raidSession.lastTurnSeq = data.turnSeq;
+
+      if (data.lastActionLog) {
+        document.getElementById('battle-dialogue-text').textContent = data.lastActionLog;
+      }
+
+      if (data.phase === 'host_attack') {
+        stopArenaLoop();
+        if (meKey === 'host') {
+          if (meData.hp <= 0) {
+            advanceCoopRaidTurn(0, '전투 불능', true);
+            return;
+          }
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 무기 스킬로 보스를 공격하세요!';
+        } else {
+          showBattlePanel('pvp_wait');
+          document.getElementById('battle-pvp-wait-panel').innerHTML = `
+            <div class="text-sm font-black text-red-300 animate-pulse">⚔️ [${allyData.nickname}]님이 보스를 공격할 스킬을 고르고 있습니다...</div>
+            <div class="text-xs text-zinc-400 mt-1">방장의 공격이 끝나면 당신의 공격 차례가 옵니다!</div>
+          `;
+        }
+      } else if (data.phase === 'guest_attack') {
+        stopArenaLoop();
+        if (meKey === 'guest') {
+          if (meData.hp <= 0) {
+            advanceCoopRaidTurn(0, '전투 불능', true);
+            return;
+          }
+          showBattlePanel('player_skills');
+          document.getElementById('battle-dialogue-text').textContent = '당신의 공격 턴! 이어서 보스를 공격하세요!';
+        } else {
+          showBattlePanel('pvp_wait');
+          document.getElementById('battle-pvp-wait-panel').innerHTML = `
+            <div class="text-sm font-black text-sky-300 animate-pulse">⚔️ [${allyData.nickname}]님이 연계 공격 스킬을 고르고 있습니다...</div>
+            <div class="text-xs text-zinc-400 mt-1">친구의 공격이 끝나면 보스의 공격을 함께 회피합니다!</div>
+          `;
+        }
+      } else if (data.phase === 'boss_dodge' && Array.isArray(data.bossSkills) && data.bossSkills.length >= 2) {
+        const patterns = data.bossSkills.map(s => s.pattern);
+        const curBossPhase = data.bossPhase || battle.bossPhase || 1;
+        showBattlePanel('arena');
+        document.getElementById('mobile-touch-pad').classList.remove('hidden');
+        if (isSansEnhanced) {
+          document.getElementById('dodge-pattern-label').textContent =
+            `⚡ 샌즈 강화: 5가지 모든 심판 스킬 동시 폭격! (빨간 하트=나 / 파란 하트=친구)`;
+          document.getElementById('battle-dialogue-text').textContent =
+            `심판의 해골 · 샌즈 강화가 5가지 모든 심판 스킬을 동시 발사! 친구와 함께 피하세요!`;
+        } else if (isSans) {
+          document.getElementById('dodge-pattern-label').textContent =
+            `💀 샌즈 ${curBossPhase}페이즈: [${data.bossSkills[0].name}] + [${data.bossSkills[1].name}]! (빨간 하트=나 / 파란 하트=친구)`;
+          document.getElementById('battle-dialogue-text').textContent =
+            `심판의 해골 · 샌즈가 [${data.bossSkills[0].name}] + [${data.bossSkills[1].name}]을(를) 동시 발사! 친구와 함께 피하세요!`;
+        } else {
+          document.getElementById('dodge-pattern-label').textContent =
+            `👹 보스 3중 스킬: [${data.bossSkills[0].name}] + [${data.bossSkills[1].name}] + [${data.bossSkills[2].name}]!`;
+          document.getElementById('battle-dialogue-text').textContent =
+            `심연의 군주가 3중 스킬을 동시 발사! 친구와 함께 피하세요!`;
+        }
+
+        startArenaPhase({
+          controller: meData.hp > 0 ? 'human_defend' : 'pvp_spectate',
+          coopAllyHeart: true,
+          patterns,
+          hitDamage: isSansEnhanced ? 8 : RAID_BOSS_HIT_DAMAGE,
+          defenderSpeed: battle.stats.speed,
+          defenderReduce: battle.stats.dmgReduce,
+          duration: isSansEnhanced ? 7.0 : 6.5,
+          onHumanDefendComplete: async () => {
+            if (!battle.active || battle.mode !== 'coop_raid') return;
+            if (!raidSession.roomCode) return;
+
+            if (meKey === 'host') {
+              await RoomStore.update('raid', raidSession.roomCode, {
+                'host.hp': Math.max(0, battle.playerHp)
+              });
+              const latest = await RoomStore.get('raid', raidSession.roomCode);
+              if (!latest) return;
+              const guestHp = latest.guest?.hp ?? 0;
+
+              if (battle.playerHp <= 0 && guestHp <= 0) {
+                await RoomStore.update('raid', raidSession.roomCode, {
+                  'host.hp': 0,
+                  phase: 'finished',
+                  winner: 'boss',
+                  turnSeq: data.turnSeq + 1
+                });
+              } else {
+                const nextPhase = battle.playerHp > 0 ? 'host_attack' : 'guest_attack';
+                await RoomStore.update('raid', raidSession.roomCode, {
+                  'host.hp': Math.max(0, battle.playerHp),
+                  phase: nextPhase,
+                  bossSkills: null,
+                  lastActionLog: '보스의 공격을 버텨냈습니다! 다시 반격하세요!',
+                  turnSeq: data.turnSeq + 1
+                });
+              }
+            } else {
+              await RoomStore.update('raid', raidSession.roomCode, {
+                'guest.hp': Math.max(0, battle.playerHp)
+              });
+            }
+          }
+        });
+      }
+    }
+
+    function handleRaidVictory(isCoop, bossType = 'abyss') {
       battle.active = false;
       stopArenaLoop();
+      cleanupRaidSubscription();
       SoundFX.victory();
 
-      const prevRp = state.rankPoints || 0;
-      const prevTier = getRankTierInfo(prevRp);
-      const gainRp = 35;
-      const newRp = prevRp + gainRp;
-      const newTier = getRankTierInfo(newRp);
+      const reward = bossType === 'sans_enhanced' ? 5 : 3;
+      state.wins += reward;
 
-      state.rankPoints = newRp;
-      state.wins += prevTier.winReward;
+      let boneRewardText = '';
+      if (bossType === 'sans' || bossType === 'sans_enhanced') {
+        if (!state.ownedWeapons['strange_bone']) {
+          state.ownedWeapons['strange_bone'] = { level: 1 };
+          boneRewardText = '\n🦴 특별 보상: 전설 무기 [이상한 뼈다귀] (신규 획득!)';
+        } else {
+          state.ownedWeapons['strange_bone'].level += 1;
+          boneRewardText = `\n🦴 특별 보상: 전설 무기 [이상한 뼈다귀] Lv.${state.ownedWeapons['strange_bone'].level} 강화!`;
+        }
+      }
+
       updateGlobalUI();
       saveAccountProgress();
 
-      const promotedMsg = prevTier.id !== newTier.id
-        ? `\n🎉 티어 승급! [${prevTier.name}] → [${newTier.icon} ${newTier.name}]!`
-        : '';
-
+      const bossTitle = bossType === 'sans_enhanced'
+        ? '심판의 해골 · 샌즈 강화 (메탈 HP 10)'
+        : (bossType === 'sans' ? '심판의 해골 · 샌즈 (메탈 HP 3)' : '심연의 군주 (100 HP)');
       showCustomModal({
-        icon: newTier.icon,
-        title: `랭크전 승리! (+${gainRp} RP)`,
-        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${newRp} RP)${promotedMsg}\n승리 보상: +${prevTier.winReward} W 획득! (보유: ${state.wins} W)`,
+        icon: '👑',
+        title: isCoop ? '2인 협동 레이드 토벌 성공!' : '솔로 레이드 토벌 성공!',
+        desc: `${bossTitle}를 격파했습니다!\n토벌 보상: +${reward} W 획득! (현재 보유: ${state.wins} W)${boneRewardText}`,
         buttons: [
           {
-            label: '다음 랭크전 도전',
-            className: 'px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs cursor-pointer',
-            onClick: () => initRankedBattle()
+            label: (bossType === 'sans' || bossType === 'sans_enhanced') ? '🛡️ 편성에서 장착하기' : `뽑기 (보유 ${state.wins} W)`,
+            className: 'px-4 py-2.5 rounded-xl bg-amber-400 text-black font-black text-xs cursor-pointer',
+            onClick: () => navigateTo((bossType === 'sans' || bossType === 'sans_enhanced') ? 'formation' : 'gacha')
           },
           {
             label: '메인 화면으로',
@@ -5495,35 +5877,1175 @@
       });
     }
 
-    function handleRankedDefeat() {
+    function handleRaidDefeat(isCoop) {
       battle.active = false;
       stopArenaLoop();
+      cleanupRaidSubscription();
       SoundFX.hurt();
 
-      const prevRp = state.rankPoints || 0;
-      const lossRp = Math.min(prevRp, 20);
-      const newRp = Math.max(0, prevRp - lossRp);
-      const newTier = getRankTierInfo(newRp);
-
-      state.rankPoints = newRp;
-      updateGlobalUI();
-      saveAccountProgress();
-
+      const bossTitle = battle.raidBossType === 'sans_enhanced'
+        ? '심판의 해골 · 샌즈 강화'
+        : (battle.raidBossType === 'sans' ? '심판의 해골 · 샌즈' : '심연의 군주');
       showCustomModal({
         icon: '💀',
-        title: `랭크전 패배... (-${lossRp} RP)`,
-        desc: `현재 랭크: ${newTier.icon} ${newTier.name} (${newRp} RP)\n더 강력한 무기와 시너지를 편성해 다시 도전하세요!`,
+        title: isCoop ? '협동 레이드 전멸...' : '솔로 레이드 패배...',
+        desc: `${bossTitle}의 공격을 버텨내지 못했습니다.\n더 강한 캐릭터와 시너지를 편성해 다시 도전하세요!`,
         buttons: [
           {
-            label: '랭크전 재도전',
-            className: 'px-4 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs cursor-pointer',
-            onClick: () => initRankedBattle()
-          },
-          {
             label: '메인 화면으로',
-            className: 'px-4 py-2.5 rounded-xl bg-zinc-800 text-white font-bold text-xs cursor-pointer',
+            className: 'px-4 py-2.5 rounded-xl bg-white text-black font-black text-xs cursor-pointer',
             onClick: () => navigateTo('lobby')
           }
         ]
       });
     }
+
+    /* ============================================================================
+       언더테일 스타일 Canvas 탄막 회피 & 쌍방향 공격 엔진
+    ============================================================================ */
+    let arenaAnimId = null;
+    let arenaState = null;
+    const keysPressed = { up: false, down: false, left: false, right: false };
+    let pointerTarget = null;
+
+    function setTouchDir(dir, isDown) {
+      keysPressed[dir] = isDown;
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keysPressed.up = true;
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keysPressed.down = true;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysPressed.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysPressed.right = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keysPressed.up = false;
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keysPressed.down = false;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysPressed.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysPressed.right = false;
+    });
+
+    function resizeArenaCanvas() {
+      const canvas = document.getElementById('dodgeCanvas');
+      const wrapper = document.getElementById('dodge-arena-wrapper');
+      if (!canvas || !wrapper) return;
+      const rect = wrapper.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      if (arenaState) {
+        arenaState.width = rect.width;
+        arenaState.height = rect.height;
+        arenaState.heart.x = Math.max(14, Math.min(rect.width - 14, arenaState.heart.x));
+        arenaState.heart.y = Math.max(14, Math.min(rect.height - 14, arenaState.heart.y));
+      }
+    }
+
+    window.addEventListener('resize', resizeArenaCanvas);
+
+    (function setupArenaPointer() {
+      const wrapper = document.getElementById('dodge-arena-wrapper');
+      if (!wrapper) return;
+      wrapper.addEventListener('pointerdown', (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        pointerTarget = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      });
+      wrapper.addEventListener('pointermove', (e) => {
+        if (!pointerTarget) return;
+        const rect = wrapper.getBoundingClientRect();
+        pointerTarget = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      });
+      const clearPointer = () => { pointerTarget = null; };
+      wrapper.addEventListener('pointerup', clearPointer);
+      wrapper.addEventListener('pointercancel', clearPointer);
+    })();
+
+    function stopArenaLoop() {
+      if (arenaAnimId) {
+        cancelAnimationFrame(arenaAnimId);
+        arenaAnimId = null;
+      }
+      pointerTarget = null;
+    }
+
+    function startArenaPhase(config) {
+      stopArenaLoop();
+      const wrapper = document.getElementById('dodge-arena-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      const w = rect.width || 360;
+      const h = rect.height || 225;
+
+      const patternList = Array.isArray(config.patterns) && config.patterns.length > 0
+        ? config.patterns
+        : [config.pattern, config.pattern2, config.pattern3].filter(Boolean);
+
+      arenaState = {
+        ...config,
+        patternList,
+        width: w,
+        height: h,
+        duration: config.duration || 6.0,
+        elapsed: 0,
+        timers: patternList.map((_, idx) => ({
+          spawnTimer: idx * 0.22,
+          waveTimer: idx * 0.28,
+          patternPhase: idx * 1.1,
+          toggleSide: idx % 2 === 1,
+          toggleAxe: idx % 2 === 1
+        })),
+        invuln: 0,
+        aiWanderAngle: Math.random() * Math.PI * 2,
+        aiDecisionTimer: 0,
+        heart: {
+          x: w / 2,
+          y: h / 2,
+          radius: 8,
+          speed: config.defenderSpeed || 3.4
+        },
+        projectiles: []
+      };
+
+      resizeArenaCanvas();
+      let lastTime = performance.now();
+
+      function loop(now) {
+        if (!battle.active || !arenaState) return;
+        const dt = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
+
+        const finished = updateArena(dt);
+        if (!finished) {
+          drawArena();
+          arenaAnimId = requestAnimationFrame(loop);
+        }
+      }
+
+      arenaAnimId = requestAnimationFrame(loop);
+    }
+
+    function spawnSinglePattern(dt, pattern, tState) {
+      const as = arenaState;
+      const { width: w, height: h, heart } = as;
+      tState.spawnTimer += dt;
+      tState.waveTimer += dt;
+      tState.patternPhase += dt;
+
+      const addDagger = (x, y, angle, speed, color = '#ef4444', telegraph = 0.42, radius = 5) => {
+        as.projectiles.push({
+          kind: 'dagger',
+          x,
+          y,
+          angle,
+          speed,
+          telegraph,
+          radius,
+          color
+        });
+      };
+
+      const addWave = (fromLeft, y, speed, arcRadius = 26, color = '#22d3ee', sineAmp = 0, sineFreq = 4) => {
+        as.projectiles.push({
+          kind: 'wave',
+          x: fromLeft ? -16 : w + 16,
+          y,
+          baseY: y,
+          vx: speed * (fromLeft ? 1 : -1),
+          dir: fromLeft ? 1 : -1,
+          arcRadius,
+          thickness: 8,
+          sineAmp,
+          sineFreq,
+          age: 0,
+          color
+        });
+      };
+
+      const addBarGap = (fromLeft, speed, gapY, gapH, color = '#e5e7eb', waveAmp = 0) => {
+        as.projectiles.push({
+          kind: 'bar_gap',
+          x: fromLeft ? -14 : w + 14,
+          vx: speed * (fromLeft ? 1 : -1),
+          width: 14,
+          gapY,
+          baseGapY: gapY,
+          gapH,
+          waveAmp,
+          age: 0,
+          color
+        });
+      };
+
+      const addBeam = (x1, y1, x2, y2, telegraph = 0.68, activeTime = 0.28, halfWidth = 11, color = '#ef4444', isBlaster = false) => {
+        as.projectiles.push({
+          kind: 'beam',
+          x1,
+          y1,
+          x2,
+          y2,
+          telegraph,
+          maxTelegraph: telegraph,
+          activeTime,
+          halfWidth,
+          color,
+          isBlaster
+        });
+      };
+
+      const addSpike = (x, fromTop, telegraph = 0.58, activeTime = 0.32, spikeLen = h * 0.62, color = '#38bdf8') => {
+        as.projectiles.push({
+          kind: 'spike',
+          x,
+          fromTop,
+          width: 16,
+          telegraph,
+          activeTime,
+          spikeLen,
+          color
+        });
+      };
+
+      if (pattern === 'rd_1') {
+        if (tState.spawnTimer >= 0.65) {
+          tState.spawnTimer = 0;
+          const side = Math.floor(Math.random() * 4);
+          let x = 12, y = 12;
+          if (side === 0) { x = Math.random() * w; y = 10; }
+          else if (side === 1) { x = w - 10; y = Math.random() * h; }
+          else if (side === 2) { x = Math.random() * w; y = h - 10; }
+          else { x = 10; y = Math.random() * h; }
+          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 150, '#a8a29e', 0.55);
+        }
+      } else if (pattern === 'rd_2') {
+        if (tState.spawnTimer >= 0.58) {
+          tState.spawnTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          const x = tState.toggleSide ? 10 : w - 10;
+          const y = 24 + Math.random() * (h - 48);
+          addDagger(x, y, tState.toggleSide ? 0 : Math.PI, 165, '#d6d3d1', 0.45);
+        }
+      } else if (pattern === 'rd_3') {
+        if (tState.spawnTimer >= 0.48) {
+          tState.spawnTimer = 0;
+          const rx = 24 + Math.random() * (w - 48);
+          addDagger(rx, 10, Math.PI / 2, 160, '#a8a29e', 0.45);
+        }
+      } else if (pattern === 'is_1') {
+        if (tState.waveTimer >= 0.68) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, 28 + Math.random() * (h - 56), 175, 24, '#e5e7eb');
+        }
+      } else if (pattern === 'is_2') {
+        if (tState.waveTimer >= 1.15) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(fromLeft, 150, gapY, 64, '#e5e7eb', 0);
+        }
+      } else if (pattern === 'is_3') {
+        if (tState.waveTimer >= 0.78) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, heart.y, 175, 22, '#93c5fd');
+          addDagger(24 + Math.random() * (w - 48), 10, Math.PI / 2, 175, '#e5e7eb', 0.45);
+        }
+      } else if (pattern === 'is_ult') {
+        if (tState.waveTimer >= 0.55) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          addWave(tState.toggleSide, 26 + Math.random() * (h - 52), 210, 26, '#facc15');
+        }
+        if (tState.spawnTimer >= 1.1) {
+          tState.spawnTimer = 0;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(!tState.toggleSide, 175, gapY, 58, '#fde047', 12);
+        }
+      } else if (pattern === 'wc_1') {
+        if (tState.waveTimer >= 0.78) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, h - 34, 155, 22, '#d97706');
+        }
+      } else if (pattern === 'wc_2') {
+        if (tState.spawnTimer >= 0.55) {
+          tState.spawnTimer = 0;
+          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 145, '#b45309', 0.5, 5.5);
+        }
+      } else if (pattern === 'wc_3') {
+        if (tState.spawnTimer >= 0.62) {
+          tState.spawnTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addDagger(fromLeft ? 10 : w - 10, 22 + Math.random() * (h - 44), fromLeft ? 0 : Math.PI, 155, '#d97706', 0.48, 6);
+        }
+      } else if (pattern === 'hb_1') {
+        if (tState.spawnTimer >= 0.62) {
+          tState.spawnTimer = 0;
+          const side = Math.floor(Math.random() * 4);
+          let x = 10, y = 10;
+          if (side === 0) { x = Math.random() * w; y = 10; }
+          else if (side === 1) { x = w - 10; y = Math.random() * h; }
+          else if (side === 2) { x = Math.random() * w; y = h - 10; }
+          else { x = 10; y = Math.random() * h; }
+          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 185, '#fbbf24', 0.5, 4);
+        }
+      } else if (pattern === 'hb_2') {
+        if (tState.spawnTimer >= 0.95) {
+          tState.spawnTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          const sx = fromLeft ? 12 : w - 12;
+          const sy = h * 0.5;
+          const baseAng = fromLeft ? 0 : Math.PI;
+          [-0.28, 0, 0.28].forEach(offset => {
+            addDagger(sx, sy, baseAng + offset, 175, '#f59e0b', 0.45, 4);
+          });
+        }
+      } else if (pattern === 'hb_3') {
+        if (tState.spawnTimer >= 0.42) {
+          tState.spawnTimer = 0;
+          addDagger(18 + Math.random() * (w - 36), 10, Math.PI / 2, 180, '#fde047', 0.42, 4);
+        }
+      } else if (pattern === 'ba_1') {
+        if (tState.spawnTimer >= 0.58) {
+          tState.spawnTimer = 0;
+          tState.toggleAxe = !tState.toggleAxe;
+          const x = tState.toggleAxe ? 10 : w - 10;
+          addDagger(x, 24 + Math.random() * (h - 48), tState.toggleAxe ? 0 : Math.PI, 175, '#f59e0b', 0.45, 6);
+        }
+      } else if (pattern === 'ba_2') {
+        if (tState.spawnTimer >= 0.85) {
+          tState.spawnTimer = 0;
+          const bx = 24 + Math.random() * (w - 48);
+          addBeam(bx, 0, bx, h, 0.72, 0.24, 9, '#f59e0b', false);
+        }
+      } else if (pattern === 'ba_3') {
+        if (tState.spawnTimer >= 0.72) {
+          tState.spawnTimer = 0;
+          const topLeft = Math.random() < 0.5;
+          const sx = topLeft ? 12 : w - 12;
+          const sy = 12;
+          addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 175, '#d97706', 0.48, 5.5);
+        }
+      } else if (pattern === 'ts_1') {
+        if (tState.spawnTimer >= 0.64) {
+          tState.spawnTimer = 0;
+          const rx = 20 + Math.random() * (w - 40);
+          addDagger(rx, 12, Math.atan2(heart.y - 12, heart.x - rx), 145, '#38bdf8', 0.5, 5.5);
+        }
+      } else if (pattern === 'ts_2') {
+        if (tState.spawnTimer >= 0.95) {
+          tState.spawnTimer = 0;
+          const rot = tState.patternPhase * 1.1;
+          for (let i = 0; i < 4; i++) {
+            addDagger(w / 2, h / 2, rot + (i * Math.PI) / 2, 150, '#7dd3fc', 0.35, 5);
+          }
+        }
+      } else if (pattern === 'ts_3') {
+        if (tState.spawnTimer >= 0.56) {
+          tState.spawnTimer = 0;
+          const fromTop = Math.random() < 0.5;
+          const rx = 22 + Math.random() * (w - 44);
+          addDagger(rx, fromTop ? 10 : h - 10, fromTop ? Math.PI / 2 : -Math.PI / 2, 155, '#38bdf8', 0.45, 5);
+        }
+      } else if (pattern === 'sh_1') {
+        if (tState.spawnTimer >= 0.72) {
+          tState.spawnTimer = 0;
+          const sx = 24 + Math.random() * (w - 48);
+          addSpike(sx, false, 0.68, 0.3, h * 0.48, '#a8a29e');
+        }
+      } else if (pattern === 'sh_2') {
+        if (tState.spawnTimer >= 0.65) {
+          tState.spawnTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addDagger(fromLeft ? 10 : w - 10, h - 18, fromLeft ? 0 : Math.PI, 165, '#78716c', 0.45, 7);
+        }
+      } else if (pattern === 'sh_3') {
+        if (tState.spawnTimer >= 0.52) {
+          tState.spawnTimer = 0;
+          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 160, '#a8a29e', 0.48, 6.5);
+        }
+      } else if (pattern === 'ss_1') {
+        if (tState.spawnTimer >= 1.25) {
+          tState.spawnTimer = 0;
+          const count = 5;
+          const rad = Math.min(w, h) * 0.42;
+          const baseRot = Math.random() * Math.PI * 2;
+          for (let i = 0; i < count; i++) {
+            const a = baseRot + (i * Math.PI * 2) / count;
+            const sx = Math.max(14, Math.min(w - 14, heart.x + Math.cos(a) * rad));
+            const sy = Math.max(14, Math.min(h - 14, heart.y + Math.sin(a) * rad));
+            addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 215, '#38bdf8', 0.62 + i * 0.08);
+          }
+        }
+      } else if (pattern === 'ss_2') {
+        if (tState.spawnTimer >= 0.62) {
+          tState.spawnTimer = 0;
+          const sx = 24 + Math.random() * (w - 48);
+          const fromTop = Math.random() < 0.35;
+          addSpike(sx, fromTop, 0.62, 0.32, h * 0.65, '#38bdf8');
+        }
+      } else if (pattern === 'ss_3') {
+        if (tState.waveTimer >= 0.92) {
+          tState.waveTimer = 0;
+          const gapY = 44 + Math.random() * (h - 88);
+          addBarGap(true, 195, gapY, 54, '#38bdf8', 0);
+        }
+      } else if (pattern === 'kg_1') {
+        if (tState.waveTimer >= 0.56) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, h * 0.5, 205, 32, '#c084fc', 38, 4.5);
+        }
+      } else if (pattern === 'kg_2') {
+        if (tState.spawnTimer >= 0.72) {
+          tState.spawnTimer = 0;
+          if (Math.random() < 0.5) {
+            const y1 = Math.random() * h;
+            const y2 = Math.random() * h;
+            addBeam(0, y1, w, y2, 0.66, 0.25, 10, '#c084fc', false);
+          } else {
+            const x1 = Math.random() * w;
+            const x2 = Math.random() * w;
+            addBeam(x1, 0, x2, h, 0.66, 0.25, 10, '#e879f9', false);
+          }
+        }
+      } else if (pattern === 'kg_3') {
+        if (tState.spawnTimer >= 1.35) {
+          tState.spawnTimer = 0;
+          const cx = w / 2;
+          const cy = h / 2;
+          const count = 6;
+          const startAng = tState.patternPhase * 1.5;
+          for (let i = 0; i < count; i++) {
+            const a = startAng + (i * Math.PI * 2) / count;
+            const sx = cx + Math.cos(a) * (w * 0.44);
+            const sy = cy + Math.sin(a) * (h * 0.44);
+            addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 210, '#e879f9', 0.58);
+          }
+        }
+      } else if (pattern === 'kg_ult') {
+        if (tState.spawnTimer >= 0.85) {
+          tState.spawnTimer = 0;
+          addBeam(0, heart.y, w, heart.y, 0.64, 0.25, 10, '#c084fc', false);
+          addBeam(heart.x, 0, heart.x, h, 0.64, 0.25, 10, '#e879f9', false);
+        }
+        if (tState.waveTimer >= 0.62) {
+          tState.waveTimer = 0;
+          addWave(Math.random() < 0.5, h * 0.5, 220, 34, '#facc15', 36, 4.5);
+        }
+      } else if (pattern === 'bm_1') {
+        if (tState.waveTimer >= 0.58) {
+          tState.waveTimer = 0;
+          const fromLeft = Math.random() < 0.5;
+          addWave(fromLeft, 26 + Math.random() * (h - 52), 205, 28, '#ef4444', 18, 4);
+        }
+      } else if (pattern === 'bm_2') {
+        if (tState.spawnTimer >= 0.46) {
+          tState.spawnTimer = 0;
+          const side = Math.floor(Math.random() * 4);
+          let x = 12, y = 12;
+          if (side === 0) { x = Math.random() * w; y = 10; }
+          else if (side === 1) { x = w - 10; y = Math.random() * h; }
+          else if (side === 2) { x = Math.random() * w; y = h - 10; }
+          else { x = 10; y = Math.random() * h; }
+          addDagger(x, y, Math.atan2(heart.y - y, heart.x - x), 215, '#f87171', 0.42, 5);
+        }
+      } else if (pattern === 'bm_3') {
+        if (tState.spawnTimer >= 0.78) {
+          tState.spawnTimer = 0;
+          const gy = 26 + Math.random() * (h - 52);
+          addBeam(0, gy, w, gy, 0.64, 0.25, 10, '#ef4444', false);
+        }
+      } else if (pattern === 'bm_ult') {
+        if (tState.spawnTimer >= 0.92) {
+          tState.spawnTimer = 0;
+          tState.toggleAxe = !tState.toggleAxe;
+          if (tState.toggleAxe) {
+            addBeam(10, 10, w - 10, h - 10, 0.66, 0.25, 10, '#ef4444', false);
+            addBeam(w - 10, 10, 10, h - 10, 0.66, 0.25, 10, '#ef4444', false);
+          } else {
+            addBeam(0, heart.y, w, heart.y, 0.66, 0.25, 10, '#fb7185', false);
+          }
+        }
+        if (tState.waveTimer >= 0.5) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          addWave(tState.toggleSide, 28 + Math.random() * (h - 56), 225, 28, '#f43f5e', 22, 4.5);
+        }
+      } else if (pattern === 'sb_1') {
+        if (tState.waveTimer >= 0.92) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(tState.toggleSide, 185, gapY, 58, '#f8fafc', 16);
+        }
+        if (tState.spawnTimer >= 0.95) {
+          tState.spawnTimer = 0;
+          const sx = 28 + Math.random() * (w - 56);
+          addSpike(sx, Math.random() < 0.5, 0.72, 0.26, h * 0.34, '#e2e8f0');
+        }
+      } else if (pattern === 'sb_2') {
+        if (tState.spawnTimer >= 0.85) {
+          tState.spawnTimer = 0;
+          const side = Math.floor(Math.random() * 4);
+          let bx = 14, by = 14;
+          if (side === 0) { bx = 22 + Math.random() * (w - 44); by = 10; }
+          else if (side === 1) { bx = w - 10; by = 22 + Math.random() * (h - 44); }
+          else if (side === 2) { bx = 22 + Math.random() * (w - 44); by = h - 10; }
+          else { bx = 10; by = 22 + Math.random() * (h - 44); }
+          const ang = Math.atan2(heart.y - by, heart.x - bx);
+          addBeam(bx, by, bx + Math.cos(ang) * 540, by + Math.sin(ang) * 540, 0.68, 0.24, 10, '#38bdf8', true);
+        }
+      } else if (pattern === 'sb_3') {
+        if (tState.waveTimer >= 1.05) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          const gapY = 48 + Math.random() * (h - 96);
+          addBarGap(tState.toggleSide, 175, gapY, 56, '#f8fafc', 12);
+        }
+        if (tState.spawnTimer >= 0.48) {
+          tState.spawnTimer = 0;
+          addDagger(20 + Math.random() * (w - 40), 10, Math.PI / 2, 185, '#38bdf8', 0.45, 5);
+        }
+      } else if (pattern === 'sb_ult') {
+        if (tState.spawnTimer >= 1.05) {
+          tState.spawnTimer = 0;
+          tState.toggleAxe = !tState.toggleAxe;
+          if (tState.toggleAxe) {
+            addBeam(10, 10, w - 10, h - 10, 0.72, 0.24, 10, '#38bdf8', true);
+            addBeam(w - 10, 10, 10, h - 10, 0.72, 0.24, 10, '#38bdf8', true);
+          } else {
+            addBeam(w / 2, 8, w / 2, h - 8, 0.72, 0.24, 10, '#38bdf8', true);
+            addBeam(8, h / 2, w - 8, h / 2, 0.72, 0.24, 10, '#38bdf8', true);
+          }
+        }
+        if (tState.waveTimer >= 0.42) {
+          tState.waveTimer = 0;
+          tState.toggleSide = !tState.toggleSide;
+          const sx = tState.toggleSide ? 10 : w - 10;
+          const sy = 24 + Math.random() * (h - 48);
+          addDagger(sx, sy, Math.atan2(heart.y - sy, heart.x - sx), 205, '#f8fafc', 0.42, 4.8);
+        }
+      } else if (pattern === 'ld_1') {
+        if (tState.spawnTimer >= 0.16) {
+          tState.spawnTimer = 0;
+          const spiralAng = tState.patternPhase * 5.2;
+          addDagger(w / 2, h / 2, spiralAng, 195, '#22d3ee', 0.15, 4.5);
+          addDagger(w / 2, h / 2, spiralAng + Math.PI, 195, '#facc15', 0.15, 4.5);
+        }
+      } else if (pattern === 'ld_2') {
+        if (tState.spawnTimer >= 0.88) {
+          tState.spawnTimer = 0;
+          const gx = 32 + Math.random() * (w - 64);
+          const gy = 28 + Math.random() * (h - 56);
+          addBeam(gx, 0, gx, h, 0.66, 0.25, 9, '#22d3ee', false);
+          addBeam(0, gy, w, gy, 0.66, 0.25, 9, '#facc15', false);
+        }
+      } else if (pattern === 'ld_3') {
+        if (tState.spawnTimer >= 0.42) {
+          tState.spawnTimer = 0;
+          const corners = [
+            [12, 12],
+            [w - 12, 12],
+            [12, h - 12],
+            [w - 12, h - 12]
+          ];
+          const [cx, cy] = corners[Math.floor(Math.random() * 4)];
+          const baseAng = Math.atan2(heart.y - cy, heart.x - cx);
+          addDagger(cx, cy, baseAng - 0.14, 265, '#22d3ee', 0.34);
+          addDagger(cx, cy, baseAng + 0.14, 265, '#fef08a', 0.34);
+        }
+      } else if (pattern === 'ld_ult') {
+        if (tState.spawnTimer >= 0.88) {
+          tState.spawnTimer = 0;
+          addBeam(heart.x, 0, heart.x, h, 0.64, 0.24, 9, '#22d3ee', false);
+          addBeam(0, heart.y, w, heart.y, 0.64, 0.24, 9, '#facc15', false);
+        }
+        if (tState.waveTimer >= 0.2) {
+          tState.waveTimer = 0;
+          const spiralAng = tState.patternPhase * 5.6;
+          addDagger(w / 2, h / 2, spiralAng, 205, '#22d3ee', 0.15, 4.5);
+          addDagger(w / 2, h / 2, spiralAng + Math.PI, 205, '#fef08a', 0.15, 4.5);
+        }
+      }
+    }
+
+    function spawnPatternProjectiles(dt) {
+      const as = arenaState;
+      if (!as || !Array.isArray(as.patternList)) return;
+      as.patternList.forEach((pat, idx) => {
+        if (pat && as.timers[idx]) {
+          spawnSinglePattern(dt, pat, as.timers[idx]);
+        }
+      });
+    }
+
+    function distToSegment(px, py, x1, y1, x2, y2) {
+      const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+      if (l2 === 0) return { dist: Math.hypot(px - x1, py - y1), projX: x1, projY: y1 };
+      let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const projX = x1 + t * (x2 - x1);
+      const projY = y1 + t * (y2 - y1);
+      return { dist: Math.hypot(px - projX, py - projY), projX, projY };
+    }
+
+    function moveAiHeart(dt) {
+      const as = arenaState;
+      const { width: w, height: h, heart, projectiles } = as;
+      const skill = as.aiSkill || 0.28;
+      const spd = heart.speed * 42;
+
+      as.aiDecisionTimer -= dt;
+      if (as.aiDecisionTimer <= 0) {
+        as.aiDecisionTimer = 0.45 + Math.random() * 0.45;
+        as.aiWanderAngle += (Math.random() - 0.5) * 2.6;
+        as.aiHesitate = Math.random() < (1 - skill * 1.3);
+      }
+
+      if (as.aiHesitate) {
+        heart.x += Math.cos(as.aiWanderAngle) * spd * 0.25 * dt;
+        heart.y += Math.sin(as.aiWanderAngle) * spd * 0.25 * dt;
+        return;
+      }
+
+      let vx = (w / 2 - heart.x) * 0.012 + Math.cos(as.aiWanderAngle) * 0.55;
+      let vy = (h / 2 - heart.y) * 0.012 + Math.sin(as.aiWanderAngle) * 0.55;
+
+      projectiles.forEach(p => {
+        if (p.kind === 'dagger' || p.kind === 'wave') {
+          const dx = heart.x - p.x;
+          const dy = heart.y - p.y;
+          const dist = Math.hypot(dx, dy);
+          const dangerRange = p.kind === 'wave' ? 62 : 52;
+          if (dist < dangerRange && dist > 0.1) {
+            const force = ((dangerRange - dist) / dangerRange) * (1.8 * skill);
+            vx += (dx / dist) * force;
+            vy += (dy / dist) * force;
+          }
+        } else if (p.kind === 'bar_gap') {
+          if (Math.abs(heart.x - p.x) < 110) {
+            vy += (p.gapY - heart.y) * 0.04 * skill;
+          }
+        } else if (p.kind === 'beam') {
+          const seg = distToSegment(heart.x, heart.y, p.x1, p.y1, p.x2, p.y2);
+          if (seg.dist < 42 && seg.dist > 0.1) {
+            const dx = heart.x - seg.projX;
+            const dy = heart.y - seg.projY;
+            vx += (dx / seg.dist) * (1.6 * skill);
+            vy += (dy / seg.dist) * (1.6 * skill);
+          }
+        } else if (p.kind === 'spike') {
+          if (Math.abs(heart.x - p.x) < 35) {
+            vx += (heart.x >= p.x ? 1 : -1) * (1.5 * skill);
+          }
+        }
+      });
+
+      const len = Math.hypot(vx, vy);
+      if (len > 0.05) {
+        heart.x += (vx / len) * spd * dt;
+        heart.y += (vy / len) * spd * dt;
+      }
+    }
+
+    function updateArena(dt) {
+      const as = arenaState;
+      as.elapsed += dt;
+      const remain = Math.max(0, as.duration - as.elapsed);
+      document.getElementById('dodge-timer-text').textContent = remain.toFixed(1);
+
+      if (remain <= 0) {
+        stopArenaLoop();
+        if (as.controller === 'ai_enemy' && as.onBotAttackComplete) {
+          as.onBotAttackComplete();
+        } else if (as.controller === 'human_defend') {
+          if (battle.mode === 'pvp' && as.onPvpDefendComplete) {
+            as.onPvpDefendComplete(Math.max(0, battle.playerHp));
+          } else if (as.onHumanDefendComplete) {
+            as.onHumanDefendComplete();
+          }
+        }
+        return true;
+      }
+
+      if (as.invuln > 0) as.invuln -= dt;
+
+      if (as.controller === 'human_defend') {
+        const spd = as.heart.speed * 60;
+        let dx = 0, dy = 0;
+        if (keysPressed.left) dx -= 1;
+        if (keysPressed.right) dx += 1;
+        if (keysPressed.up) dy -= 1;
+        if (keysPressed.down) dy += 1;
+
+        if (dx !== 0 || dy !== 0) {
+          const len = Math.hypot(dx, dy);
+          as.heart.x += (dx / len) * spd * dt;
+          as.heart.y += (dy / len) * spd * dt;
+        } else if (pointerTarget) {
+          const pdx = pointerTarget.x - as.heart.x;
+          const pdy = pointerTarget.y - as.heart.y;
+          const dist = Math.hypot(pdx, pdy);
+          if (dist > 3) {
+            const step = Math.min(dist, spd * 1.25 * dt);
+            as.heart.x += (pdx / dist) * step;
+            as.heart.y += (pdy / dist) * step;
+          }
+        }
+      } else {
+        moveAiHeart(dt);
+      }
+
+      const pad = as.heart.radius + 5;
+      as.heart.x = Math.max(pad, Math.min(as.width - pad, as.heart.x));
+      as.heart.y = Math.max(pad, Math.min(as.height - pad, as.heart.y));
+
+      if (as.coopAllyHeart && raidSession.roomCode && raidSession.role) {
+        const now = performance.now();
+        if (now - raidSession.lastPosSync > 130) {
+          raidSession.lastPosSync = now;
+          const meKey = raidSession.role;
+          RoomStore.update('raid', raidSession.roomCode, {
+            [`${meKey}.heartX`]: Math.round(as.heart.x),
+            [`${meKey}.heartY`]: Math.round(as.heart.y),
+            [`${meKey}.hp`]: Math.max(0, battle.playerHp)
+          }).catch(() => {});
+        }
+      }
+
+      spawnPatternProjectiles(dt);
+
+      for (let i = as.projectiles.length - 1; i >= 0; i--) {
+        const p = as.projectiles[i];
+
+        if (p.kind === 'dagger') {
+          if (p.telegraph > 0) {
+            p.telegraph -= dt;
+            continue;
+          }
+          p.x += Math.cos(p.angle) * p.speed * dt;
+          p.y += Math.sin(p.angle) * p.speed * dt;
+
+          if (p.x < -40 || p.x > as.width + 40 || p.y < -40 || p.y > as.height + 40) {
+            as.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const dist = Math.hypot(p.x - as.heart.x, p.y - as.heart.y);
+          if (dist < as.heart.radius + p.radius) {
+            const killed = handleArenaHeartHit();
+            as.projectiles.splice(i, 1);
+            if (killed) return true;
+          }
+        } else if (p.kind === 'wave') {
+          p.age += dt;
+          p.x += p.vx * dt;
+          if (p.sineAmp > 0) {
+            p.y = p.baseY + Math.sin(p.age * p.sineFreq) * p.sineAmp;
+          }
+          if (p.x < -60 || p.x > as.width + 60) {
+            as.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const dxWave = Math.abs(p.x - as.heart.x);
+          const dyWave = Math.abs(p.y - as.heart.y);
+          if (dxWave < p.thickness + as.heart.radius - 2 && dyWave < p.arcRadius) {
+            const killed = handleArenaHeartHit();
+            if (killed) return true;
+          }
+        } else if (p.kind === 'bar_gap') {
+          p.age += dt;
+          p.x += p.vx * dt;
+          if (p.waveAmp > 0) {
+            p.gapY = p.baseGapY + Math.sin(p.age * 3.5) * p.waveAmp;
+          }
+          if (p.x < -40 || p.x > as.width + 40) {
+            as.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const inX = Math.abs(as.heart.x - p.x) < (p.width / 2 + as.heart.radius - 2);
+          const inSafeGap = Math.abs(as.heart.y - p.gapY) < (p.gapH / 2 - as.heart.radius + 2);
+          if (inX && !inSafeGap) {
+            const killed = handleArenaHeartHit();
+            if (killed) return true;
+          }
+        } else if (p.kind === 'beam') {
+          if (p.telegraph > 0) {
+            p.telegraph -= dt;
+            if (p.telegraph <= 0) SoundFX.slash();
+            continue;
+          }
+          p.activeTime -= dt;
+          if (p.activeTime <= 0) {
+            as.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const seg = distToSegment(as.heart.x, as.heart.y, p.x1, p.y1, p.x2, p.y2);
+          if (seg.dist < p.halfWidth + as.heart.radius - 2) {
+            const killed = handleArenaHeartHit();
+            if (killed) return true;
+          }
+        } else if (p.kind === 'spike') {
+          if (p.telegraph > 0) {
+            p.telegraph -= dt;
+            if (p.telegraph <= 0) SoundFX.slash();
+            continue;
+          }
+          p.activeTime -= dt;
+          if (p.activeTime <= 0) {
+            as.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const inX = Math.abs(as.heart.x - p.x) < (p.width / 2 + as.heart.radius - 2);
+          const inY = p.fromTop ? (as.heart.y < p.spikeLen) : (as.heart.y > as.height - p.spikeLen);
+          if (inX && inY) {
+            const killed = handleArenaHeartHit();
+            if (killed) return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function handleArenaHeartHit() {
+      const as = arenaState;
+      if (!as || as.invuln > 0 || !battle.active) return false;
+      if (as.controller === 'pvp_spectate') return false;
+
+      as.invuln = 0.65;
+
+      if (as.controller === 'ai_enemy') {
+        SoundFX.slash();
+        const dmg = as.hitDamage;
+        battle.enemyHp = Math.max(0, battle.enemyHp - dmg);
+        updateBattleBars();
+        spawnDamagePopup(`-${dmg} 명중!`, 'text-amber-300');
+
+        const sprite = document.getElementById('enemy-sprite-container');
+        sprite.classList.remove('animate-shake');
+        void sprite.offsetWidth;
+        sprite.classList.add('animate-shake');
+
+        if (battle.enemyHp <= 0) {
+          stopArenaLoop();
+          if (as.onBotAttackComplete) as.onBotAttackComplete();
+          return true;
+        }
+        return false;
+      }
+
+      if (as.controller === 'human_defend') {
+        SoundFX.hurt();
+        const reduced = Math.max(2, Math.round(as.hitDamage * (1 - (as.defenderReduce || 0))));
+        battle.playerHp = Math.max(0, battle.playerHp - reduced);
+        updateBattleBars();
+        spawnDamagePopup(`-${reduced} 피격!`, 'text-red-500');
+
+        if (battle.playerHp <= 0) {
+          if (battle.mode === 'coop_raid') {
+            if (raidSession.roomCode && raidSession.role) {
+              RoomStore.update('raid', raidSession.roomCode, {
+                [`${raidSession.role}.hp`]: 0
+              }).catch(() => {});
+            }
+            return false;
+          }
+          stopArenaLoop();
+          if (battle.mode === 'pvp' && as.onPvpDefendComplete) {
+            as.onPvpDefendComplete(0);
+          } else if (as.onHumanDefendComplete) {
+            as.onHumanDefendComplete();
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function drawArena() {
+      const canvas = document.getElementById('dodgeCanvas');
+      if (!canvas || !arenaState) return;
+      const ctx = canvas.getContext('2d');
+      const { width: w, height: h, heart, projectiles, invuln, controller } = arenaState;
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let gx = 24; gx < w; gx += 24) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+      }
+      for (let gy = 24; gy < h; gy += 24) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+      }
+
+      projectiles.forEach(p => {
+        if (p.kind === 'dagger') {
+          if (p.telegraph > 0) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + Math.cos(p.angle) * 400, p.y + Math.sin(p.angle) * 400);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(-6, -4.5);
+          ctx.lineTo(-6, 4.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = p.color || '#ef4444';
+          ctx.lineWidth = 1.3;
+          ctx.stroke();
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(-8, -6, 2.5, 12);
+          ctx.restore();
+        } else if (p.kind === 'wave') {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          if (p.dir < 0) ctx.scale(-1, 1);
+
+          ctx.strokeStyle = p.color || '#22d3ee';
+          ctx.shadowColor = p.color || '#06b6d4';
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(-10, 0, p.arcRadius, -Math.PI * 0.42, Math.PI * 0.42);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(-8, 0, p.arcRadius - 2, -Math.PI * 0.38, Math.PI * 0.38);
+          ctx.stroke();
+          ctx.restore();
+        } else if (p.kind === 'bar_gap') {
+          const topEnd = Math.max(0, p.gapY - p.gapH / 2);
+          const botStart = Math.min(h, p.gapY + p.gapH / 2);
+
+          ctx.save();
+          ctx.fillStyle = p.color || '#e5e7eb';
+          ctx.shadowColor = p.color || '#ffffff';
+          ctx.shadowBlur = 8;
+
+          if (topEnd > 0) {
+            ctx.fillRect(p.x - p.width / 2, 0, p.width, topEnd);
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(p.x - p.width / 2 - 2, topEnd - 4, p.width + 4, 4);
+            ctx.fillStyle = p.color || '#e5e7eb';
+          }
+          if (botStart < h) {
+            ctx.fillRect(p.x - p.width / 2, botStart, p.width, h - botStart);
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(p.x - p.width / 2 - 2, botStart, p.width + 4, 4);
+          }
+          ctx.restore();
+        } else if (p.kind === 'beam') {
+          ctx.save();
+          if (p.telegraph > 0) {
+            ctx.strokeStyle = p.color || '#ef4444';
+            ctx.globalAlpha = 0.55;
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(p.x1, p.y1);
+            ctx.lineTo(p.x2, p.y2);
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = p.color || '#ef4444';
+            ctx.shadowColor = p.color || '#ef4444';
+            ctx.shadowBlur = 18;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = p.halfWidth * 2;
+            ctx.beginPath();
+            ctx.moveTo(p.x1, p.y1);
+            ctx.lineTo(p.x2, p.y2);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = p.halfWidth * 0.85;
+            ctx.beginPath();
+            ctx.moveTo(p.x1, p.y1);
+            ctx.lineTo(p.x2, p.y2);
+            ctx.stroke();
+          }
+
+          if (p.isBlaster) {
+            const ang = Math.atan2(p.y2 - p.y1, p.x2 - p.x1);
+            ctx.globalAlpha = 1;
+            ctx.translate(p.x1, p.y1);
+            ctx.rotate(ang);
+            ctx.fillStyle = '#18181b';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(14, 0);
+            ctx.lineTo(-10, -11);
+            ctx.lineTo(-6, 0);
+            ctx.lineTo(-10, 11);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (p.kind === 'spike') {
+          ctx.save();
+          if (p.telegraph > 0) {
+            ctx.strokeStyle = p.color || '#38bdf8';
+            ctx.globalAlpha = 0.45;
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(p.x - p.width / 2, p.fromTop ? 0 : h - p.spikeLen, p.width, p.spikeLen);
+          } else {
+            ctx.fillStyle = p.color || '#38bdf8';
+            ctx.shadowColor = p.color || '#38bdf8';
+            ctx.shadowBlur = 10;
+            const yStart = p.fromTop ? 0 : h - p.spikeLen;
+            ctx.fillRect(p.x - p.width / 2, yStart, p.width, p.spikeLen);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(p.x - 2, yStart, 4, p.spikeLen);
+          }
+          ctx.restore();
+        }
+      });
+
+      if (arenaState.coopAllyHeart && battle.allyHp > 0) {
+        const ax = Math.max(12, Math.min(w - 12, raidSession.allyHeartPos.x));
+        const ay = Math.max(12, Math.min(h - 12, raidSession.allyHeartPos.y));
+        ctx.save();
+        ctx.translate(ax, ay);
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#0284c7';
+        ctx.shadowBlur = 10;
+
+        const s = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(0, 7 * s);
+        ctx.bezierCurveTo(-10 * s, -2 * s, -10 * s, -9 * s, -4.5 * s, -9 * s);
+        ctx.bezierCurveTo(-1.5 * s, -9 * s, 0, -6.5 * s, 0, -5 * s);
+        ctx.bezierCurveTo(0, -6.5 * s, 1.5 * s, -9 * s, 4.5 * s, -9 * s);
+        ctx.bezierCurveTo(10 * s, -9 * s, 10 * s, -2 * s, 0, 7 * s);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#bae6fd';
+        ctx.font = 'bold 9px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('친구', 0, -12);
+        ctx.restore();
+      }
+
+      if (battle.playerHp > 0 && (invuln <= 0 || Math.floor(invuln * 16) % 2 === 0)) {
+        const isEnemyHeart = controller === 'ai_enemy' || controller === 'pvp_spectate';
+        ctx.save();
+        ctx.translate(heart.x, heart.y);
+        ctx.fillStyle = isEnemyHeart ? '#c084fc' : '#ff1e1e';
+        ctx.shadowColor = isEnemyHeart ? '#a855f7' : '#ef4444';
+        ctx.shadowBlur = 10;
+
+        const s = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(0, 7 * s);
+        ctx.bezierCurveTo(-10 * s, -2 * s, -10 * s, -9 * s, -4.5 * s, -9 * s);
+        ctx.bezierCurveTo(-1.5 * s, -9 * s, 0, -6.5 * s, 0, -5 * s);
+        ctx.bezierCurveTo(0, -6.5 * s, 1.5 * s, -9 * s, 4.5 * s, -9 * s);
+        ctx.bezierCurveTo(10 * s, -9 * s, 10 * s, -2 * s, 0, 7 * s);
+        ctx.closePath();
+        ctx.fill();
+
+        if (isEnemyHeart || arenaState.coopAllyHeart) {
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = isEnemyHeart ? '#e9d5ff' : '#fecaca';
+          ctx.font = 'bold 9px "Noto Sans KR", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(isEnemyHeart ? (controller === 'ai_enemy' ? 'AI' : 'OPP') : '나', 0, -12);
+        }
+        ctx.restore();
+      }
+    }
+
+    /* ============================================================================
+       전역 함수 바인딩 & 초기 구동
+    ============================================================================ */
+    Object.assign(window, {
+      openInExternalBrowser,
+      switchAuthTab,
+      handleAuthSubmit,
+      logoutAccount,
+      openCodeModal,
+      closeCodeModal,
+      openAdminCreateCodePanel,
+      openAdminExpireCodePanel,
+      adminCreateCode,
+      adminExpireCode,
+      redeemPromoCode,
+      navigateTo,
+      confirmLeaveToLobby,
+      toggleSound,
+      rollWeaponGacha,
+      rollCharGacha,
+      closeGachaModal,
+      selectWeaponForCraft,
+      clearCraftSlot,
+      clearAllCraftSlots,
+      selectRecipeToCraft,
+      executeCraftWeapon,
+      handleFormationSlotClick,
+      selectCharacterForSlot,
+      selectWeaponForSlot,
+      resetFormation,
+      openWarModeModal,
+      closeWarModeModal,
+      backToWarStepSelect,
+      showFriendPvpStep,
+      openJoinCodeInput,
+      startBotWar,
+      startRankedBattle,
+      createPvpRoom,
+      cancelPvpRoom,
+      joinPvpRoom,
+      castSelectedDualPvpSkills,
+      selectRaidBoss,
+      openRaidModeModal,
+      closeRaidModeModal,
+      backToRaidStepSelect,
+      showFriendRaidStep,
+      openRaidJoinCodeInput,
+      startSoloRaid,
+      createRaidRoom,
+      cancelRaidRoom,
+      joinRaidRoom,
+      setTouchDir,
+      closeCustomModal
+    });
+
+    window.onload = function () {
+      updateGlobalUI();
+      navigateTo('auth');
+      syncPromoCodesFromCloud();
+    };
+  </script>
+</body>
+</html>
